@@ -3,4 +3,5 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/varolver/public_html/deneme/menu/
     - /bin/mkdir -p $DEPLOYPATH
-    - /bin/rsync -a --delete --exclude='.git' --exclude='.cpanel.yml' --exclude='config.php' --exclude='admin/config.php' ./ $DEPLOYPATH
+    - /bin/cp -R admin catalog css image img js sound storage system vendor $DEPLOYPATH
+    - /bin/cp -f .htaccess favicon.ico index.php robots.txt config.example.php $DEPLOYPATH
