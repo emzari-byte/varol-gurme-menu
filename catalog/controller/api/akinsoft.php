@@ -19,6 +19,28 @@ class ControllerApiAkinsoft extends Controller {
 			}
 		}
 
+		if (!$user) {
+			$candidates = array(
+				array('username', 'password'),
+				array('user', 'pass'),
+				array('kullanici', 'sifre'),
+				array('WEBUSERNAME', 'WEBPASSWORD'),
+				array('webusername', 'webpassword'),
+				array('KULLANICI_ADI', 'SIFRE')
+			);
+
+			foreach ($candidates as $candidate) {
+				$user_key = $candidate[0];
+				$pass_key = $candidate[1];
+
+				if (isset($this->request->post[$user_key]) || isset($this->request->get[$user_key])) {
+					$user = isset($this->request->post[$user_key]) ? (string)$this->request->post[$user_key] : (string)$this->request->get[$user_key];
+					$pass = isset($this->request->post[$pass_key]) ? (string)$this->request->post[$pass_key] : (isset($this->request->get[$pass_key]) ? (string)$this->request->get[$pass_key] : '');
+					break;
+				}
+			}
+		}
+
 		return ($user === $this->api_user && $pass === $this->api_pass);
 	}
 
@@ -28,8 +50,20 @@ class ControllerApiAkinsoft extends Controller {
 		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
 		$this->response->setOutput(json_encode(array(
 			'success' => false,
-			'message' => 'Yetkisiz erişim'
-		), JSON_UNESCAPED_UNICODE));
+			'message' => 'Yetkisiz erisim'
+		)));
+	}
+
+	public function index() {
+		$this->ping();
+	}
+
+	public function test() {
+		$this->ping();
+	}
+
+	public function login() {
+		$this->ping();
 	}
 
 	public function ping() {
@@ -41,9 +75,10 @@ class ControllerApiAkinsoft extends Controller {
 		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
 		$this->response->setOutput(json_encode(array(
 			'success' => true,
-			'message' => 'Bağlantı başarılı',
+			'message' => 'Akinsoft API baglantisi basarili',
+			'api'     => 'akinsoft',
 			'time'    => date('Y-m-d H:i:s')
-		), JSON_UNESCAPED_UNICODE));
+		)));
 	}
 
 	public function pendingOrders() {
@@ -61,7 +96,7 @@ class ControllerApiAkinsoft extends Controller {
 			'success' => true,
 			'count'   => count($orders),
 			'orders'  => $orders
-		), JSON_UNESCAPED_UNICODE));
+		)));
 	}
 
 	public function markSent() {
@@ -75,7 +110,7 @@ class ControllerApiAkinsoft extends Controller {
 
 		$restaurant_order_id = 0;
 		$external_order_no = '';
-		$message = 'AKINSOFT tarafından alındı';
+		$message = 'AKINSOFT tarafindan alindi';
 
 		if (is_array($data)) {
 			$restaurant_order_id = isset($data['restaurant_order_id']) ? (int)$data['restaurant_order_id'] : 0;
@@ -92,7 +127,7 @@ class ControllerApiAkinsoft extends Controller {
 			$this->response->setOutput(json_encode(array(
 				'success' => false,
 				'message' => 'restaurant_order_id gerekli'
-			), JSON_UNESCAPED_UNICODE));
+			)));
 			return;
 		}
 
@@ -103,6 +138,6 @@ class ControllerApiAkinsoft extends Controller {
 		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
 		$this->response->setOutput(json_encode(array(
 			'success' => (bool)$ok
-		), JSON_UNESCAPED_UNICODE));
+		)));
 	}
 }
