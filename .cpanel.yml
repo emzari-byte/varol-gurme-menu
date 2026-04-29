@@ -4,4 +4,4 @@ deployment:
     - export DEPLOYPATH=/home/varolver/public_html/menu/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R admin catalog css image img js sound storage system vendor $DEPLOYPATH
-    - /bin/cp -f .htaccess favicon.ico index.php robots.txt config.example.php $DEPLOYPATH
+    - /bin/cp -f .htaccess favicon.ico index.php robots.txt akinsoft_api.php config.example.php $DEPLOYPATH

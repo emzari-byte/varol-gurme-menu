@@ -55,6 +55,13 @@ class ControllerApiAkinsoft extends Controller {
 	}
 
 	public function index() {
+		$command = isset($this->request->request['command']) ? strtolower((string)$this->request->request['command']) : '';
+
+		if ($command !== '') {
+			$this->command($command);
+			return;
+		}
+
 		$this->ping();
 	}
 
@@ -64,6 +71,29 @@ class ControllerApiAkinsoft extends Controller {
 
 	public function login() {
 		$this->ping();
+	}
+
+	public function command($command = '') {
+		if ($command === '') {
+			$command = isset($this->request->request['command']) ? strtolower((string)$this->request->request['command']) : '';
+		}
+
+		if ($command === 'wlogin') {
+			$this->webLogin();
+			return;
+		}
+
+		if ($command === 'wlogout') {
+			$this->plain('OK');
+			return;
+		}
+
+		if ($command === 'ping' || $command === 'test') {
+			$this->ping();
+			return;
+		}
+
+		$this->plain('Komut Bulunamadi');
 	}
 
 	public function ping() {
@@ -79,6 +109,32 @@ class ControllerApiAkinsoft extends Controller {
 			'api'     => 'akinsoft',
 			'time'    => date('Y-m-d H:i:s')
 		)));
+	}
+
+	private function webLogin() {
+		$user = isset($this->request->request['username']) ? (string)$this->request->request['username'] : '';
+		$pass = isset($this->request->request['password']) ? (string)$this->request->request['password'] : '';
+
+		if ($user !== $this->api_user || $pass !== $this->api_pass) {
+			$this->plain('AS42001');
+			return;
+		}
+
+		$token = hash('sha256', $this->api_user . ':' . $this->api_pass);
+
+		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
+		$this->response->setOutput(json_encode(array(
+			'success' => true,
+			'result'  => true,
+			'tpwd'    => $token,
+			'tPwd'    => $token,
+			'message' => 'OK'
+		)));
+	}
+
+	private function plain($value) {
+		$this->response->addHeader('Content-Type: text/plain; charset=utf-8');
+		$this->response->setOutput($value);
 	}
 
 	public function pendingOrders() {
