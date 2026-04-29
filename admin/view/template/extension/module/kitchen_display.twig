@@ -1,0 +1,701 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+  <div class="page-header kitchen-page-header">
+    <div class="container-fluid">
+      <h1>Mutfak Ekrani</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="container-fluid kitchen-shell">
+    <div id="kitchenAlert" class="kitchen-alert" style="display:none;">
+      <strong>Yeni sipari&#351; var</strong>
+      <span id="kitchenAlertText"></span>
+    </div>
+
+    <div class="kitchen-hero">
+      <div>
+        <div class="kitchen-eyebrow">Canli KDS</div>
+        <h2>Mutfak Sipari&#351;leri</h2>
+        <p id="kitchenLastUpdate">Haz&#305;rlan&#305;yor...</p>
+      </div>
+    </div>
+
+    <div class="kitchen-topbar">
+      <div class="kpi-card">
+        <span class="kpi-label">Haz&#305;rlanan</span>
+        <b id="prepCount">0</b>
+      </div>
+      <div class="kpi-card warning">
+        <span class="kpi-label">S&#252;resi yakla&#351;an</span>
+        <b id="warningCount">0</b>
+      </div>
+      <div class="kpi-card danger">
+        <span class="kpi-label">Geciken</span>
+        <b id="lateCount">0</b>
+      </div>
+      <div class="kpi-card success">
+        <span class="kpi-label">Haz&#305;r bekleyen</span>
+        <b id="readyCount">0</b>
+      </div>
+      <div class="kpi-card muted">
+        <span class="kpi-label">Toplam aktif</span>
+        <b id="orderCount">0</b>
+      </div>
+    </div>
+
+    <div class="kitchen-filterbar">
+      <button type="button" class="kitchen-filter active" data-filter="all">T&#252;m&#252;</button>
+      <button type="button" class="kitchen-filter" data-filter="late">Geciken</button>
+      <button type="button" class="kitchen-filter" data-filter="warning">S&#252;resi yakla&#351;an</button>
+      <button type="button" class="kitchen-filter" data-filter="ready">Servise haz&#305;r</button>
+      <select id="kitchenCategoryFilter" class="kitchen-category-filter">
+        <option value="">T&#252;m kategoriler</option>
+      </select>
+    </div>
+
+    <div id="kitchenBoard" class="kitchen-board"></div>
+
+    <div id="kitchenEmpty" class="kitchen-empty" style="display:none;">
+      <strong>Aktif mutfak sipari&#351;i yok.</strong>
+      <span>Yeni sipari&#351; geldi&#287;inde bu ekran otomatik g&#252;ncellenecek.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var refreshUrl = '{{ refresh_url|replace({'&amp;':'&'}) }}';
+  var statusUrl  = '{{ status_url|replace({'&amp;':'&'}) }}';
+  var initialOrders = {{ orders_json|raw }};
+  var seenInKitchenOrders = {};
+  var lateAlarmedOrders = {};
+  var currentOrders = [];
+  var activeFilter = 'all';
+  var activeCategory = '';
+  var isLoading = false;
+  var kitchenAudio = new Audio('/menu/sound/notify.wav');
+  var kitchenAudioUnlocked = false;
+  var kitchenAudioContext = null;
+
+  function escapeHtml(value) {
+    return String(value === null || value === undefined ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function statusLabel(status) {
+    var labels = {
+      in_kitchen: 'Haz\u0131rlan\u0131yor',
+      ready_for_service: 'Servise Haz\u0131r',
+      out_for_service: 'Garson Teslim Ald\u0131'
+    };
+
+    return labels[status] || status;
+  }
+
+  function ticketClass(order, isNew) {
+    var classes = ['kds-ticket', order.service_status || ''];
+    var remaining = getRemainingSeconds(order);
+
+    if (isNew) {
+      classes.push('is-new');
+    }
+
+    if (order.service_status === 'ready_for_service') {
+      classes.push('ready');
+    }
+
+    if (order.service_status === 'in_kitchen' && order.prep_deadline_ts && remaining < 0) {
+      classes.push('late');
+    } else if (order.service_status === 'in_kitchen' && order.prep_deadline_ts && remaining <= 180) {
+      classes.push('warning');
+    }
+
+    if (order.prep_state) {
+      classes.push('prep-' + order.prep_state);
+    }
+
+    return classes.join(' ');
+  }
+
+  function getRemainingSeconds(order) {
+    if (!order || !order.prep_deadline_ts) {
+      return null;
+    }
+
+    return Math.floor((parseInt(order.prep_deadline_ts, 10) * 1000 - Date.now()) / 1000);
+  }
+
+  function formatRemaining(seconds) {
+    if (seconds === null || isNaN(seconds)) {
+      return '';
+    }
+
+    var overdue = seconds < 0;
+    seconds = Math.abs(seconds);
+
+    var minutes = Math.floor(seconds / 60);
+    var secs = seconds % 60;
+    var text = String(minutes).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+    return overdue ? '-' + text : text;
+  }
+
+  function renderProducts(products) {
+    var html = '';
+
+    (products || []).forEach(function(product){
+      html += '<div class="line">';
+      html += '<span class="qty">' + escapeHtml(product.quantity) + 'x</span>';
+      html += '<span class="name">' + escapeHtml(product.name);
+      if (product.prep_tag) {
+        html += '<small class="prep-tag">' + escapeHtml(product.prep_tag) + '</small>';
+      }
+      if (product.category_names) {
+        html += '<small class="prep-tag">' + escapeHtml(product.category_names) + '</small>';
+      }
+      html += '</span>';
+      html += '</div>';
+    });
+
+    return html;
+  }
+
+  function renderActions(order) {
+    if (order.service_status === 'in_kitchen') {
+      return '<button type="button" class="btn-kitchen btn-prep" data-id="' + escapeHtml(order.restaurant_order_id) + '" data-status="ready_for_service">Haz\u0131r</button>';
+    }
+
+    if (order.service_status === 'ready_for_service') {
+      return '<div class="ready-label">Garson alsin</div>';
+    }
+
+    if (order.service_status === 'out_for_service') {
+      return '<div class="ready-label out">Garson teslim ald\u0131</div>';
+    }
+
+    return '';
+  }
+
+  function renderOrder(order, isNew) {
+    var tableNo = order.table_no || order.table_id || '';
+    var remaining = getRemainingSeconds(order);
+    var html = '';
+
+    html += '<div class="' + ticketClass(order, isNew) + '" data-order="' + escapeHtml(order.restaurant_order_id) + '">';
+    html += '<div class="ticket-head">';
+    html += '<div>';
+    html += '<div class="table-no">Masa ' + escapeHtml(tableNo) + '</div>';
+    html += '<div class="ticket-time">' + escapeHtml(order.time_label || '') + ' | ' + escapeHtml(order.elapsed_minutes || 0) + ' dk</div>';
+    html += '</div>';
+    html += '<div class="ticket-status">' + escapeHtml(order.status_label || statusLabel(order.service_status)) + '</div>';
+    html += '</div>';
+
+    if (order.category_label) {
+      html += '<div class="ticket-category">' + escapeHtml(order.category_label) + '</div>';
+    }
+
+    if (order.prep_state_label) {
+      html += '<div class="kitchen-urgency ' + escapeHtml(order.prep_state || 'normal') + '">';
+      html += '<span>' + escapeHtml(order.prep_state_label) + '</span>';
+      if (order.prep_overdue_minutes && order.prep_overdue_minutes > 0) {
+        html += '<strong>Öncelikli</strong>';
+      } else if (order.prep_state === 'warning') {
+        html += '<strong>Kontrol et</strong>';
+      } else if (order.prep_state === 'ready') {
+        html += '<strong>Garson</strong>';
+      }
+      html += '</div>';
+    }
+
+    if (order.prep_minutes) {
+      html += '<div class="prep-timer" data-deadline="' + escapeHtml(order.prep_deadline_ts || 0) + '">';
+      html += '<span>Haz\u0131rl\u0131k s\u00fcresi</span>';
+      html += '<strong>' + escapeHtml(order.prep_label || (order.prep_minutes + ' dk')) + '</strong>';
+      if (order.service_status === 'in_kitchen' && order.prep_deadline_ts) {
+        html += '<em class="js-prep-countdown">' + escapeHtml(formatRemaining(remaining)) + '</em>';
+      } else if (order.service_status === 'ready_for_service') {
+        html += '<em>Haz\u0131r</em>';
+      } else if (order.service_status === 'out_for_service') {
+        html += '<em>Teslimde</em>';
+      }
+      html += '</div>';
+    }
+
+    html += '<div class="ticket-products">' + renderProducts(order.products) + '</div>';
+
+    if (order.customer_note) {
+      html += '<div class="ticket-note">' + escapeHtml(order.customer_note) + '</div>';
+    }
+
+    html += '<div class="ticket-actions">' + renderActions(order) + '</div>';
+    html += '</div>';
+
+    return html;
+  }
+
+  function updateKpis(orders) {
+    var prep = 0;
+    var ready = 0;
+    var late = 0;
+    var warning = 0;
+
+    (orders || []).forEach(function(order){
+      if (order.service_status === 'in_kitchen') {
+        prep++;
+      }
+
+      if (order.service_status === 'ready_for_service') {
+        ready++;
+      }
+
+      if (order.service_status === 'in_kitchen' && order.prep_deadline_ts && getRemainingSeconds(order) < 0) {
+        late++;
+      } else if (order.service_status === 'in_kitchen' && order.prep_deadline_ts && getRemainingSeconds(order) <= 180) {
+        warning++;
+      }
+    });
+
+    document.getElementById('prepCount').textContent = prep;
+    document.getElementById('readyCount').textContent = ready;
+    document.getElementById('lateCount').textContent = late;
+    document.getElementById('warningCount').textContent = warning;
+    document.getElementById('orderCount').textContent = (orders || []).length;
+  }
+
+  function showNewOrderAlert(newOrders) {
+    var alert = document.getElementById('kitchenAlert');
+    var text = document.getElementById('kitchenAlertText');
+    var labels = [];
+
+    newOrders.forEach(function(order){
+      labels.push('Masa ' + (order.table_no || order.table_id || ''));
+    });
+
+    text.textContent = labels.join(', ');
+    alert.style.display = 'flex';
+    alert.classList.remove('pulse');
+
+    setTimeout(function(){
+      alert.classList.add('pulse');
+    }, 20);
+
+    setTimeout(function(){
+      alert.style.display = 'none';
+    }, 8000);
+  }
+
+  function showLateOrderAlert(lateOrders) {
+    var alert = document.getElementById('kitchenAlert');
+    var text = document.getElementById('kitchenAlertText');
+    var labels = [];
+
+    lateOrders.forEach(function(order){
+      labels.push('Masa ' + (order.table_no || order.table_id || ''));
+    });
+
+    alert.querySelector('strong').textContent = 'Geciken sipari\u015f var';
+    text.textContent = labels.join(', ');
+    alert.style.display = 'flex';
+    alert.classList.remove('pulse');
+
+    setTimeout(function(){
+      alert.classList.add('pulse');
+    }, 20);
+
+    setTimeout(function(){
+      alert.style.display = 'none';
+      alert.querySelector('strong').textContent = 'Yeni sipari\u015f var';
+    }, 9000);
+  }
+
+  function unlockKitchenAudio() {
+    if (kitchenAudioUnlocked) {
+      return;
+    }
+
+    kitchenAudioUnlocked = true;
+
+    try {
+      kitchenAudio.volume = 1;
+      kitchenAudio.currentTime = 0;
+
+      var playPromise = kitchenAudio.play();
+
+      if (playPromise && playPromise.then) {
+        playPromise.then(function(){
+          kitchenAudio.pause();
+          kitchenAudio.currentTime = 0;
+        }).catch(function(){});
+      } else {
+        kitchenAudio.pause();
+        kitchenAudio.currentTime = 0;
+      }
+    } catch(e) {}
+
+    try {
+      var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+      if (AudioContextClass) {
+        kitchenAudioContext = kitchenAudioContext || new AudioContextClass();
+
+        if (kitchenAudioContext.state === 'suspended') {
+          kitchenAudioContext.resume();
+        }
+      }
+    } catch(e) {}
+  }
+
+  function playFallbackBeep() {
+    try {
+      var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContextClass) {
+        return;
+      }
+
+      kitchenAudioContext = kitchenAudioContext || new AudioContextClass();
+
+      if (kitchenAudioContext.state === 'suspended') {
+        kitchenAudioContext.resume();
+      }
+
+      var oscillator = kitchenAudioContext.createOscillator();
+      var gain = kitchenAudioContext.createGain();
+      var now = kitchenAudioContext.currentTime;
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, now);
+      oscillator.frequency.setValueAtTime(660, now + 0.18);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.55, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+      oscillator.connect(gain);
+      gain.connect(kitchenAudioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.6);
+    } catch(e) {}
+  }
+
+  function playKitchenAlertSound() {
+    unlockKitchenAudio();
+
+    try {
+      kitchenAudio.pause();
+      kitchenAudio.currentTime = 0;
+
+      var playPromise = kitchenAudio.play();
+
+      if (playPromise && playPromise.catch) {
+        playPromise.catch(function(){
+          playFallbackBeep();
+        });
+      }
+    } catch(e) {
+      playFallbackBeep();
+    }
+
+    setTimeout(playFallbackBeep, 120);
+  }
+
+  function showBrowserNotification(newOrders) {
+    if (!('Notification' in window)) {
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification('Yeni sipari\u015f var', {
+          body: newOrders.map(function(order){
+            return 'Masa ' + (order.table_no || order.table_id || '');
+          }).join(', ')
+        });
+      } catch(e) {}
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(function(){});
+    }
+  }
+
+  function orderMatchesFilter(order) {
+    if (activeFilter === 'late' && order.prep_state !== 'late') {
+      return false;
+    }
+
+    if (activeFilter === 'warning' && order.prep_state !== 'warning') {
+      return false;
+    }
+
+    if (activeFilter === 'ready' && order.service_status !== 'ready_for_service') {
+      return false;
+    }
+
+    if (activeCategory) {
+      var categories = order.categories || [];
+
+      if (categories.indexOf(activeCategory) === -1) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function updateCategoryFilter(orders) {
+    var select = document.getElementById('kitchenCategoryFilter');
+    var categories = {};
+
+    (orders || []).forEach(function(order){
+      (order.categories || []).forEach(function(category){
+        categories[category] = true;
+      });
+    });
+
+    var current = select.value;
+    var html = '<option value="">T\u00fcm kategoriler</option>';
+
+    Object.keys(categories).sort().forEach(function(category){
+      html += '<option value="' + escapeHtml(category) + '">' + escapeHtml(category) + '</option>';
+    });
+
+    select.innerHTML = html;
+    select.value = categories[current] ? current : '';
+    activeCategory = select.value;
+  }
+
+  function renderBoard(orders, newOrderIds) {
+    var board = document.getElementById('kitchenBoard');
+    var empty = document.getElementById('kitchenEmpty');
+    var html = '';
+    var visibleOrders = (orders || []).filter(orderMatchesFilter);
+
+    visibleOrders.forEach(function(order){
+      html += renderOrder(order, !!newOrderIds[String(order.restaurant_order_id)]);
+    });
+
+    board.innerHTML = html;
+    empty.style.display = visibleOrders.length ? 'none' : 'block';
+    updateKpis(orders || []);
+
+    document.getElementById('kitchenLastUpdate').textContent = 'Son guncelleme: ' + new Date().toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
+  function tickPrepCountdowns() {
+    var timers = document.querySelectorAll('.prep-timer[data-deadline]');
+
+    timers.forEach(function(timer){
+      var deadline = parseInt(timer.getAttribute('data-deadline'), 10) || 0;
+      var countdown = timer.querySelector('.js-prep-countdown');
+      var ticket = timer.closest('.kds-ticket');
+
+      if (!deadline || !countdown) {
+        return;
+      }
+
+      var remaining = Math.floor((deadline * 1000 - Date.now()) / 1000);
+      countdown.textContent = formatRemaining(remaining);
+
+      if (remaining < 0) {
+        timer.classList.add('overdue');
+        if (ticket) {
+          ticket.classList.add('late');
+          ticket.classList.remove('warning');
+          updateUrgency(ticket, 'late', 'Gecikti ' + Math.max(1, Math.ceil(Math.abs(remaining) / 60)) + ' dk', 'Öncelikli');
+        }
+      } else if (remaining <= 180) {
+        timer.classList.add('ending');
+        if (ticket) {
+          ticket.classList.add('warning');
+          updateUrgency(ticket, 'warning', 'Süre bitiyor', 'Kontrol et');
+        }
+      } else {
+        timer.classList.remove('overdue', 'ending');
+      }
+    });
+  }
+
+  function updateUrgency(ticket, state, label, action) {
+    var urgency = ticket.querySelector('.kitchen-urgency');
+
+    if (!urgency) {
+      return;
+    }
+
+    urgency.className = 'kitchen-urgency ' + state;
+    urgency.innerHTML = '<span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(action) + '</strong>';
+  }
+
+  function rememberSeenOrders(orders) {
+    seenInKitchenOrders = {};
+
+    (orders || []).forEach(function(order){
+      if (order.service_status === 'in_kitchen') {
+        seenInKitchenOrders[String(order.restaurant_order_id)] = true;
+      }
+    });
+  }
+
+  function applyOrders(orders, notify) {
+    var newOrders = [];
+    var newlyLateOrders = [];
+    var newOrderIds = {};
+    currentOrders = orders || [];
+    updateCategoryFilter(currentOrders);
+
+    (orders || []).forEach(function(order){
+      var id = String(order.restaurant_order_id);
+
+      if (notify && order.service_status === 'in_kitchen' && !seenInKitchenOrders[id]) {
+        newOrders.push(order);
+        newOrderIds[id] = true;
+      }
+
+      if (notify && order.service_status === 'in_kitchen' && order.prep_state === 'late' && !lateAlarmedOrders[id]) {
+        newlyLateOrders.push(order);
+        lateAlarmedOrders[id] = true;
+      }
+    });
+
+    renderBoard(orders || [], newOrderIds);
+
+    if (newOrders.length) {
+      showNewOrderAlert(newOrders);
+      playKitchenAlertSound();
+      showBrowserNotification(newOrders);
+    }
+
+    if (newlyLateOrders.length) {
+      showLateOrderAlert(newlyLateOrders);
+      playKitchenAlertSound();
+    }
+
+    rememberSeenOrders(orders || []);
+  }
+
+  function loadKitchen(notify) {
+    if (isLoading) {
+      return;
+    }
+
+    isLoading = true;
+
+    fetch(refreshUrl, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store'
+    })
+      .then(function(response){ return response.json(); })
+      .then(function(response){
+        if (!response || !response.success) {
+          return;
+        }
+
+        applyOrders(response.orders || [], notify);
+      })
+      .catch(function(){})
+      .finally(function(){
+        isLoading = false;
+      });
+  }
+
+  function updateKitchenStatus(orderId, status, button) {
+    button.disabled = true;
+
+    var body = new URLSearchParams();
+    body.append('restaurant_order_id', orderId);
+    body.append('service_status', status);
+
+    fetch(statusUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+      },
+      body: body.toString()
+    })
+      .then(function(response){ return response.json(); })
+      .then(function(response){
+        if (response && response.success) {
+          loadKitchen(false);
+        } else {
+          alert(response && response.message ? response.message : 'Hata');
+          button.disabled = false;
+        }
+      })
+      .catch(function(){
+        alert('AJAX hatasi');
+        button.disabled = false;
+      });
+  }
+
+  document.addEventListener('click', function(event){
+    unlockKitchenAudio();
+
+    var button = event.target.closest('.btn-kitchen');
+
+    if (!button) {
+      return;
+    }
+
+    if (!confirm('Sipari\u015f haz\u0131r olarak i\u015faretlensin mi?')) {
+      return;
+    }
+
+    updateKitchenStatus(button.getAttribute('data-id'), button.getAttribute('data-status'), button);
+  });
+
+  document.addEventListener('click', function(event){
+    var filter = event.target.closest('.kitchen-filter');
+
+    if (!filter) {
+      return;
+    }
+
+    activeFilter = filter.getAttribute('data-filter') || 'all';
+    document.querySelectorAll('.kitchen-filter').forEach(function(button){
+      button.classList.toggle('active', button === filter);
+    });
+    renderBoard(currentOrders || [], {});
+  });
+
+  document.getElementById('kitchenCategoryFilter').addEventListener('change', function(){
+    activeCategory = this.value;
+    renderBoard(currentOrders || [], {});
+  });
+
+  document.addEventListener('touchstart', unlockKitchenAudio, { passive: true });
+  document.addEventListener('keydown', unlockKitchenAudio);
+
+  applyOrders(initialOrders || [], false);
+
+  setInterval(function(){
+    loadKitchen(true);
+  }, 2000);
+
+  setInterval(tickPrepCountdowns, 1000);
+
+  setTimeout(function(){
+    loadKitchen(true);
+  }, 700);
+})();
+</script>
+
+{{ footer }}

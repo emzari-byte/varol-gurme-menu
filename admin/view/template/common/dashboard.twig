@@ -1,0 +1,98 @@
+{{ header }}{{ column_left }}
+<div id="content" class="restaurant-dashboard">
+  <style>
+    .restaurant-dashboard .page-header{background:#f8fbf9;border-bottom:1px solid #e1ece6;margin-bottom:0}
+    .restaurant-dashboard .page-header h1{font-weight:800;color:#264235}
+    .rd-wrap{padding:22px}
+    .rd-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;background:#20372c;color:#fff;border-radius:8px;padding:22px 24px;margin-bottom:18px}
+    .rd-hero h2{margin:0 0 6px;font-size:24px;font-weight:800}
+    .rd-hero p{margin:0;color:#c9d8d0}
+    .rd-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .rd-actions a{display:inline-flex;align-items:center;gap:8px;border-radius:6px;padding:10px 13px;background:#f4f8f6;color:#244235;font-weight:700;text-decoration:none}
+    .rd-actions a.disabled{opacity:.45;pointer-events:none}
+    .rd-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .rd-card{background:#fff;border:1px solid #e1ece6;border-radius:8px;padding:17px;box-shadow:0 8px 20px rgba(32,55,44,.05)}
+    .rd-card small{display:block;color:#7a8a80;font-weight:700;margin-bottom:8px}
+    .rd-card strong{display:block;color:#264235;font-size:28px;font-weight:900;line-height:1}
+    .rd-card.warning strong{color:#b7791f}.rd-card.danger strong{color:#b03a2e}.rd-card.success strong{color:#1e6f46}
+    .rd-layout{display:grid;grid-template-columns:1.35fr .65fr;gap:14px}
+    .rd-panel{background:#fff;border:1px solid #e1ece6;border-radius:8px;overflow:hidden}
+    .rd-panel h3{margin:0;padding:15px 17px;border-bottom:1px solid #e1ece6;font-size:16px;font-weight:800;color:#264235}
+    .rd-table{width:100%;border-collapse:collapse}
+    .rd-table td,.rd-table th{padding:12px 15px;border-bottom:1px solid #eef4f1;color:#405a4d}
+    .rd-table th{font-size:12px;color:#7a8a80;text-transform:uppercase}
+    .rd-badge{display:inline-flex;border-radius:999px;padding:5px 9px;background:#eef6f1;color:#315645;font-size:12px;font-weight:800}
+    .rd-settings{display:flex;flex-direction:column;padding:14px;gap:10px}
+    .rd-setting{display:flex;align-items:center;justify-content:space-between;border:1px solid #eef4f1;border-radius:7px;padding:10px 12px;color:#405a4d}
+    .rd-dot{width:10px;height:10px;border-radius:50%;background:#c0392b}.rd-dot.on{background:#1e9d55}
+    @media(max-width:991px){.rd-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rd-layout{grid-template-columns:1fr}.rd-hero{align-items:flex-start;flex-direction:column}.rd-actions{justify-content:flex-start}}
+  </style>
+  <div class="page-header">
+    <div class="container-fluid">
+      <h1>{{ heading_title }}</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid rd-wrap">
+    {% if error_install %}
+    <div class="alert alert-danger alert-dismissible"><button type="button" class="close pull-right" data-dismiss="alert">&times;</button><i class="fa fa-exclamation-circle"></i> {{ error_install }}</div>
+    {% endif %}
+    <section class="rd-hero">
+      <div>
+        <h2>Bugünkü restoran akışı</h2>
+        <p>Masalar, siparişler, mutfak ve ödeme bekleyen işlemler tek ekranda.</p>
+      </div>
+      <div class="rd-actions">
+        {% for link in quick_links %}
+        <a href="{{ link.href }}" class="{{ link.enabled ? '' : 'disabled' }}"><i class="fa {{ link.icon }}"></i>{{ link.title }}</a>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="rd-grid">
+      <div class="rd-card"><small>Aktif Masa</small><strong>{{ stats.active_tables }} / {{ stats.total_tables }}</strong></div>
+      <div class="rd-card warning"><small>Garson Onayı Bekleyen</small><strong>{{ stats.waiting_orders }}</strong></div>
+      <div class="rd-card danger"><small>Mutfakta Hazırlanan</small><strong>{{ stats.in_kitchen }}</strong></div>
+      <div class="rd-card success"><small>Bugünkü Tahsilat</small><strong>{{ stats.today_revenue }}</strong></div>
+      <div class="rd-card"><small>Servise Hazır</small><strong>{{ stats.ready_for_service }}</strong></div>
+      <div class="rd-card"><small>Servis Edildi</small><strong>{{ stats.served }}</strong></div>
+      <div class="rd-card warning"><small>Hesap Talebi</small><strong>{{ stats.bill_requests }}</strong></div>
+      <div class="rd-card"><small>ERP Durumu</small><strong>{{ settings.akinsoft ? 'Açık' : 'Kapalı' }}</strong></div>
+    </section>
+    <section class="rd-layout">
+      <div class="rd-panel">
+        <h3>Son Siparişler</h3>
+        <table class="rd-table">
+          <thead><tr><th>Masa</th><th>Durum</th><th>Tutar</th><th>Saat</th></tr></thead>
+          <tbody>
+            {% if latest_orders %}
+            {% for order in latest_orders %}
+            <tr>
+              <td><strong>{{ order.table }}</strong><br><small>{{ order.table_name }}</small></td>
+              <td><span class="rd-badge">{{ order.status_label }}</span></td>
+              <td>{{ order.total }}</td>
+              <td>{{ order.time }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr><td colspan="4">Henüz sipariş bulunmuyor.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      <div class="rd-panel">
+        <h3>Sistem Akışı</h3>
+        <div class="rd-settings">
+          <div class="rd-setting"><span>QR Sipariş Menü</span><i class="rd-dot {{ settings.qr_order_menu ? 'on' : '' }}"></i></div>
+          <div class="rd-setting"><span>Garson Paneli</span><i class="rd-dot {{ settings.waiter_panel ? 'on' : '' }}"></i></div>
+          <div class="rd-setting"><span>Mutfak Paneli</span><i class="rd-dot {{ settings.kitchen_panel ? 'on' : '' }}"></i></div>
+          <div class="rd-setting"><span>Akınsoft ERP</span><i class="rd-dot {{ settings.akinsoft ? 'on' : '' }}"></i></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{{ footer }}

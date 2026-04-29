@@ -1,0 +1,1533 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+	<div class="page-header">
+		<div class="container-fluid">
+			<h1>Garson Paneli</h1>
+			<ul class="breadcrumb">
+				{% for breadcrumb in breadcrumbs %}
+					<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="waiter-summary">
+			<div class="box">
+				Toplam Masa
+				<strong id="summary-total">{{ total_tables }}</strong>
+			</div>
+			<div class="box">
+				Aktif Masa
+				<strong id="summary-active">{{ active_tables }}</strong>
+			</div>
+			<div class="box">
+				Onay Bekleyen
+				<strong id="summary-call">{{ new_calls }}</strong>
+			</div>
+			<div class="box">
+				Bugün Ödenen
+				<strong id="summary-paid">{{ paid_count }}</strong>
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title"><i class="fa fa-cutlery"></i> Masalar</h3>
+			</div>
+			<div class="panel-body">
+				<div class="waiter-grid" id="waiter-grid">
+					{% for table in tables %}
+						{% set status_text = {
+	'empty': 'Boş',
+	'waiting_order': 'Onay Bekliyor',
+	'in_kitchen': 'Mutfakta',
+	'ready_for_service': 'Servise Hazır',
+	'served': 'Servis Edildi',
+	'paid': 'Ödeme Alındı',
+	'out_for_service': 'Servise Çıkıyor',
+	'cancelled': 'İptal'
+} %}
+
+						<div class="table-card {{ table.service_status }}"
+							 data-table-id="{{ table.table_id }}"
+							 data-table-no="{{ table.table_no }}"
+							 data-status="{{ table.service_status }}"
+							 data-waiter-call-pending="{{ table.waiter_call_pending|default(0) }}"
+							 data-waiter-call-status="{{ table.latest_waiter_call_status|default('') }}"
+							 data-bill-request-pending="{{ table.bill_request_pending|default(0) }}"
+							 data-bill-request-status="{{ table.latest_bill_request_status|default('') }}"
+							 data-bill-request-note="{{ table.latest_bill_request_note|default('')|e('html_attr') }}"
+							 data-note="{{ table.note|e('html_attr') }}">
+							<div class="table-top">
+								<div>
+									<div class="table-name">Masa {{ table.table_no }}</div>
+									<div class="table-sub">{{ table.area }} · {{ table.capacity }} Kişi</div>
+								</div>
+
+								<div class="table-amount">{{ table.total_amount }} TL</div>
+							</div>
+
+							<div class="table-service-name">{{ table.name }}</div>
+
+							<div class="table-operation {{ table.operation_class|default('idle') }}">
+								<span>{{ table.operation_label|default('Boş masa') }}</span>
+								{% if table.operation_time %}
+									<strong>{{ table.operation_time }}</strong>
+								{% endif %}
+							</div>
+
+							{% if table.bill_payment_note %}
+								<div class="bill-payment-chip">{{ table.bill_payment_note }}</div>
+							{% endif %}
+
+							<div class="table-footer">
+								<span class="table-status-badge">
+									{{ status_text[table.service_status] is defined ? status_text[table.service_status] : table.service_status }}
+								</span>
+
+								{% if table.call_badge %}
+									<span class="table-alert-badge {{ table.call_badge_class }}">{{ table.call_badge }}</span>
+								{% endif %}
+
+								<span class="order-count">{{ table.active_order_count }} Sipariş</span>
+							</div>
+
+							<div class="waiter-note">{{ table.note }}</div>
+						</div>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="waiter-modal-backdrop" id="waiterModalBackdrop"></div>
+
+<div class="waiter-modal" id="waiterModal">
+	<h3 id="modalTitle">Masa Detayı</h3>
+
+	<input type="hidden" id="modal_table_id" value="">
+
+	<div class="waiter-call-panel" id="waiterCallPanel" style="display:none;">
+		<div>
+			<strong id="waiterCallTitle">Garson çağrısı var</strong>
+			<span id="waiterCallText">Müşteri masaya destek istiyor.</span>
+		</div>
+		<button type="button" class="btn btn-success" id="ackWaiterCallBtn">Tamam, masaya gidiyorum</button>
+	</div>
+
+	<div class="waiter-call-panel bill-panel" id="billRequestPanel" style="display:none;">
+		<div>
+			<strong id="billRequestTitle">Hesap talebi var</strong>
+			<span id="billRequestText">Müşteri hesabı istiyor.</span>
+			<span id="billPaymentNote"></span>
+		</div>
+	</div>
+
+	<div class="form-group">
+		<label>Masa Notu</label>
+		<textarea id="modal_note" class="form-control" rows="3" placeholder="Masa notu..."></textarea>
+	</div>
+
+	<div class="form-group">
+		<label>Masaya Bağlı Siparişler</label>
+		<div id="orderList"><div class="no-orders">Yükleniyor...</div></div>
+	</div>
+    <div class="form-group">
+	<label>Garson İlave Ürün</label>
+
+	<input type="text"
+		   id="manualProductSearch"
+		   class="form-control"
+		   placeholder="Ürün ara: su, kola, kahve...">
+
+	<div id="manualProductResults" class="manual-product-results"></div>
+
+	<div id="manualSelectedProducts" class="manual-selected-products"></div>
+</div>
+<button type="button"
+id="sendManualOrderBtn"
+class="btn btn-success"
+disabled
+style="margin-top:12px;width:100%;opacity:.55;cursor:not-allowed;">
+Mutfağa Gönder
+</button>
+	<div class="actions">
+		<button type="button" class="btn btn-default" id="modalCloseBtn">Kapat</button>
+		<button type="button" class="btn btn-primary" id="modalSaveBtn">Masa Notunu Kaydet</button>
+	</div>
+</div>
+
+<div id="orderAlarm">
+	<div id="alarmTitle">YENİ SİPARİŞ</div>
+	<div id="alarmTable"></div>
+	<div id="alarmSubText">Garson lütfen siparişi kontrol edin</div>
+	<button id="alarmOkBtn">TAMAM</button>
+</div>
+
+<script>
+(function($) {
+	var refreshUrl      = '{{ refresh_url|replace({'&amp;':'&'}) }}';
+	var ordersUrl       = '{{ orders_url|replace({'&amp;':'&'}) }}';
+	var orderStatusUrl  = '{{ order_status_url|replace({'&amp;':'&'}) }}';
+	var removeOrderProductUrl = '{{ remove_order_product_url|replace({'&amp;':'&'}) }}';
+	var tableNoteUrl    = '{{ table_note_url|replace({'&amp;':'&'}) }}';
+	var waiterCallAckUrl = '{{ waiter_call_ack_url|replace({'&amp;':'&'}) }}';
+	var billRequestAckUrl = '{{ bill_request_ack_url|replace({'&amp;':'&'}) }}';
+    var productSearchUrl = '{{ product_search_url|replace({'&amp;':'&'}) }}';
+	var originalTitle = document.title;
+	var previousWaitingTables = [];
+	var previousBillRequests = [];
+	var previousWaiterCalls = [];
+	var previousReadyCalls=[];
+    var firstReadyRefresh=false;
+    var firstBillRefreshCompleted = false;
+    var firstWaiterRefreshCompleted = false;
+	var notificationPermissionAsked = false;
+	var audioUnlocked = false;
+	var notifyAudio = new Audio('/menu/sound/notify.wav');
+	var autoOpenedTableKey = null;
+	var firstRefreshCompleted = false;
+	var alarmLoop = null;
+	var alarmOpen = false;
+	var titleBlinkInterval = null;
+	var titleBlinkState = false;
+    var manualOrderItems = {};
+    var currentTableOrders = [];
+    var currentBillRequestPending = false;
+    var currentBillRequestStatus = '';
+    var currentMainAction = null;
+    var productSearchTimer = null;
+    var manualOrderUrl='{{ manual_order_url|replace({'&amp;':'&'}) }}';
+    var kitchenPanelEnabled = {{ kitchen_panel_enabled ? 1 : 0 }};
+    var akinsoftEnabled = {{ akinsoft_enabled ? 1 : 0 }};
+	function statusText(status) {
+		var map = {
+empty:'Boş',
+waiting_order:'Onay Bekliyor',
+in_kitchen:'Mutfakta',
+ready_for_service:'Servise Hazır',
+out_for_service:'Servise Çıkıyor',
+served:'Servis Edildi',
+paid:'Ödeme Alındı',
+cancelled:'İptal'
+};
+		return map[status] || status;
+	}
+
+	function escapeHtml(text) {
+		if (text === null || text === undefined) return '';
+		return $('<div>').text(text).html();
+	}
+$(document).on('input', '#manualProductSearch', function() {
+	var keyword = $(this).val();
+
+	clearTimeout(productSearchTimer);
+
+	if (!keyword || keyword.length < 2) {
+		$('#manualProductResults').html('');
+		return;
+	}
+
+	productSearchTimer = setTimeout(function() {
+		$.ajax({
+			url: productSearchUrl + '&keyword=' + encodeURIComponent(keyword),
+			type: 'GET',
+			dataType: 'json',
+			cache: false,
+			success: function(json) {
+				if (json.error) {
+					$('#manualProductResults').html('<div class="no-orders">' + json.error + '</div>');
+					return;
+				}
+
+				renderProductResults(json.products || []);
+			},
+			error: function() {
+				$('#manualProductResults').html('<div class="no-orders">Ürün aranırken hata oluştu.</div>');
+			}
+		});
+	}, 250);
+});
+
+$(document).on('click', '.manual-product-result', function() {
+	var productId = String($(this).data('product-id'));
+
+	if (!manualOrderItems[productId]) {
+		manualOrderItems[productId] = {
+			product_id: parseInt(productId, 10),
+			name: $(this).data('name'),
+			price: $(this).data('price'),
+			price_raw: parseFloat($(this).data('price-raw')) || 0,
+			quantity: 1
+		};
+	} else {
+		manualOrderItems[productId].quantity++;
+	}
+
+	$('#manualProductSearch').val('');
+	$('#manualProductResults').html('');
+	renderManualSelectedProducts();
+});
+
+$(document).on('click', '.manual-plus', function() {
+	var productId = String($(this).data('product-id'));
+
+	if (manualOrderItems[productId]) {
+		manualOrderItems[productId].quantity++;
+		renderManualSelectedProducts();
+	}
+});
+
+$(document).on('click', '.manual-minus', function() {
+	var productId = String($(this).data('product-id'));
+
+	if (manualOrderItems[productId]) {
+		manualOrderItems[productId].quantity--;
+
+		if (manualOrderItems[productId].quantity <= 0) {
+			delete manualOrderItems[productId];
+		}
+
+		renderManualSelectedProducts();
+	}
+});
+	function bindCards() {
+		$('.table-card').off('click').on('click', function() {
+			openModal(this);
+		});
+	}
+
+	function openModal(card) {
+		var tableId = $(card).attr('data-table-id');
+		var tableNo = $(card).attr('data-table-no');
+
+		$('#modal_table_id').val(tableId);
+		$('#modalTitle').text('Masa ' + tableNo + ' Detayı');
+		$('#modal_note').val($(card).attr('data-note') || '');
+		updateWaiterCallPanel($(card).attr('data-waiter-call-pending'), $(card).attr('data-waiter-call-status'));
+		updateBillRequestPanel($(card).attr('data-bill-request-pending'), $(card).attr('data-bill-request-status'), $(card).attr('data-bill-request-note'));
+		$('#orderList').html('<div class="no-orders">Yükleniyor...</div>');
+        
+		$('#waiterModalBackdrop').show();
+		$('#waiterModal').show();
+        resetManualOrderBox();
+		loadOrders(tableId);
+	}
+
+	function openModalByTableData(table) {
+		if (!table || !table.table_id) return;
+
+		var fakeCard = $('<div>')
+			.attr('data-table-id', table.table_id)
+			.attr('data-table-no', table.table_no)
+			.attr('data-waiter-call-pending', table.waiter_call_pending || 0)
+			.attr('data-waiter-call-status', table.latest_waiter_call_status || '')
+			.attr('data-bill-request-pending', table.bill_request_pending || 0)
+			.attr('data-bill-request-status', table.latest_bill_request_status || '')
+			.attr('data-bill-request-note', table.latest_bill_request_note || '')
+			.attr('data-note', table.note || '');
+
+		openModal(fakeCard);
+	}
+
+	function updateWaiterCallPanel(pending, status) {
+		var hasPending = parseInt(pending || 0, 10) > 0;
+
+		if (!hasPending) {
+			$('#waiterCallPanel').hide();
+			$('#ackWaiterCallBtn').prop('disabled', false).text('Tamam, masaya gidiyorum');
+			return;
+		}
+
+		$('#waiterCallPanel').css('display', 'flex');
+
+		if (status === 'seen') {
+			$('#waiterCallTitle').text('Çağrı görüldü');
+			$('#waiterCallText').text('Müşteri ekranında garsonun masaya geldiği bilgisi görünüyor.');
+			$('#ackWaiterCallBtn').prop('disabled', true).text('Müşteriye bilgi verildi');
+		} else {
+			$('#waiterCallTitle').text('Garson çağrısı var');
+			$('#waiterCallText').text('Müşteri masaya destek istiyor.');
+			$('#ackWaiterCallBtn').prop('disabled', false).text('Tamam, masaya gidiyorum');
+		}
+	}
+
+	function updateBillRequestPanel(pending, status, note) {
+		var hasPending = parseInt(pending || 0, 10) > 0;
+		currentBillRequestPending = hasPending;
+		currentBillRequestStatus = hasPending ? (status || '') : '';
+
+		if (!hasPending) {
+			$('#billRequestPanel').hide();
+			$('#billPaymentNote').text('');
+			toggleManualOrderButton();
+			return;
+		}
+
+		$('#billRequestPanel').css('display', 'flex');
+		$('#billPaymentNote').text(note || '');
+
+		if (status === 'seen') {
+			$('#billRequestTitle').text('Hesap talebi görüldü');
+			$('#billRequestText').text('Müşteri ekranında hesap talebinin alındığı bilgisi görünüyor.');
+		} else {
+			$('#billRequestTitle').text('Hesap talebi var');
+			$('#billRequestText').text('Müşteri hesabını istiyor.');
+		}
+		toggleManualOrderButton();
+	}
+
+	function closeModal() {
+		$('#waiterModalBackdrop').hide();
+		$('#waiterModal').hide();
+	}
+
+	function orderButtons(order) {
+		var html = '<div class="order-actions" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">';
+
+		if (order.service_status === 'waiting_order') {
+			html += '<button type="button" class="btn btn-sm btn-danger js-order-status" data-id="' + order.restaurant_order_id + '" data-status="cancelled">İptal</button>';
+		} else if (order.service_status === 'in_kitchen') {
+			html += '<span class="label label-info">Mutfakta hazırlanıyor</span>';
+		} else if (order.service_status === 'ready_for_service') {
+			html += '<button type="button" class="btn btn-sm btn-success js-order-status" data-id="' + order.restaurant_order_id + '" data-status="served">Servis Edildi</button>';
+		} else if (order.service_status === 'out_for_service') {
+			html += '<button type="button" class="btn btn-sm btn-success js-order-status" data-id="' + order.restaurant_order_id + '" data-status="served">Servis Edildi</button>';
+		} else if (order.service_status === 'served') {
+			html += '<button type="button" class="btn btn-sm btn-warning js-order-status" data-id="' + order.restaurant_order_id + '" data-status="paid">Ödeme Alındı</button>';
+		} else if (order.service_status === 'paid') {
+			html += '<span class="label label-success">Ödeme tamamlandı</span>';
+		} else if (order.service_status === 'cancelled') {
+			html += '<span class="label label-danger">Sipariş iptal edildi</span>';
+		}
+
+		html += '</div>';
+
+		return html;
+	}
+	function orderButtons(order) {
+		if (order.service_status === 'in_kitchen') {
+			return '<div class="order-actions"><span class="label label-info">Mutfakta hazırlanıyor</span></div>';
+		}
+
+		if (order.service_status === 'cancelled') {
+			return '<div class="order-actions"><span class="label label-danger">Sipariş iptal edildi</span></div>';
+		}
+
+		return '';
+	}
+
+	function orderIntegrationBadge(order) {
+		if (!order || !order.integration_status) {
+			return '';
+		}
+
+		if (order.integration_status === 'sent') {
+			var sentText = 'Akınsoft’a aktarıldı';
+
+			if (order.external_order_no) {
+				sentText += ' #' + order.external_order_no;
+			}
+
+			return '<div class="order-integration sent">' + escapeHtml(sentText) + '</div>';
+		}
+
+		if (order.integration_status === 'failed') {
+			return '<div class="order-integration failed">' + escapeHtml(order.integration_message || 'Akınsoft aktarımı başarısız') + '</div>';
+		}
+
+		if (order.integration_status === 'pending_export') {
+			return '<div class="order-integration pending">Akınsoft aktarımı bekliyor</div>';
+		}
+
+		return '';
+	}
+
+	function renderOrders(orders) {
+		var html = '';
+		currentTableOrders = orders || [];
+
+		if (!orders || !orders.length) {
+			html = '<div class="no-orders">Bu masaya bağlı aktif sipariş yok.</div>';
+		} else {
+			orders.forEach(function(order) {
+				html += '<div class="order-box">';
+				html += '<div class="order-head">Sipariş #' + escapeHtml(order.restaurant_order_id) + ' - ' + statusText(order.service_status) + '</div>';
+				html += '<div class="order-date">' + escapeHtml(order.date_added || '') + '</div>';
+				html += orderIntegrationBadge(order);
+
+				if (order.customer_note) {
+					html += '<div class="waiter-note" style="margin-bottom:8px;">Not: ' + escapeHtml(order.customer_note) + '</div>';
+				}
+
+				if (order.products && order.products.length) {
+					order.products.forEach(function(product) {
+						html += '<div class="order-product-row">';
+						html += '<div>' + escapeHtml(product.name) + ' x ' + escapeHtml(product.quantity) + '</div>';
+						html += '<div class="order-product-side"><span>' + escapeHtml(product.total) + ' ₺</span>' + (order.service_status === 'waiting_order' ? '<button type="button" class="btn btn-xs btn-danger js-remove-order-product" data-id="' + escapeHtml(product.restaurant_order_product_id) + '">Sil</button>' : '') + '</div>';
+						html += '</div>';
+					});
+				} else {
+					html += '<div class="no-orders">Bu siparişte ürün yok.</div>';
+				}
+
+				html += '<div class="order-total">Toplam: ' + escapeHtml(order.total_amount || '0.0000') + ' ₺</div>';
+				html += orderButtons(order);
+				html += '</div>';
+			});
+		}
+
+		$('#orderList').html(html);
+		bindOrderButtons();
+		toggleManualOrderButton();
+	}
+
+	function loadOrders(tableId) {
+		$.ajax({
+			url: ordersUrl + '&table_id=' + tableId,
+			type: 'GET',
+			dataType: 'json',
+			cache: false,
+			success: function(json) {
+	if (json.error) {
+		$('#orderList').html('<div class="no-orders">' + json.error + '</div>');
+		return;
+	}
+
+	renderOrders(json.orders || []);
+},
+error: function(xhr) {
+	$('#orderList').html('<div class="no-orders">Siparişler alınırken hata oluştu.<br>' + (xhr.responseText ? xhr.responseText : '') + '</div>');
+}
+		});
+	}
+
+	function bindOrderButtons() {
+		$('.js-remove-order-product').off('click').on('click', function() {
+			var button = $(this);
+			var rowId = button.data('id');
+			var tableId = $('#modal_table_id').val();
+
+			if (!rowId || !confirm('Bu ürün siparişten çıkarılsın mı?')) {
+				return;
+			}
+
+			button.prop('disabled', true);
+
+			$.ajax({
+				url: removeOrderProductUrl,
+				type: 'POST',
+				dataType: 'json',
+				cache: false,
+				data: {
+					restaurant_order_product_id: rowId
+				},
+				success: function(json) {
+					if (json.success) {
+						loadOrders(tableId);
+						refreshPanel();
+					} else {
+						alert(json.message || 'Ürün çıkarılamadı.');
+						button.prop('disabled', false);
+					}
+				},
+				error: function() {
+					alert('Ürün çıkarılırken hata oluştu.');
+					button.prop('disabled', false);
+				}
+			});
+		});
+
+		$('.js-order-status').off('click').on('click', function() {
+		    var $button = $(this);
+		    var nextStatus = $(this).data('status');
+
+var confirmText='';
+if(nextStatus=='out_for_service'){
+	confirmText='Siparişi teslim aldığınızı onaylıyor musunuz?';
+}
+if(nextStatus=='served'){
+	confirmText='Sipariş servis edildi olarak işaretlensin mi?';
+}
+if(nextStatus=='in_kitchen'){
+	confirmText='Siparişi mutfağa göndermek istiyor musunuz?';
+}
+
+if(nextStatus=='served'){
+	confirmText='Sipariş servis edildi olarak işaretlensin mi?';
+}
+
+if(nextStatus=='paid'){
+	confirmText='Bu sipariş ödeme alındı olarak kapatılsın mı?';
+}
+
+if(nextStatus=='cancelled'){
+	confirmText='Sipariş iptal edilsin mi?';
+}
+
+if(confirmText && !confirm(confirmText)){
+	return;
+}
+			var restaurantOrderId = $(this).data('id');
+			var serviceStatus = $(this).data('status');
+			var tableId = $('#modal_table_id').val();
+
+			$button.prop('disabled', true);
+
+			$.ajax({
+				url: orderStatusUrl,
+				type: 'POST',
+				dataType: 'json',
+				cache: false,
+				data: {
+					restaurant_order_id: restaurantOrderId,
+					service_status: serviceStatus
+				},
+				success: function(json) {
+					if (json.success) {
+						closeModal();
+						autoOpenedTableKey = null;
+						refreshPanel();
+					} else {
+						alert(json.message || 'Sipariş güncellenemedi.');
+						$button.prop('disabled', false);
+					}
+				},
+				error: function() {
+					alert('Sipariş durumu güncellenirken hata oluştu.');
+					$button.prop('disabled', false);
+				}
+			});
+		});
+	}
+
+	function renderTables(tables) {
+	var html = '';
+
+	(tables || []).forEach(function(table) {
+		var alertBadge = '';
+
+		if (table.call_badge) {
+			alertBadge = '<span class="table-alert-badge ' + escapeHtml(table.call_badge_class || '') + '">' + escapeHtml(table.call_badge) + '</span>';
+		}
+
+		html += '<div class="table-card ' + escapeHtml(table.service_status) + '" ' +
+			'data-table-id="' + escapeHtml(table.table_id) + '" ' +
+			'data-table-no="' + escapeHtml(table.table_no) + '" ' +
+			'data-status="' + escapeHtml(table.service_status) + '" ' +
+			'data-waiter-call-pending="' + escapeHtml(table.waiter_call_pending || 0) + '" ' +
+			'data-waiter-call-status="' + escapeHtml(table.latest_waiter_call_status || '') + '" ' +
+			'data-bill-request-pending="' + escapeHtml(table.bill_request_pending || 0) + '" ' +
+			'data-bill-request-status="' + escapeHtml(table.latest_bill_request_status || '') + '" ' +
+			'data-bill-request-note="' + escapeHtml(table.latest_bill_request_note || '') + '" ' +
+			'data-note="' + escapeHtml(table.note || '') + '">' +
+			'<div class="table-top">' +
+			'  <div>' +
+			'    <div class="table-name">Masa ' + escapeHtml(table.table_no) + '</div>' +
+			'    <div class="table-sub">' + escapeHtml(table.area || '') + ' · ' + escapeHtml(table.capacity) + ' Kişi</div>' +
+			'  </div>' +
+			'  <div class="table-amount">' + escapeHtml(table.total_amount) + ' TL</div>' +
+			'</div>' +
+			'<div class="table-service-name">' + escapeHtml(table.name || '') + '</div>' +
+			'<div class="table-operation ' + escapeHtml(table.operation_class || 'idle') + '">' +
+			'  <span>' + escapeHtml(table.operation_label || 'Boş masa') + '</span>' +
+			(table.operation_time ? '  <strong>' + escapeHtml(table.operation_time) + '</strong>' : '') +
+			'</div>' +
+			(table.bill_payment_note ? '<div class="bill-payment-chip">' + escapeHtml(table.bill_payment_note) + '</div>' : '') +
+			'<div class="table-footer">' +
+			'  <span class="table-status-badge">' + statusText(table.service_status) + '</span>';
+
+		if (parseInt(table.ready_service_pending || 0, 10) > 0 && !table.call_badge) {
+			html += '<span class="table-alert-badge service-ready">Servise Hazır</span>';
+		}
+
+		html += alertBadge +
+			'  <span class="order-count">' + escapeHtml(table.active_order_count) + ' Sipariş</span>' +
+			'</div>' +
+			'<div class="waiter-note">' + escapeHtml(table.note || '') + '</div>' +
+			'</div>';
+	});
+
+	$('#waiter-grid').html(html);
+	bindCards();
+}
+function resetManualOrderBox() {
+	manualOrderItems = {};
+	$('#manualProductSearch').val('');
+	$('#manualProductResults').html('');
+	$('#manualSelectedProducts').html('');
+	toggleManualOrderButton();
+}
+
+function renderManualSelectedProducts() {
+	var html = '';
+	var keys = Object.keys(manualOrderItems);
+
+	if (!keys.length) {
+	$('#manualSelectedProducts').html('');
+	toggleManualOrderButton();
+	return;
+}
+
+	keys.forEach(function(productId) {
+		var item = manualOrderItems[productId];
+
+		html += '<div class="manual-selected-row">';
+		html += '  <div class="manual-selected-info">';
+		html += '    <div class="manual-selected-name">' + escapeHtml(item.name) + '</div>';
+		html += '    <div class="manual-selected-meta">' + escapeHtml(item.price) + '</div>';
+		html += '  </div>';
+		html += '  <div class="manual-selected-qty">';
+		html += '    <button type="button" class="manual-minus" data-product-id="' + productId + '">-</button>';
+		html += '    <strong>' + item.quantity + '</strong>';
+		html += '    <button type="button" class="manual-plus" data-product-id="' + productId + '">+</button>';
+		html += '  </div>';
+		html += '</div>';
+	});
+
+	$('#manualSelectedProducts').html(html);
+toggleManualOrderButton();
+}
+function toggleManualOrderButton(){
+	var btn=$('#sendManualOrderBtn');
+	currentMainAction = getMainAction();
+
+	if(currentMainAction){
+
+		btn.prop('disabled',false)
+		   .text(currentMainAction.label)
+		   .removeClass('btn-success btn-warning btn-info btn-primary')
+		   .addClass(currentMainAction.className || 'btn-success')
+		   .css({
+			 opacity:'1',
+			 cursor:'pointer'
+		   });
+
+	}else{
+
+		btn.prop('disabled',true)
+		   .text('İşlem Yok')
+		   .removeClass('btn-success btn-warning btn-info btn-primary')
+		   .addClass('btn-success')
+		   .css({
+			 opacity:'.55',
+			 cursor:'not-allowed'
+		   });
+	}
+}
+
+function getOrdersByStatus(statuses) {
+	return (currentTableOrders || []).filter(function(order) {
+		return statuses.indexOf(order.service_status) !== -1;
+	});
+}
+
+function getMainAction() {
+	var hasItems = Object.keys(manualOrderItems).length > 0;
+
+	if (hasItems) {
+		return {type:'manual_order', label:'Mutfağa Gönder', className:'btn-success'};
+	}
+
+	if (currentBillRequestPending && currentBillRequestStatus !== 'seen') {
+		return {type:'ack_bill', label:'Hesapla İlgileniyorum', className:'btn-warning'};
+	}
+
+	if (currentBillRequestPending && currentBillRequestStatus === 'seen' && getOrdersByStatus(['served']).length) {
+		return {type:'pay_orders', label:'Ödeme Alındı', className:'btn-warning'};
+	}
+
+	if (getOrdersByStatus(['served']).length) {
+		return {type:'pay_orders', label:'Ödeme Alındı', className:'btn-warning'};
+	}
+
+	if (getOrdersByStatus(['ready_for_service', 'out_for_service']).length) {
+		return {type:'serve_orders', label:'Servis Edildi', className:'btn-info'};
+	}
+
+	if (akinsoftEnabled && !kitchenPanelEnabled && getOrdersByStatus(['in_kitchen']).length) {
+		return {type:'serve_orders', label:'Servis Edildi', className:'btn-info'};
+	}
+
+	if (getOrdersByStatus(['waiting_order']).length) {
+		return {type:'approve_orders', label:(kitchenPanelEnabled || akinsoftEnabled) ? 'Mutfağa Gönder' : 'Servis Edildi', className:'btn-success'};
+	}
+
+	return null;
+}
+function renderProductResults(products) {
+	var html = '';
+
+	if (!products || !products.length) {
+		$('#manualProductResults').html('<div class="no-orders">Ürün bulunamadı.</div>');
+		return;
+	}
+
+	products.forEach(function(product) {
+		html += '<div class="manual-product-result" data-product-id="' + product.product_id + '" data-name="' + escapeHtml(product.name) + '" data-price="' + escapeHtml(product.price) + '" data-price-raw="' + product.price_raw + '">';
+		html += '  <div class="manual-product-name">' + escapeHtml(product.name) + '</div>';
+		html += '  <div class="manual-product-price">' + escapeHtml(product.price) + '</div>';
+		html += '</div>';
+	});
+
+	$('#manualProductResults').html(html);
+}
+	function requestNotificationPermission() {
+		if (!('Notification' in window)) return;
+
+		if (!notificationPermissionAsked && Notification.permission === 'default') {
+			notificationPermissionAsked = true;
+			Notification.requestPermission();
+		}
+	}
+
+	function unlockAudio() {
+		if (audioUnlocked) return;
+
+		audioUnlocked = true;
+
+		try {
+			notifyAudio.volume = 1;
+			var playPromise = notifyAudio.play();
+
+			if (playPromise !== undefined) {
+				playPromise.then(function() {
+					notifyAudio.pause();
+					notifyAudio.currentTime = 0;
+				}).catch(function() {});
+			}
+		} catch (e) {}
+	}
+
+	function playNotifySound() {
+		try {
+			notifyAudio.currentTime = 0;
+			notifyAudio.play().catch(function() {});
+		} catch (e) {}
+	}
+
+	function vibratePhone(pattern) {
+		if (navigator.vibrate) {
+			navigator.vibrate(pattern || [250, 120, 250]);
+		}
+	}
+
+	function showToast(message) {
+		var $oldToast = $('#waiter-new-order-toast');
+
+		if ($oldToast.length) {
+			$oldToast.remove();
+		}
+
+		var $toast = $('<div id="waiter-new-order-toast"></div>');
+		$toast.text(message).css({
+			position: 'fixed',
+			top: '0',
+			left: '0',
+			right: '0',
+			background: '#e53935',
+			color: '#fff',
+			padding: '14px 16px',
+			fontSize: '16px',
+			fontWeight: '700',
+			textAlign: 'center',
+			zIndex: 10050,
+			boxShadow: '0 2px 10px rgba(0,0,0,0.25)'
+		});
+
+		$('body').append($toast);
+
+		setTimeout(function() {
+			$toast.fadeOut(300, function() {
+				$(this).remove();
+			});
+		}, 4500);
+	}
+
+	function showBrowserNotification(title, body) {
+		if (!('Notification' in window)) return;
+
+		if (Notification.permission === 'granted') {
+			try {
+				new Notification(title, {
+					body: body,
+					icon: '/image/catalog/logo.png'
+				});
+			} catch (e) {}
+		}
+	}
+
+	function startTitleBlink(message) {
+	if (titleBlinkInterval) {
+		clearInterval(titleBlinkInterval);
+	}
+
+	titleBlinkState = false;
+
+	titleBlinkInterval = setInterval(function() {
+		titleBlinkState = !titleBlinkState;
+
+		if (titleBlinkState) {
+			document.title = message;
+		} else {
+			document.title = '(Yeni Bildirim) ' + originalTitle;
+		}
+	}, 1000);
+}
+
+	function stopTitleBlink() {
+		if (titleBlinkInterval) {
+			clearInterval(titleBlinkInterval);
+			titleBlinkInterval = null;
+		}
+
+		document.title = originalTitle;
+	}
+
+	function setAlertTitle(count) {
+		if (!alarmOpen) {
+			if (count > 0) {
+				document.title = '(' + count + ') Yeni Sipariş - ' + originalTitle;
+			} else {
+				document.title = originalTitle;
+			}
+		}
+	}
+
+	function showFullAlarm(message, type) {
+	if (alarmOpen) return;
+
+	alarmOpen = true;
+
+	if (type === 'bill_request') {
+		$('#alarmTitle').text('HESAP İSTİYOR');
+		$('#alarmTable').text(message);
+		$('#alarmSubText').text('Garson lütfen hesabı hazırlayın');
+	} else if (type === 'service_ready') {
+		$('#alarmTitle').text('SERVİSE HAZIR');
+		$('#alarmTable').text(message);
+		$('#alarmSubText').text('Mutfaktan teslim alın');
+	} else if (type === 'waiter_call') {
+		$('#alarmTitle').text('GARSON ÇAĞRISI');
+		$('#alarmTable').text(message);
+		$('#alarmSubText').text('Müşteri garson çağırıyor');
+	} else {
+		$('#alarmTitle').text('YENİ SİPARİŞ');
+		$('#alarmTable').text(message);
+		$('#alarmSubText').text('Garson lütfen siparişi kontrol edin');
+	}
+
+	$('#orderAlarm').show();
+
+	startTitleBlink(message);
+
+	try {
+		notifyAudio.currentTime = 0;
+		notifyAudio.play().catch(function() {});
+	} catch (e) {}
+
+	vibratePhone([400, 200, 400, 200, 700]);
+
+	alarmLoop = setInterval(function() {
+		try {
+			notifyAudio.currentTime = 0;
+			notifyAudio.play().catch(function() {});
+		} catch (e) {}
+
+		vibratePhone([250, 120, 250, 120, 250]);
+	}, 2500);
+}
+
+	function closeFullAlarm() {
+		alarmOpen = false;
+
+		if (alarmLoop) {
+			clearInterval(alarmLoop);
+			alarmLoop = null;
+		}
+
+		try {
+			notifyAudio.pause();
+			notifyAudio.currentTime = 0;
+		} catch (e) {}
+
+		stopTitleBlink();
+		$('#orderAlarm').hide();
+	}
+
+	function getWaitingTableKeys(tables) {
+		var keys = [];
+
+		(tables || []).forEach(function(table) {
+			var waitingCount = parseInt(table.active_order_count || 0, 10);
+
+			if (table.service_status === 'waiting_order' && waitingCount > 0) {
+				keys.push('table_' + table.table_id);
+			}
+		});
+
+		return keys;
+	}
+
+	function checkNewWaitingOrders(tables) {
+		var currentKeys = getWaitingTableKeys(tables);
+		var newOrders = [];
+
+		(tables || []).forEach(function(table) {
+			var waitingCount = parseInt(table.active_order_count || 0, 10);
+			var tableKey = 'table_' + table.table_id;
+
+			if (table.service_status === 'waiting_order' && waitingCount > 0) {
+				if (previousWaitingTables.indexOf(tableKey) === -1) {
+					newOrders.push({
+						table_id: table.table_id,
+						table_no: table.table_no,
+						count: waitingCount,
+						note: table.note || ''
+					});
+				}
+			}
+		});
+
+		if (firstRefreshCompleted && newOrders.length > 0) {
+			var firstOrder = newOrders[0];
+			var toastMessage = 'Yeni Sipariş! Masa ' + firstOrder.table_no;
+
+			if (firstOrder.count > 1) {
+				toastMessage += ' (' + firstOrder.count + ' sipariş)';
+			}
+
+			showToast(toastMessage);
+			vibratePhone();
+			playNotifySound();
+			showBrowserNotification('Yeni Sipariş', 'Masa ' + firstOrder.table_no + ' için yeni sipariş geldi');
+			showFullAlarm('Masa ' + firstOrder.table_no + ' Yeni Sipariş', 'order');
+
+			if (!$('#waiterModal').is(':visible') || autoOpenedTableKey !== ('table_' + firstOrder.table_id)) {
+				autoOpenedTableKey = 'table_' + firstOrder.table_id;
+				openModalByTableData(firstOrder);
+			}
+		}
+
+		setAlertTitle(currentKeys.length);
+		previousWaitingTables = currentKeys;
+		firstRefreshCompleted = true;
+	}
+function checkNewBillRequests(tables) {
+	var currentReadyKeys = [];
+	var currentBillKeys = [];
+	var currentWaiterKeys = [];
+
+	(tables || []).forEach(function(table) {
+		var readyCount = parseInt(table.ready_service_pending || 0, 10);
+		var billCount = parseInt(table.bill_request_pending || 0, 10);
+		var waiterCount = parseInt(table.waiter_call_pending || 0, 10);
+
+		if (readyCount > 0) {
+			currentReadyKeys.push('ready_' + table.table_id);
+		}
+
+		if (billCount > 0) {
+			currentBillKeys.push('bill_' + table.table_id);
+		}
+
+		if (waiterCount > 0) {
+			currentWaiterKeys.push('waiter_' + table.table_id + '_' + table.latest_waiter_call_id);
+		}
+	});
+
+	if (!firstReadyRefresh) {
+		previousReadyCalls = currentReadyKeys;
+		firstReadyRefresh = true;
+	} else {
+		(tables || []).forEach(function(table) {
+			var readyCount = parseInt(table.ready_service_pending || 0, 10);
+			var readyKey = 'ready_' + table.table_id;
+
+			if (readyCount > 0 && previousReadyCalls.indexOf(readyKey) === -1) {
+				showToast('Masa ' + table.table_no + ' servise hazır');
+				vibratePhone();
+				playNotifySound();
+				showBrowserNotification('Servise Hazır', 'Masa ' + table.table_no + ' mutfaktan hazır');
+				showFullAlarm('Masa ' + table.table_no + ' Servise Hazır', 'service_ready');
+			}
+		});
+
+		previousReadyCalls = currentReadyKeys;
+	}
+
+	if (!firstBillRefreshCompleted) {
+		previousBillRequests = currentBillKeys;
+		firstBillRefreshCompleted = true;
+	} else {
+		(tables || []).forEach(function(table) {
+			var billCount = parseInt(table.bill_request_pending || 0, 10);
+			var billKey = 'bill_' + table.table_id;
+
+			if (billCount > 0 && previousBillRequests.indexOf(billKey) === -1) {
+				showToast('Masa ' + table.table_no + ' hesap istiyor');
+				vibratePhone();
+				playNotifySound();
+				showBrowserNotification('Hesap Talebi', 'Masa ' + table.table_no + ' hesap talebinde bulundu');
+				showFullAlarm('Masa ' + table.table_no + ' Hesap İstiyor', 'bill_request');
+			}
+		});
+
+		previousBillRequests = currentBillKeys;
+	}
+
+	if (!firstWaiterRefreshCompleted) {
+		previousWaiterCalls = currentWaiterKeys;
+		firstWaiterRefreshCompleted = true;
+	} else {
+		(tables || []).forEach(function(table) {
+			var waiterCount = parseInt(table.waiter_call_pending || 0, 10);
+			var waiterKey = 'waiter_' + table.table_id + '_' + table.latest_waiter_call_id;
+
+			if (waiterCount > 0 && previousWaiterCalls.indexOf(waiterKey) === -1) {
+				showToast('Masa ' + table.table_no + ' garson çağırıyor');
+				vibratePhone();
+				playNotifySound();
+				showBrowserNotification('Garson Çağrısı', 'Masa ' + table.table_no + ' garson çağırıyor');
+				showFullAlarm('Masa ' + table.table_no + ' Garson Çağırıyor', 'waiter_call');
+			}
+		});
+
+		previousWaiterCalls = currentWaiterKeys;
+	}
+}
+	function refreshPanel() {
+		$.ajax({
+			url: refreshUrl,
+			type: 'GET',
+			dataType: 'json',
+			cache: false,
+			success: function(json) {
+				if (json.summary) {
+					$('#summary-total').text(json.summary.total_tables || 0);
+					$('#summary-active').text(json.summary.active_tables || 0);
+					$('#summary-call').text(json.summary.new_calls || 0);
+					$('#summary-paid').text(json.summary.paid_count || 0);
+				}
+
+				if (json.tables) {
+	renderTables(json.tables);
+	checkNewWaitingOrders(json.tables);
+	checkNewBillRequests(json.tables);
+}
+			}
+		});
+	}
+
+	$('#modalCloseBtn, #waiterModalBackdrop').on('click', function() {
+		closeModal();
+		autoOpenedTableKey = null;
+	});
+
+	$('#modalSaveBtn').on('click', function() {
+		$.ajax({
+			url: tableNoteUrl,
+			type: 'POST',
+			dataType: 'json',
+			cache: false,
+			data: {
+				table_id: $('#modal_table_id').val(),
+				note: $('#modal_note').val()
+			},
+			success: function(json) {
+				if (json.success) {
+					closeModal();
+					refreshPanel();
+				} else {
+					alert(json.message || 'Kaydedilemedi.');
+				}
+			},
+			error: function() {
+				alert('Masa notu kaydedilirken hata oluştu.');
+			}
+		});
+	});
+
+	$('#ackWaiterCallBtn').on('click', function() {
+		var btn = $(this);
+		var tableId = $('#modal_table_id').val();
+
+		if (!tableId || btn.prop('disabled')) {
+			return;
+		}
+
+		btn.prop('disabled', true).text('Bildirim gönderiliyor...');
+
+		$.ajax({
+			url: waiterCallAckUrl,
+			type: 'POST',
+			dataType: 'json',
+			cache: false,
+			data: { table_id: tableId },
+			success: function(json) {
+				if (json.success) {
+					updateWaiterCallPanel(1, 'seen');
+					refreshPanel();
+					showToast(json.message || 'Çağrı görüldü.');
+				} else {
+					btn.prop('disabled', false).text('Tamam, masaya gidiyorum');
+					alert(json.message || 'Çağrı güncellenemedi.');
+				}
+			},
+			error: function() {
+				btn.prop('disabled', false).text('Tamam, masaya gidiyorum');
+				alert('Çağrı güncellenemedi.');
+			}
+		});
+	});
+
+	$('#ackBillRequestBtn').on('click', function() {
+		var btn = $(this);
+		var tableId = $('#modal_table_id').val();
+
+		if (!tableId || btn.prop('disabled')) {
+			return;
+		}
+
+		btn.prop('disabled', true).text('Bildirim gönderiliyor...');
+
+		$.ajax({
+			url: billRequestAckUrl,
+			type: 'POST',
+			dataType: 'json',
+			cache: false,
+			data: { table_id: tableId },
+			success: function(json) {
+				if (json.success) {
+					updateBillRequestPanel(1, 'seen');
+					refreshPanel();
+					showToast(json.message || 'Hesap talebi görüldü.');
+				} else {
+					btn.prop('disabled', false).text('Hesapla ilgileniyorum');
+					alert(json.message || 'Hesap talebi güncellenemedi.');
+				}
+			},
+			error: function() {
+				btn.prop('disabled', false).text('Hesapla ilgileniyorum');
+				alert('Hesap talebi güncellenemedi.');
+			}
+		});
+	});
+
+	$(document).on('click touchstart', function() {
+		requestNotificationPermission();
+		unlockAudio();
+	});
+
+	$(document).on('click', '#alarmOkBtn', function() {
+		closeFullAlarm();
+	});
+$(document).on('click', '#sendManualOrderBtn', function() {
+	var items = [];
+
+	Object.keys(manualOrderItems).forEach(function(id) {
+		items.push({
+			product_id: manualOrderItems[id].product_id,
+			quantity: manualOrderItems[id].quantity
+		});
+	});
+
+	var waitingOrders = (currentTableOrders || []).filter(function(order) {
+		return order.service_status === 'waiting_order';
+	});
+
+	if (!items.length) {
+		if (!waitingOrders.length) {
+			alert('Ürün seçiniz veya bekleyen sipariş olduğundan emin olunuz.');
+			return;
+		}
+
+		if (!confirm('Bekleyen siparişleri mutfağa göndermek istiyor musunuz?')) {
+			return;
+		}
+
+		var approveBtn = $(this);
+		var nextStatus = (kitchenPanelEnabled || akinsoftEnabled) ? 'in_kitchen' : 'served';
+		var index = 0;
+
+		approveBtn.prop('disabled', true).text('Gönderiliyor...');
+
+		function sendNextWaitingOrder() {
+			if (index >= waitingOrders.length) {
+				closeModal();
+				autoOpenedTableKey = null;
+				refreshPanel();
+				approveBtn.prop('disabled', false).text('Mutfağa Gönder');
+				return;
+			}
+
+			$.ajax({
+				url: orderStatusUrl,
+				type: 'POST',
+				dataType: 'json',
+				cache: false,
+				data: {
+					restaurant_order_id: waitingOrders[index].restaurant_order_id,
+					service_status: nextStatus
+				},
+				success: function(json) {
+					if (json.success) {
+						index++;
+						sendNextWaitingOrder();
+					} else {
+						alert(json.message || 'Sipariş mutfağa gönderilemedi.');
+						approveBtn.prop('disabled', false).text('Mutfağa Gönder');
+					}
+				},
+				error: function() {
+					alert('Sipariş mutfağa gönderilemedi.');
+					approveBtn.prop('disabled', false).text('Mutfağa Gönder');
+				}
+			});
+		}
+
+		sendNextWaitingOrder();
+		return;
+	}
+
+	var tableId = $('#modal_table_id').val();
+    if (!confirm('Bu ilave siparişi mutfağa göndermek istiyor musunuz?')) {
+	return;
+}
+	var btn = $(this);
+	btn.prop('disabled', true).text('Gönderiliyor...');
+
+	$.ajax({
+		url: manualOrderUrl,
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table_id: tableId,
+			products: items
+		},
+		success: function(json) {
+			if (json.success) {
+				resetManualOrderBox();
+				closeModal();
+				autoOpenedTableKey = null;
+				refreshPanel();
+			} else {
+				alert(json.message || 'Hata oluştu');
+				btn.prop('disabled', false).text('Mutfağa Gönder');
+			}
+
+		},
+		error: function(xhr) {
+	alert('Sipariş gönderilemedi:\n' + (xhr.responseText ? xhr.responseText : 'Boş cevap'));
+	btn.prop('disabled', false).text('Mutfağa Gönder');
+}
+	});
+});
+
+$('#sendManualOrderBtn').on('click', function(e) {
+	e.preventDefault();
+	e.stopImmediatePropagation();
+	processMainAction($(this));
+	return false;
+});
+
+function updateOrdersSequential(orders, nextStatus, confirmText, doneText, button) {
+	if (!orders.length) {
+		alert('Bu işlem için uygun sipariş bulunmuyor.');
+		return;
+	}
+
+	if (confirmText && !confirm(confirmText)) {
+		return;
+	}
+
+	var index = 0;
+	var tableId = $('#modal_table_id').val();
+
+	button.prop('disabled', true).text('İşleniyor...');
+
+	function next() {
+		if (index >= orders.length) {
+			closeModal();
+			autoOpenedTableKey = null;
+			refreshPanel();
+			button.prop('disabled', false).text(doneText || 'Tamam');
+			return;
+		}
+
+		$.ajax({
+			url: orderStatusUrl,
+			type: 'POST',
+			dataType: 'json',
+			cache: false,
+			data: {
+				restaurant_order_id: orders[index].restaurant_order_id,
+				service_status: nextStatus
+			},
+			success: function(json) {
+				if (json.success) {
+					index++;
+					next();
+				} else {
+					alert(json.message || 'İşlem tamamlanamadı.');
+					button.prop('disabled', false);
+					toggleManualOrderButton();
+				}
+			},
+			error: function() {
+				alert('İşlem sırasında hata oluştu.');
+				button.prop('disabled', false);
+				toggleManualOrderButton();
+			}
+		});
+	}
+
+	next();
+}
+
+function processManualOrder(button) {
+	var items = [];
+
+	Object.keys(manualOrderItems).forEach(function(id) {
+		items.push({
+			product_id: manualOrderItems[id].product_id,
+			quantity: manualOrderItems[id].quantity
+		});
+	});
+
+	if (!items.length) {
+		return false;
+	}
+
+	if (!confirm('Bu ilave siparişi mutfağa göndermek istiyor musunuz?')) {
+		return true;
+	}
+
+	button.prop('disabled', true).text('Gönderiliyor...');
+
+	$.ajax({
+		url: manualOrderUrl,
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table_id: $('#modal_table_id').val(),
+			products: items
+		},
+		success: function(json) {
+			if (json.success) {
+				resetManualOrderBox();
+				closeModal();
+				autoOpenedTableKey = null;
+				refreshPanel();
+			} else {
+				alert(json.message || 'Hata oluştu');
+				button.prop('disabled', false);
+				toggleManualOrderButton();
+			}
+		},
+		error: function(xhr) {
+			alert('Sipariş gönderilemedi:\n' + (xhr.responseText ? xhr.responseText : 'Boş cevap'));
+			button.prop('disabled', false);
+			toggleManualOrderButton();
+		}
+	});
+
+	return true;
+}
+
+function processMainAction(button) {
+	var action = getMainAction();
+
+	if (!action || button.prop('disabled')) {
+		return;
+	}
+
+	if (action.type === 'manual_order') {
+		processManualOrder(button);
+		return;
+	}
+
+	if (action.type === 'ack_bill') {
+		if (!confirm('Hesap talebiyle ilgilendiğinizi müşteriye bildirelim mi?')) {
+			return;
+		}
+
+		button.prop('disabled', true).text('Bildirim gönderiliyor...');
+
+		$.ajax({
+			url: billRequestAckUrl,
+			type: 'POST',
+			dataType: 'json',
+			cache: false,
+			data: { table_id: $('#modal_table_id').val() },
+			success: function(json) {
+				if (json.success) {
+					updateBillRequestPanel(1, 'seen');
+					refreshPanel();
+					showToast(json.message || 'Hesap talebi görüldü.');
+				} else {
+					alert(json.message || 'Hesap talebi güncellenemedi.');
+				}
+				button.prop('disabled', false);
+				toggleManualOrderButton();
+			},
+			error: function() {
+				alert('Hesap talebi güncellenemedi.');
+				button.prop('disabled', false);
+				toggleManualOrderButton();
+			}
+		});
+
+		return;
+	}
+
+	if (action.type === 'approve_orders') {
+		updateOrdersSequential(
+			getOrdersByStatus(['waiting_order']),
+			(kitchenPanelEnabled || akinsoftEnabled) ? 'in_kitchen' : 'served',
+			(kitchenPanelEnabled || akinsoftEnabled) ? 'Bekleyen siparişleri mutfağa göndermek istiyor musunuz?' : 'Bekleyen siparişleri servis edildi olarak işaretleyelim mi?',
+			action.label,
+			button
+		);
+		return;
+	}
+
+	if (action.type === 'serve_orders') {
+		var serveStatuses = ['ready_for_service', 'out_for_service'];
+
+		if (akinsoftEnabled && !kitchenPanelEnabled) {
+			serveStatuses.push('in_kitchen');
+		}
+
+		updateOrdersSequential(
+			getOrdersByStatus(serveStatuses),
+			'served',
+			'Sipariş servis edildi olarak işaretlensin mi?',
+			action.label,
+			button
+		);
+		return;
+	}
+
+	if (action.type === 'pay_orders') {
+		updateOrdersSequential(
+			getOrdersByStatus(['served']),
+			'paid',
+			'Bu masadaki servis edilmiş siparişler ödeme alındı olarak kapatılsın mı?',
+			action.label,
+			button
+		);
+	}
+}
+
+bindCards();
+refreshPanel();
+setInterval(refreshPanel, 10000);
+})(jQuery);
+</script>
+
+{{ footer }}
+

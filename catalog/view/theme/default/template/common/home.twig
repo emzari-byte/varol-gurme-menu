@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="{{ text_html_lang }}">
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+   <title>{{ title }}</title>
+
+   <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=5" rel="stylesheet">
+   <link href="{{ serv }}vendor/icons/feather.css?v=5" rel="stylesheet">
+<link href="{{ serv }}css/style.css?v=30" rel="stylesheet">
+</head>
+<body>
+
+<div class="page-wrap">
+   <div class="entry-card">
+
+      <div class="mini-badge">
+         <i class="feather-sun"></i>
+         <span>{{ text_open_air_menu }}</span>
+      </div>
+      <div class="hero-center">
+         <div class="logo-frame">
+            <div class="logo-ring"></div>
+            <img src="{{ logo }}?v=5" class="logo" alt="{{ title }}">
+         </div>
+
+         <div class="brand-tags">breakfast.food.coffee.drink</div>
+
+         <p class="headline">{{ text_select_language }}</p>
+
+         <div class="divider"></div>
+      </div>
+
+      <div class="language-grid">
+         {% if language_code == 'en-gb' %}
+
+         <a href="{{ menu }}" class="lang-card primary">
+            <div class="lang-left">
+               <div class="flag-shell">
+                  <img src="catalog/language/en-gb/en-gb.png" class="btn-flag" alt="English">
+               </div>
+               <div class="lang-copy">
+                  <strong>{{ text_english_menu }}</strong>
+                  <small>{{ text_open_menu }}</small>
+               </div>
+            </div>
+            <span class="lang-arrow"><i class="feather-arrow-right"></i></span>
+         </a>
+
+         <a href="{{ menutr }}" class="lang-card">
+            <div class="lang-left">
+               <div class="flag-shell">
+                  <img src="catalog/language/tr-tr/tr-tr.png" class="btn-flag" alt="Türkçe">
+               </div>
+               <div class="lang-copy">
+                  <strong>{{ text_turkish_menu }}</strong>
+                  <small>{{ text_open_turkish_menu }}</small>
+               </div>
+            </div>
+            <span class="lang-arrow"><i class="feather-arrow-right"></i></span>
+         </a>
+
+         {% else %}
+
+         <a href="{{ menu }}" class="lang-card primary">
+            <div class="lang-left">
+               <div class="flag-shell">
+                  <img src="catalog/language/tr-tr/tr-tr.png" class="btn-flag" alt="Türkçe">
+               </div>
+               <div class="lang-copy">
+                  <strong>{{ text_turkish_menu }}</strong>
+                  <small>{{ text_open_turkish_menu }}</small>
+               </div>
+            </div>
+            <span class="lang-arrow"><i class="feather-arrow-right"></i></span>
+         </a>
+
+         <a href="{{ menueng }}" class="lang-card">
+            <div class="lang-left">
+               <div class="flag-shell">
+                  <img src="catalog/language/en-gb/en-gb.png" class="btn-flag" alt="English">
+               </div>
+               <div class="lang-copy">
+                  <strong>{{ text_english_menu }}</strong>
+                  <small>{{ text_open_menu }}</small>
+               </div>
+            </div>
+            <span class="lang-arrow"><i class="feather-arrow-right"></i></span>
+         </a>
+
+         {% endif %}
+      </div>
+
+      <div class="bottom-row">
+         <a href="https://www.instagram.com/varolveranda/" target="_blank" rel="noopener noreferrer" class="social-link">
+            <i class="feather-instagram"></i>
+            <span>{{ text_follow_us }}</span>
+         </a>
+      </div>
+
+      <div class="footer-note">VAROL VERANDA</div>
+
+   </div>
+</div>
+
+<script src="{{ serv }}vendor/jquery/jquery.min.js?v=5"></script>
+<script src="{{ serv }}vendor/bootstrap/js/bootstrap.bundle.min.js?v=5"></script>
+
+<script>
+window.addEventListener('pageshow', function(event) {
+   var navEntries = performance.getEntriesByType('navigation');
+   var isBackForward = navEntries.length && navEntries[0].type === 'back_forward';
+
+   if (event.persisted || isBackForward) {
+      window.location.reload();
+   }
+});
+</script>
+
+</body>
+</html>

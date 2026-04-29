@@ -1,0 +1,33 @@
+{
+  "name": "Varol Gurme Garson Paneli",
+  "short_name": "Garson Paneli",
+  "description": "Masa, sipariş, çağrı ve hesap talepleri için garson operasyon paneli.",
+  "start_url": "/menu/admin/index.php?route=extension/module/waiter_panel",
+  "scope": "/menu/admin/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef5f0",
+  "theme_color": "#163225",
+  "icons": [
+    {
+      "src": "/menu/image/catalog/veranda-logo2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/menu/image/catalog/veranda-logo2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Garson Paneli",
+      "short_name": "Panel",
+      "url": "/menu/admin/index.php?route=extension/module/waiter_panel",
+      "description": "Garson panelini aç"
+    }
+  ]
+}

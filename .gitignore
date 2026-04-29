@@ -1,0 +1,45 @@
+# Local assistant/history files
+.aider*
+.vscode/
+
+# Local/server configuration with secrets and absolute paths
+/config.php
+/admin/config.php
+/php.ini
+
+# Logs and temporary files
+/error_log
+/admin/error_log
+/catalog/error_log
+*.log
+*.tmp
+
+# Test/debug entrypoints
+/test.php
+/fcm_test.php
+/hinstall/
+
+# OpenCart generated/runtime data
+/image/cache/
+/storage/cache/
+/storage/logs/
+/storage/modification/
+/storage/session/
+/storage/upload/
+/system/storage/cache/
+/system/storage/logs/
+/system/storage/modification/
+/system/storage/session/
+/system/storage/upload/
+
+# Archives/backups
+*.zip
+*.tar
+*.tar.gz
+*.sql
+*.bak
+*.old
+
+# OS/editor noise
+Thumbs.db
+.DS_Store

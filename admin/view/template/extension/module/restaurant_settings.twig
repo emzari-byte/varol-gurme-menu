@@ -1,0 +1,447 @@
+﻿{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <button type="submit" form="form-restaurant-settings" data-toggle="tooltip" title="Kaydet" class="btn btn-primary"><i class="fa fa-save"></i></button>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="Vazgeç" class="btn btn-default"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>Restoran Ayarları</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    {% if error_warning %}
+    <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}</div>
+    {% endif %}
+
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-cog"></i> Restoran Sistem Ayarları</h3>
+      </div>
+      <div class="panel-body">
+        <style>
+          .restaurant-module-frame{
+            width:100%;
+            min-height:680px;
+            border:1px solid #e5e5e5;
+            border-radius:4px;
+            background:#fff;
+          }
+          .restaurant-embed-note{
+            margin:0 0 12px;
+            color:#777;
+            font-size:13px;
+          }
+        </style>
+        <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-restaurant-settings" class="form-horizontal">
+          <ul class="nav nav-tabs">
+            <li class="active"><a href="#tab-menu-settings" data-toggle="tab">Menü Ayarları</a></li>
+            <li><a href="#tab-tables" data-toggle="tab">Masa Yönetimi</a></li>
+            <li><a href="#tab-waiters" data-toggle="tab">Garson Yönetimi</a></li>
+            <li><a href="#tab-allergens" data-toggle="tab">Alerjen Tanımları</a></li>
+            <li><a href="#tab-recommendation" data-toggle="tab">Menü Öneri Motoru</a></li>
+            <li><a href="#tab-production" data-toggle="tab">Production Test</a></li>
+            <li><a href="#tab-activity" data-toggle="tab">Hareket Geçmişi</a></li>
+            <li><a href="#tab-integrations" data-toggle="tab">AI & İletişim</a></li>
+            <li><a href="#tab-erp" data-toggle="tab">ERP</a></li>
+          </ul>
+
+          <div class="tab-content">
+            <div class="tab-pane active" id="tab-menu-settings">
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Sadece QR Menü Kullan</label>
+                <div class="col-sm-9">
+                  <label class="radio-inline"><input type="radio" name="restaurant_plain_qr_menu" value="1" {% if restaurant_plain_qr_menu %}checked{% endif %}> Açık</label>
+                  <label class="radio-inline"><input type="radio" name="restaurant_plain_qr_menu" value="0" {% if not restaurant_plain_qr_menu %}checked{% endif %}> Kapalı</label>
+                  <p class="help-block">Siparişsiz, sadece menü gösterimi için temel anahtar.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">QR Sipariş Menü Kullan</label>
+                <div class="col-sm-9">
+                  <label class="radio-inline"><input type="radio" name="restaurant_qr_order_menu" value="1" {% if restaurant_qr_order_menu %}checked{% endif %}> Açık</label>
+                  <label class="radio-inline"><input type="radio" name="restaurant_qr_order_menu" value="0" {% if not restaurant_qr_order_menu %}checked{% endif %}> Kapalı</label>
+                  <p class="help-block">Kapalıysa müşteri QR üzerinden sipariş gönderemez.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Garson Paneli Kullan</label>
+                <div class="col-sm-9">
+                  <label class="radio-inline"><input type="radio" name="restaurant_waiter_panel" value="1" {% if restaurant_waiter_panel %}checked{% endif %}> Açık</label>
+                  <label class="radio-inline"><input type="radio" name="restaurant_waiter_panel" value="0" {% if not restaurant_waiter_panel %}checked{% endif %}> Kapalı</label>
+                  <p class="help-block">Kapalıysa müşteri siparişi garson onayına düşmeden, mutfak açıksa doğrudan mutfağa gider.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Mutfak Paneli Kullan</label>
+                <div class="col-sm-9">
+                  <label class="radio-inline"><input type="radio" name="restaurant_kitchen_panel" value="1" {% if restaurant_kitchen_panel %}checked{% endif %}> Açık</label>
+                  <label class="radio-inline"><input type="radio" name="restaurant_kitchen_panel" value="0" {% if not restaurant_kitchen_panel %}checked{% endif %}> Kapalı</label>
+                  <p class="help-block">Kapalıysa sipariş akışı mutfak ekranına gönderilmez.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Garson Çağrı Tekrar Süresi</label>
+                <div class="col-sm-9">
+                  <div class="input-group" style="max-width:220px;">
+                    <input type="number" name="restaurant_waiter_call_reset_minutes" value="{{ restaurant_waiter_call_reset_minutes }}" min="1" max="60" class="form-control">
+                    <span class="input-group-addon">dk</span>
+                  </div>
+                  <p class="help-block">Garson çağrıyı gördükten sonra butonun müşteride tekrar aktif olacağı süre. Önerilen değer 5 dakikadır.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Hesap Talebi Tekrar Süresi</label>
+                <div class="col-sm-9">
+                  <div class="input-group" style="max-width:220px;">
+                    <input type="number" name="restaurant_bill_request_reset_minutes" value="{{ restaurant_bill_request_reset_minutes }}" min="1" max="60" class="form-control">
+                    <span class="input-group-addon">dk</span>
+                  </div>
+                  <p class="help-block">Garson hesap talebini gördükten sonra müşterinin tekrar hesap isteyebileceği süre. Önerilen değer 5 dakikadır.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-pane" id="tab-tables">
+              <p class="restaurant-embed-note">Masalar, QR kodları ve salon düzeni bu sekmeden yönetilir.</p>
+              <iframe class="restaurant-module-frame" data-embedded-admin="1" src="{{ restaurant_tables_url }}"></iframe>
+            </div>
+
+            <div class="tab-pane" id="tab-waiters">
+              <p class="restaurant-embed-note">Garson kullanıcıları, masa yetkileri ve servis alanları bu sekmeden yönetilir.</p>
+              <iframe class="restaurant-module-frame" data-embedded-admin="1" src="{{ restaurant_waiters_url }}"></iframe>
+            </div>
+
+            <div class="tab-pane" id="tab-allergens">
+              <p class="restaurant-embed-note">Ürünlerde kullanılan alerjen seçenekleri bu sekmeden yönetilir.</p>
+              <iframe class="restaurant-module-frame" data-embedded-admin="1" src="{{ allergen_url }}"></iframe>
+            </div>
+
+            <div class="tab-pane" id="tab-recommendation">
+              <p class="restaurant-embed-note">Menü önerileri, öne çıkan ürünler ve öneri akışı bu sekmeden yönetilir.</p>
+              <iframe class="restaurant-module-frame" data-embedded-admin="1" src="{{ recommendation_url }}"></iframe>
+            </div>
+
+            <div class="tab-pane" id="tab-production">
+              <p class="restaurant-embed-note">Canlı kullanım öncesi kritik QR, panel, ses, yetki ve açık işlem kontrolleri.</p>
+              <div class="row">
+                {% for check in production_checks %}
+                  <div class="col-sm-6 col-lg-4">
+                    <div class="well production-check production-{{ check.state }}">
+                      <div class="production-check-head">
+                        {% if check.state == 'ok' %}
+                          <i class="fa fa-check-circle text-success"></i>
+                        {% elseif check.state == 'warning' %}
+                          <i class="fa fa-exclamation-triangle text-warning"></i>
+                        {% else %}
+                          <i class="fa fa-times-circle text-danger"></i>
+                        {% endif %}
+                        <strong>{{ check.title }}</strong>
+                      </div>
+                      <p>{{ check.detail }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+              <style>
+                .production-check{min-height:122px;border-radius:8px;background:#fff;}
+                .production-check-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:15px;}
+                .production-check-head i{font-size:20px;}
+                .production-check p{margin:0;color:#66706b;font-weight:600;}
+                .production-ok{border-left:5px solid #3c763d;}
+                .production-warning{border-left:5px solid #d29922;}
+                .production-error{border-left:5px solid #a94442;}
+              </style>
+            </div>
+
+            <div class="tab-pane" id="tab-activity">
+              <p class="restaurant-embed-note">Son sipariş, masa, hesap, garson çağrısı ve mola hareketleri.</p>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <th style="width:150px;">Tarih</th>
+                      <th style="width:170px;">İşlem</th>
+                      <th style="width:90px;">Masa</th>
+                      <th style="width:90px;">Sipariş</th>
+                      <th style="width:140px;">Kullanıcı</th>
+                      <th>Detay</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if activities %}
+                      {% for activity in activities %}
+                        <tr>
+                          <td>{{ activity.date_added }}</td>
+                          <td><strong>{{ activity.type }}</strong></td>
+                          <td>{{ activity.table }}</td>
+                          <td>{% if activity.order_id %}#{{ activity.order_id }}{% else %}-{% endif %}</td>
+                          <td>{{ activity.user }}</td>
+                          <td>{{ activity.detail }}</td>
+                        </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr>
+                        <td colspan="6" class="text-center">Henüz hareket bulunmuyor.</td>
+                      </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-pane" id="tab-integrations">
+              <div class="form-group">
+                <label class="col-sm-3 control-label">OpenAI Secret Key</label>
+                <div class="col-sm-9">
+                  <input type="password" name="restaurant_openai_api_key" value="{{ restaurant_openai_api_key }}" class="form-control" autocomplete="new-password">
+                  <p class="help-block">Menü öneri motorunun AI metinleri için kullanılır. Boş bırakılırsa öneri motoru yedek metinle çalışır.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">WeatherAPI Key</label>
+                <div class="col-sm-9">
+                  <input type="password" name="restaurant_weatherapi_key" value="{{ restaurant_weatherapi_key }}" class="form-control" autocomplete="new-password">
+                  <p class="help-block">Hava durumuna göre öneri üretmek için kullanılır.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Hava Durumu Konumu</label>
+                <div class="col-sm-4">
+                  <input type="text" name="restaurant_weather_lat" value="{{ restaurant_weather_lat }}" placeholder="Latitude" class="form-control">
+                </div>
+                <div class="col-sm-4">
+                  <input type="text" name="restaurant_weather_lon" value="{{ restaurant_weather_lon }}" placeholder="Longitude" class="form-control">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">WhatsApp Telefon</label>
+                <div class="col-sm-9">
+                  <input type="text" name="restaurant_whatsapp_phone" value="{{ restaurant_whatsapp_phone }}" placeholder="905xxxxxxxxx" class="form-control">
+                  <p class="help-block">Menü footer WhatsApp butonu bu numaraya yönlenir. Ülke kodu ile, boşluksuz giriniz.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Şikayet & Öneri Maili</label>
+                <div class="col-sm-9">
+                  <input type="email" name="restaurant_feedback_email" value="{{ restaurant_feedback_email }}" placeholder="mail@domain.com" class="form-control">
+                  <p class="help-block">Müşteri feedback formları bu adrese gönderilir.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-pane" id="tab-erp">
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Akınsoft Entegrasyonu</label>
+                <div class="col-sm-9">
+                  <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_enabled" value="1" {% if restaurant_akinsoft_enabled %}checked{% endif %}> Açık</label>
+                  <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_enabled" value="0" {% if not restaurant_akinsoft_enabled %}checked{% endif %}> Kapalı</label>
+                  <p class="help-block">Açık olduğunda mutfağa gönderilen siparişler Akınsoft aktarım kuyruğuna alınır.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Bağlantı Modu</label>
+                <div class="col-sm-9">
+                  <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_mode" value="local_firebird" {% if restaurant_akinsoft_mode == 'local_firebird' %}checked{% endif %}> Local Firebird</label>
+                  <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_mode" value="bridge_agent" {% if restaurant_akinsoft_mode == 'bridge_agent' %}checked{% endif %}> Canlı Bridge Agent</label>
+                  <p class="help-block">Local testte XAMPP doğrudan Firebird veritabanına bağlanır. Canlıda restoran bilgisayarındaki bridge servis kullanılacak.</p>
+                </div>
+              </div>
+
+              <div class="akinsoft-local-fields">
+                <div class="form-group">
+                  <label class="col-sm-3 control-label">Firebird Host</label>
+                  <div class="col-sm-4">
+                    <input type="text" name="restaurant_akinsoft_host" value="{{ restaurant_akinsoft_host }}" placeholder="localhost" class="form-control">
+                  </div>
+                  <div class="col-sm-2">
+                    <input type="text" name="restaurant_akinsoft_port" value="{{ restaurant_akinsoft_port }}" placeholder="3050" class="form-control">
+                  </div>
+                  <div class="col-sm-3">
+                    <input type="text" name="restaurant_akinsoft_charset" value="{{ restaurant_akinsoft_charset }}" placeholder="WIN1254" class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-sm-3 control-label">Firebird DB Yolu</label>
+                  <div class="col-sm-9">
+                    <input type="text" name="restaurant_akinsoft_db_path" value="{{ restaurant_akinsoft_db_path }}" placeholder="C:\AKINSOFT\Wolvox9\Database_FB\...\WOLVOX.FDB" class="form-control">
+                    <p class="help-block">Şu an bulunan test veritabanı: C:\AKINSOFT\Wolvox9\Database_FB\DEMOWOLVOX\2026\WOLVOX.FDB</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Kullanıcı</label>
+                <div class="col-sm-9">
+                  <input type="text" name="restaurant_akinsoft_user" value="{{ restaurant_akinsoft_user }}" class="form-control">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Şifre / Anahtar</label>
+                <div class="col-sm-9">
+                  <input type="password" name="restaurant_akinsoft_pass" value="{{ restaurant_akinsoft_pass }}" class="form-control" autocomplete="new-password">
+                </div>
+              </div>
+
+              <div class="akinsoft-bridge-fields">
+                <div class="form-group">
+                  <label class="col-sm-3 control-label">Bridge URL</label>
+                  <div class="col-sm-9">
+                    <input type="text" name="restaurant_akinsoft_bridge_url" value="{{ restaurant_akinsoft_bridge_url }}" placeholder="https://restoran-pc-domain/akinsoft-bridge" class="form-control">
+                    <p class="help-block">Canlı siteden local Akınsoft Firebird'e doğrudan bağlanmayacağız. Restoran bilgisayarında çalışan bridge siparişleri güvenli şekilde Firebird'e yazacak.</p>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-sm-3 control-label">Bridge Token</label>
+                  <div class="col-sm-9">
+                    <input type="password" name="restaurant_akinsoft_bridge_token" value="{{ restaurant_akinsoft_bridge_token }}" class="form-control" autocomplete="new-password">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Akış Notu</label>
+                <div class="col-sm-9">
+                  <div class="well" style="margin-bottom:10px;">
+                    <strong>V1 eşleştirme:</strong> OpenCart ürün stok kodu, Akınsoft STOK.STOKKODU ile aynı tutulacak. Masa eşleştirmesi masa numarası üzerinden yapılacak.
+                  </div>
+                  <button type="button" id="button-akinsoft-test" class="btn btn-info"><i class="fa fa-plug"></i> Bağlantıyı Test Et</button>
+                  <button type="button" id="button-akinsoft-sync-tables" class="btn btn-success"><i class="fa fa-table"></i> Masaları Akınsoft'tan Çek</button>
+                  <button type="button" id="button-akinsoft-sync-prices" class="btn btn-warning"><i class="fa fa-money"></i> Fiyatları Akınsoft'tan Güncelle</button>
+                  <div id="akinsoft-test-result" style="margin-top:10px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript"><!--
+  function prepareRestaurantFrame(frame) {
+    try {
+      var doc = frame.contentDocument || frame.contentWindow.document;
+
+      if (!doc) {
+        return;
+      }
+
+      var style = doc.createElement('style');
+      style.innerHTML = '#header,#column-left,footer{display:none!important;}#content{margin-left:0!important;padding-top:0!important;}.page-header{margin-top:0!important;}body{background:#fff!important;}';
+      doc.head.appendChild(style);
+
+      var resize = function() {
+        var height = Math.max(
+          doc.body ? doc.body.scrollHeight : 0,
+          doc.documentElement ? doc.documentElement.scrollHeight : 0,
+          680
+        );
+        frame.style.height = height + 'px';
+      };
+
+      resize();
+      setTimeout(resize, 500);
+      setTimeout(resize, 1200);
+    } catch (e) {}
+  }
+
+  $('.restaurant-module-frame').on('load', function() {
+    prepareRestaurantFrame(this);
+  });
+
+  $('a[data-toggle="tab"]').on('shown.bs.tab', function() {
+    toggleRestaurantSettingsSave();
+
+    $('.tab-pane.active .restaurant-module-frame').each(function() {
+      prepareRestaurantFrame(this);
+    });
+  });
+
+  function toggleRestaurantSettingsSave() {
+    var target = $('.nav-tabs li.active a[data-toggle="tab"]').attr('href');
+    var showSave = target == '#tab-menu-settings' || target == '#tab-integrations' || target == '#tab-erp';
+
+    $('button[form="form-restaurant-settings"]').toggle(showSave);
+  }
+
+  function toggleAkinsoftMode() {
+    var mode = $('input[name="restaurant_akinsoft_mode"]:checked').val();
+
+    $('.akinsoft-local-fields').toggle(mode == 'local_firebird');
+    $('.akinsoft-bridge-fields').toggle(mode == 'bridge_agent');
+  }
+
+  $('input[name="restaurant_akinsoft_mode"]').on('change', toggleAkinsoftMode);
+  toggleAkinsoftMode();
+
+  function runAkinsoftAction(button, url, loadingText) {
+    var $button = $(this);
+    var $result = $('#akinsoft-test-result');
+    var iconClass = $button.find('i').attr('class');
+
+    if (button) {
+      $button = $(button);
+      iconClass = $button.find('i').attr('class');
+    }
+
+    $button.prop('disabled', true).find('i').attr('class', 'fa fa-spinner fa-spin');
+    $result.removeClass('text-success text-danger').text(loadingText);
+
+    $.ajax({
+      url: url,
+      type: 'post',
+      dataType: 'json',
+      data: $('#form-restaurant-settings').serialize(),
+      success: function(json) {
+        if (json && json.success) {
+          $result.addClass('text-success').text(json.message);
+        } else {
+          $result.addClass('text-danger').text(json && json.message ? json.message : 'Bağlantı testi başarısız.');
+        }
+      },
+      error: function() {
+        $result.addClass('text-danger').text('İşlem sırasında hata oluştu.');
+      },
+      complete: function() {
+        $button.prop('disabled', false).find('i').attr('class', iconClass);
+      }
+    });
+  }
+
+  $('#button-akinsoft-test').on('click', function() {
+    runAkinsoftAction(this, '{{ akinsoft_test_url|replace({"&amp;":"&"}) }}', 'Test ediliyor...');
+  });
+
+  $('#button-akinsoft-sync-tables').on('click', function() {
+    runAkinsoftAction(this, '{{ akinsoft_sync_tables_url|replace({"&amp;":"&"}) }}', 'Masalar Akınsofttan çekiliyor...');
+  });
+
+  $('#button-akinsoft-sync-prices').on('click', function() {
+    runAkinsoftAction(this, '{{ akinsoft_sync_prices_url|replace({"&amp;":"&"}) }}', 'Fiyatlar Akınsofttan güncelleniyor...');
+  });
+
+  toggleRestaurantSettingsSave();
+  //--></script>
+</div>
+{{ footer }}

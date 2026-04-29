@@ -1,0 +1,95 @@
+{{ header }}{{ column_left }}
+<div id="content">
+	<div class="page-header">
+		<div class="container-fluid">
+			<div class="pull-right">
+				<a href="{{ add }}" data-toggle="tooltip" title="Yeni Garson Ekle" class="btn btn-primary"><i class="fa fa-plus"></i></a>
+				<button type="submit" form="form-waiter" data-toggle="tooltip" title="Sil" class="btn btn-danger" onclick="return confirm('Se&ccedil;ilen garsonlar&#305; silmek istiyor musunuz?');"><i class="fa fa-trash-o"></i></button>
+			</div>
+			<h1>Garson Y&ouml;netimi</h1>
+			<ul class="breadcrumb">
+				{% for breadcrumb in breadcrumbs %}
+					<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		{% if error_warning %}
+			<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}</div>
+		{% endif %}
+		{% if success %}
+			<div class="alert alert-success"><i class="fa fa-check-circle"></i> {{ success }}</div>
+		{% endif %}
+
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title"><i class="fa fa-users"></i> Garson Listesi</h3>
+			</div>
+			<div class="panel-body">
+				<form action="{{ delete }}" method="post" enctype="multipart/form-data" id="form-waiter">
+					<div class="table-responsive">
+						<table class="table table-bordered table-hover">
+							<thead>
+								<tr>
+									<td style="width:1px;" class="text-center">
+										<input type="checkbox" onclick="$('input[name*=\'selected\']').prop('checked', this.checked);" />
+									</td>
+									<td class="text-left">Kullan&#305;c&#305; Ad&#305;</td>
+									<td class="text-left">Garson Ad&#305;</td>
+									<td class="text-left">Atanan Masa</td>
+									<td class="text-left">&Ccedil;al&#305;&#351;ma</td>
+									<td class="text-left">Bug&uuml;nk&uuml; Mola</td>
+									<td class="text-left">Durum</td>
+									<td class="text-right">&#304;&#351;lem</td>
+								</tr>
+							</thead>
+							<tbody>
+								{% if waiters %}
+									{% for waiter in waiters %}
+										<tr>
+											<td class="text-center">
+												{% if waiter.waiter_id in selected %}
+													<input type="checkbox" name="selected[]" value="{{ waiter.waiter_id }}" checked="checked" />
+												{% else %}
+													<input type="checkbox" name="selected[]" value="{{ waiter.waiter_id }}" />
+												{% endif %}
+											</td>
+											<td class="text-left">{{ waiter.username }}</td>
+											<td class="text-left">{{ waiter.name }}</td>
+											<td class="text-left">{{ waiter.table_count }}</td>
+											<td class="text-left">{{ waiter.work_minutes }} dk</td>
+											<td class="text-left">
+												<strong>{{ waiter.today_break_minutes }} / {{ waiter.break_limit_minutes }} dk</strong>
+												<div class="text-muted">Kalan: {{ waiter.break_remaining_minutes }} dk</div>
+												{% if waiter.on_break %}
+													<span class="label label-warning">&#350;u an molada</span>
+												{% endif %}
+											</td>
+											<td class="text-left">
+												{% if waiter.status %}
+													Aktif
+												{% else %}
+													Pasif
+												{% endif %}
+											</td>
+											<td class="text-right">
+												<a href="{{ waiter.edit }}" data-toggle="tooltip" title="D&uuml;zenle ve Mola Raporu" class="btn btn-primary"><i class="fa fa-pencil"></i></a>
+											</td>
+										</tr>
+									{% endfor %}
+								{% else %}
+									<tr>
+										<td class="text-center" colspan="8">Kay&#305;t bulunamad&#305;.</td>
+									</tr>
+								{% endif %}
+							</tbody>
+						</table>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+{{ footer }}

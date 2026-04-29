@@ -1,0 +1,64 @@
+<nav id="column-left">
+  <style>
+    #column-left{background:#1f3329}
+    #column-left #navigation{background:#17271f;color:#dce9e2;font-weight:800}
+    #column-left #menu > li > a{color:#dce9e2;border-bottom:1px solid rgba(255,255,255,.06);font-weight:700}
+    #column-left #menu > li > a:hover,#column-left #menu > li.open > a{background:#274638;color:#fff}
+    #column-left #menu li li a{color:#c8d9d0;background:#243b30}
+    #column-left #menu li li a:hover{background:#315646;color:#fff}
+    #column-left #stats{padding:14px;background:#17271f;color:#b9cdc3}
+    #column-left #stats .restaurant-admin-mark{border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px}
+    #column-left #stats strong{display:block;color:#fff;font-size:14px;margin-bottom:4px}
+    #column-left #stats span{font-size:12px;line-height:1.45}
+  </style>
+  <div id="navigation"><span class="fa fa-bars"></span> Restoran Yönetimi</div>
+  <ul id="menu">
+    {% set i = 0 %}
+    {% for menu in menus %}
+    <li id="{{ menu.id }}">
+        {% if menu.href %}<a href="{{ menu.href }}"><i class="fa {{ menu.icon }} fw"></i> {{ menu.name }}</a>{% else %}<a href="#collapse{{ i }}" data-toggle="collapse" class="parent collapsed"><i class="fa {{ menu.icon }} fw"></i> {{ menu.name }}</a>{% endif %}
+        {% if menu.children %}
+          <ul id="collapse{{ i }}" class="collapse">
+            {% set j = 0 %}
+            {% for children_1 in menu.children %}
+              <li>{% if children_1.href %}
+                  <a href="{{ children_1.href }}">{{ children_1.name }}</a>
+                {% else %}
+                  <a href="#collapse{{ i }}-{{ j }}" data-toggle="collapse" class="parent collapsed">{{ children_1.name }}</a>
+                {% endif %}
+
+                {% if children_1.children %}
+                  <ul id="collapse{{ i }}-{{ j }}" class="collapse">
+                    {% set k = 0 %}
+                    {% for children_2 in children_1.children %}
+                      <li>{% if children_2.href %}
+                          <a href="{{ children_2.href }}">{{ children_2.name }}</a>
+                        {% else %}
+                          <a href="#collapse-{{ i }}-{{ j }}-{{ k }}" data-toggle="collapse" class="parent collapsed">{{ children_2.name }}</a>
+                        {% endif %}
+                        {% if children_2.children %}
+                          <ul id="collapse-{{ i }}-{{ j }}-{{ k }}" class="collapse">
+                            {% for children_3 in children_2.children %}
+                              <li><a href="{{ children_3.href }}">{{ children_3.name }}</a></li>
+                            {% endfor %}
+                          </ul>
+                        {% endif %}</li>
+                      {% set k = k + 1 %}
+                    {% endfor %}
+                  </ul>
+                {% endif %} </li>
+              {% set j = j + 1 %}
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </li>
+    {% set i = i + 1 %}
+    {% endfor %}
+  </ul>
+  <div id="stats">
+    <div class="restaurant-admin-mark">
+      <strong>Varol Gurme</strong>
+      <span>QR menü, masa, garson ve mutfak akışı için sadeleştirilmiş yönetim paneli.</span>
+    </div>
+  </div>
+</nav>

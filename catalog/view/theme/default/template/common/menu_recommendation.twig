@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="{{ is_english ? 'en' : 'tr' }}">
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+   <meta name="description" content="{{ description }}">
+   <meta name="author" content="Varol Veranda">
+   <link rel="icon" type="image/png" href="{{ logo }}">
+   <title>{{ title }}</title>
+
+   <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick.min.css"/>
+   <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick-theme.min.css"/>
+   <link href="{{ serv }}vendor/icons/feather.css" rel="stylesheet" type="text/css">
+   <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+   <link href="{{ serv }}css/style.css?v=4" rel="stylesheet">
+   <link href="{{ serv }}vendor/sidebar/demo.css" rel="stylesheet">
+
+   <style>
+      :root {
+         --bg-1: #f7fbf8;
+         --bg-2: #eef6f1;
+         --bg-3: #e6f0ea;
+         --text: #24372d;
+         --text-soft: #708277;
+         --accent-dark: #5f9078;
+         --accent-deep: #3f6d57;
+         --shadow-card: 0 18px 42px rgba(66, 101, 82, 0.08);
+         --shadow-main: 0 26px 64px rgba(66, 101, 82, 0.12);
+         --radius-xl: 32px;
+         --radius-lg: 24px;
+      }
+
+      html, body {
+         margin: 0;
+         padding: 0;
+         overflow-x: hidden;
+      }
+
+      body {
+         color: var(--text);
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         -webkit-text-size-adjust: 100%;
+         background:
+            radial-gradient(circle at 12% 8%, rgba(134,183,158,0.18), transparent 22%),
+            radial-gradient(circle at 88% 10%, rgba(255,255,255,0.92), transparent 18%),
+            radial-gradient(circle at 50% 100%, rgba(134,183,158,0.08), transparent 30%),
+            linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 54%, var(--bg-3) 100%);
+      }
+
+      body::before {
+         content: "";
+         position: fixed;
+         inset: 0;
+         pointer-events: none;
+         background:
+            radial-gradient(circle at center, rgba(255,255,255,0.16), transparent 56%),
+            linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0.05));
+         mix-blend-mode: soft-light;
+         z-index: 0;
+      }
+
+      .menu-ai-page {
+         position: relative;
+         z-index: 1;
+         max-width: 980px;
+         margin: 0 auto;
+         min-height: calc(100vh - 110px);
+         padding: 28px 14px 42px;
+      }
+
+      .menu-ai-top {
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         gap: 12px;
+         margin-bottom: 18px;
+      }
+
+      .menu-ai-home {
+         display: inline-flex;
+         align-items: center;
+         gap: 8px;
+         text-decoration: none !important;
+         color: var(--accent-deep);
+         font-weight: 800;
+         background: rgba(255,255,255,0.78);
+         border: 1px solid rgba(255,255,255,0.88);
+         padding: 10px 14px;
+         border-radius: 999px;
+         box-shadow: 0 10px 22px rgba(66, 101, 82, 0.06);
+         transition: all .2s ease;
+      }
+
+      .menu-ai-home:hover {
+         color: var(--accent-dark);
+         transform: translateY(-1px);
+      }
+
+      .menu-ai-top-weather {
+         display: inline-flex;
+         align-items: center;
+         gap: 12px;
+         padding: 10px 14px;
+         border-radius: 18px;
+         background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,251,248,0.92));
+         border: 1px solid rgba(255,255,255,0.88);
+         box-shadow: 0 10px 24px rgba(66, 101, 82, 0.07);
+         min-width: 180px;
+         justify-content: flex-start;
+      }
+
+      .menu-ai-top-weather-icon {
+         width: 38px;
+         height: 38px;
+         border-radius: 50%;
+         display: inline-flex;
+         align-items: center;
+         justify-content: center;
+         background: rgba(134,183,158,0.14);
+         color: var(--accent-deep);
+         font-size: 16px;
+         flex: 0 0 38px;
+      }
+
+      .menu-ai-top-weather-text {
+         display: flex;
+         flex-direction: column;
+         min-width: 0;
+      }
+
+      .menu-ai-top-weather-text strong {
+         font-size: 16px;
+         line-height: 1.2;
+         color: var(--accent-deep);
+         font-weight: 900;
+      }
+
+      .menu-ai-top-weather-text span {
+         font-size: 12px;
+         line-height: 1.35;
+         color: var(--text-soft);
+         white-space: nowrap;
+         overflow: hidden;
+         text-overflow: ellipsis;
+         max-width: 160px;
+      }
+
+      .menu-ai-hero {
+         background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.84));
+         border: 1px solid rgba(255,255,255,0.86);
+         box-shadow: var(--shadow-main);
+         border-radius: var(--radius-xl);
+         padding: 30px 24px;
+         text-align: center;
+         margin-bottom: 18px;
+      }
+
+      .menu-ai-hero h1 {
+         font-size: 34px;
+         line-height: 1.15;
+         color: var(--accent-deep);
+         font-weight: 900;
+         margin: 0 0 10px;
+         letter-spacing: -0.4px;
+      }
+
+      .menu-ai-hero p {
+         margin: 0 auto;
+         max-width: 700px;
+         color: var(--text-soft);
+         font-size: 15px;
+         line-height: 1.85;
+      }
+
+      .menu-ai-hero small {
+         display: block;
+         margin-top: 10px;
+         color: #708277;
+         font-size: 13px;
+      }
+
+      .menu-ai-modes {
+         display: flex;
+         flex-wrap: wrap;
+         justify-content: center;
+         gap: 10px;
+         margin: 0 0 18px;
+      }
+
+      .menu-mode-btn {
+         border: 0;
+         background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(243,249,245,0.96));
+         color: var(--accent-deep);
+         border-radius: 999px;
+         padding: 11px 16px;
+         font-weight: 800;
+         font-size: 14px;
+         cursor: pointer;
+         box-shadow: 0 10px 24px rgba(66, 101, 82, 0.06);
+         transition: all .22s ease;
+      }
+
+      .menu-mode-btn:hover {
+         transform: translateY(-1px);
+      }
+
+      .menu-mode-btn.is-active {
+         background: linear-gradient(135deg, #6aa487, #8bc0a5);
+         color: #fff;
+         box-shadow: 0 14px 28px rgba(95,144,120,0.18);
+      }
+
+      .menu-ai-panel {
+         background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.84));
+         border: 1px solid rgba(255,255,255,0.85);
+         border-radius: 28px;
+         padding: 22px;
+         box-shadow: var(--shadow-card);
+      }
+
+      .menu-ai-summary {
+         text-align: center;
+         margin-bottom: 18px;
+      }
+
+      .menu-ai-summary-top {
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         gap: 10px;
+         flex-wrap: wrap;
+         margin-bottom: 12px;
+      }
+
+      .menu-ai-period,
+      .menu-ai-weather,
+      .menu-ai-mode-label,
+      .menu-ai-hot-note {
+         display: inline-flex;
+         align-items: center;
+         justify-content: center;
+         padding: 8px 14px;
+         border-radius: 999px;
+         font-size: 12px;
+         font-weight: 800;
+      }
+
+      .menu-ai-period {
+         background: rgba(134,183,158,0.12);
+         color: var(--accent-deep);
+      }
+
+      .menu-ai-weather {
+         background: rgba(95, 144, 120, 0.10);
+         color: var(--accent-deep);
+      }
+
+      .menu-ai-mode-label {
+         background: rgba(255,255,255,0.92);
+         color: var(--accent-dark);
+         margin-bottom: 12px;
+         box-shadow: 0 8px 18px rgba(66, 101, 82, 0.05);
+      }
+
+      .menu-ai-hot-note {
+         background: rgba(63,109,87,0.08);
+         color: var(--accent-deep);
+         margin-bottom: 12px;
+      }
+
+      .menu-ai-summary h2 {
+         margin: 0 0 8px;
+         font-size: 28px;
+         line-height: 1.2;
+         color: var(--accent-deep);
+         font-weight: 900;
+         letter-spacing: -0.3px;
+      }
+
+      .menu-ai-summary p {
+         margin: 0;
+         color: var(--text-soft);
+         font-size: 15px;
+         line-height: 1.82;
+      }
+
+      .menu-ai-grid {
+         display: grid;
+         grid-template-columns: repeat(3, minmax(0, 1fr));
+         gap: 16px;
+         margin-top: 18px;
+      }
+
+      .menu-ai-card {
+         background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(249,252,250,0.92));
+         border: 1px solid rgba(255,255,255,0.90);
+         border-radius: var(--radius-lg);
+         overflow: hidden;
+         box-shadow: 0 14px 32px rgba(66, 101, 82, 0.06);
+         min-height: 100%;
+         display: flex;
+         flex-direction: column;
+         cursor: pointer;
+         transition: transform .22s ease, box-shadow .22s ease;
+      }
+
+      .menu-ai-card:hover {
+         transform: translateY(-4px);
+         box-shadow: 0 18px 38px rgba(66, 101, 82, 0.12);
+      }
+
+      .menu-ai-card:hover .menu-ai-card-title {
+         color: var(--accent-dark);
+      }
+
+      .menu-ai-card-media {
+         background: #edf3ef;
+         aspect-ratio: 4 / 3;
+         overflow: hidden;
+      }
+
+      .menu-ai-card-media img {
+         width: 100%;
+         height: 100%;
+         object-fit: cover;
+         display: block;
+      }
+
+      .menu-ai-card-body {
+         padding:14px 14px 12px;
+   display:flex;
+   flex-direction:column;
+   height:auto;
+      }
+
+      .menu-ai-card-tag {
+         display: inline-flex;
+         align-items: center;
+         justify-content: center;
+         align-self: flex-start;
+         padding: 7px 12px;
+         border-radius: 999px;
+         background: rgba(134,183,158,0.12);
+         color: var(--accent-deep);
+         font-size: 11px;
+         font-weight: 800;
+         margin-bottom: 10px;
+      }
+
+      .menu-ai-card-title {
+         margin: 0 0 8px;
+         font-size: 18px;
+         line-height: 1.35;
+         font-weight: 900;
+         color: var(--accent-deep);
+         letter-spacing: -0.2px;
+      }
+
+      .menu-ai-card-desc {
+         color: var(--text-soft);
+         font-size: 14px;
+         line-height: 1.7;
+       
+         margin-bottom: 14px;
+      }
+
+      .menu-ai-card-price {
+         margin-top: auto;
+         font-size: 20px;
+         font-weight: 900;
+         color: var(--accent-deep);
+      }
+
+      .menu-ai-state {
+         text-align: center;
+         padding: 40px 18px;
+         color: var(--text-soft);
+      }
+
+      .menu-ai-state strong {
+         display: block;
+         font-size: 22px;
+         color: var(--accent-deep);
+         margin-bottom: 8px;
+      }
+
+      .menu-ai-loader {
+         min-height: 220px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+      }
+
+      .menu-ai-loader::after {
+         content: "";
+         width: 42px;
+         height: 42px;
+         border-radius: 50%;
+         border: 3px solid rgba(134,183,158,0.2);
+         border-top-color: var(--accent-dark);
+         animation: spinMenuAi .75s linear infinite;
+      }
+
+      @keyframes spinMenuAi {
+         to { transform: rotate(360deg); }
+      }
+
+      .menu-ai-modal {
+         position: fixed;
+         inset: 0;
+         z-index: 9999;
+         display: none;
+      }
+
+      .menu-ai-modal.is-open {
+         display: block;
+      }
+
+      .menu-ai-modal-backdrop {
+         position: absolute;
+         inset: 0;
+         background: rgba(20, 31, 25, 0.48);
+         backdrop-filter: blur(4px);
+      }
+
+      .menu-ai-modal-dialog {
+         position: relative;
+         width: min(920px, calc(100% - 24px));
+         margin: 40px auto;
+         background: #fff;
+         border-radius: 28px;
+         overflow: hidden;
+         box-shadow: 0 30px 80px rgba(0,0,0,.18);
+         display: grid;
+         grid-template-columns: 1.1fr 1fr;
+         z-index: 2;
+      }
+
+      .menu-ai-modal-close {
+         position: absolute;
+         top: 14px;
+         right: 14px;
+         width: 42px;
+         height: 42px;
+         border: 0;
+         border-radius: 50%;
+         background: rgba(255,255,255,.92);
+         color: #2f473b;
+         font-size: 28px;
+         line-height: 1;
+         cursor: pointer;
+         z-index: 3;
+         box-shadow: 0 8px 20px rgba(0,0,0,.08);
+      }
+
+      .menu-ai-modal-media {
+         background: #edf3ef;
+         min-height: 420px;
+      }
+
+      .menu-ai-modal-media img {
+         width: 100%;
+         height: 100%;
+         object-fit: cover;
+         display: block;
+      }
+
+      .menu-ai-modal-body {
+         padding: 34px 28px 28px;
+         display: flex;
+         flex-direction: column;
+      }
+
+      .menu-ai-modal-tag {
+         display: inline-flex;
+         align-self: flex-start;
+         padding: 8px 14px;
+         border-radius: 999px;
+         background: rgba(134,183,158,0.12);
+         color: var(--accent-deep);
+         font-size: 12px;
+         font-weight: 800;
+         margin-bottom: 14px;
+      }
+
+      .menu-ai-modal-title {
+         margin: 0 0 12px;
+         font-size: 30px;
+         line-height: 1.18;
+         color: var(--accent-deep);
+         font-weight: 900;
+      }
+
+      .menu-ai-modal-desc {
+         color: var(--text-soft);
+         font-size: 15px;
+         line-height: 1.85;
+         margin-bottom: 18px;
+      }
+
+      .menu-ai-modal-price {
+         margin-top: auto;
+         font-size: 24px;
+         font-weight: 900;
+         color: var(--accent-deep);
+      }
+
+      @media (max-width: 767.98px) {
+         .menu-ai-page {
+            padding: 18px 10px 28px;
+         }
+
+         .menu-ai-top {
+            align-items: stretch;
+            flex-direction: column;
+         }
+
+         .menu-ai-top-weather {
+            width: 100%;
+            min-width: 0;
+            justify-content: flex-start;
+         }
+
+         .menu-ai-top-weather-text span {
+            max-width: 100%;
+         }
+
+         .menu-ai-hero {
+            padding: 24px 16px;
+         }
+
+         .menu-ai-hero h1 {
+            font-size: 28px;
+         }
+
+         .menu-ai-summary h2 {
+            font-size: 24px;
+         }
+
+         .menu-ai-grid {
+            grid-template-columns: 1fr;
+         }
+
+         .menu-ai-panel {
+            padding: 16px;
+         }
+
+         .menu-mode-btn {
+            font-size: 13px;
+            padding: 10px 14px;
+         }
+
+         .menu-ai-modal-dialog {
+            width: calc(100% - 16px);
+            margin: 14px auto;
+            grid-template-columns: 1fr;
+            max-height: calc(100vh - 28px);
+            overflow: auto;
+            border-radius: 22px;
+         }
+
+         .menu-ai-modal-media {
+            min-height: 240px;
+         }
+
+         .menu-ai-modal-body {
+            padding: 22px 18px 20px;
+         }
+
+         .menu-ai-modal-title {
+            font-size: 24px;
+         }
+      }
+   </style>
+</head>
+<body>
+   <div class="menu-ai-page">
+      <div class="menu-ai-top">
+         <a href="{{ menu_url }}" class="menu-ai-home">
+            <i class="feather-arrow-left"></i>
+            <span>{{ is_english ? 'Back to Menu' : 'Menüye Dön' }}</span>
+         </a>
+
+         <div class="menu-ai-top-weather" id="menuAiTopWeather">
+            <div class="menu-ai-top-weather-icon">
+               <i class="feather-cloud"></i>
+            </div>
+            <div class="menu-ai-top-weather-text">
+               <strong id="menuAiTopWeatherTemp">--°C</strong>
+               <span id="menuAiTopWeatherLabel">{{ is_english ? 'Loading weather...' : 'Hava yükleniyor...' }}</span>
+            </div>
+         </div>
+      </div>
+
+      <div class="menu-ai-hero">
+         <h1>{{ is_english ? 'Curated Just for You' : 'Sana Özel Seçildi' }}</h1>
+         <p>
+            {{ is_english
+               ? 'Your menu is shaped by the time of day and weather conditions. Each suggestion is designed as a complete meal and is updated at different times of the day to keep your experience fresh.'
+               : 'Menün, günün saati ve hava koşullarına göre şekillenir. Her öneri tam bir öğün olarak tasarlanır ve günün farklı saatlerinde güncellenerek deneyimini taze tutar.'
+            }}
+         </p>
+         <small>
+            {{ is_english
+               ? 'Morning, afternoon and evening selections may differ.'
+               : 'Sabah, öğle ve akşam önerileri farklılık gösterebilir.'
+            }}
+         </small>
+      </div>
+
+      <div class="menu-ai-modes" id="menuRecModes">
+         <button type="button" class="menu-mode-btn is-active" data-mode="combo">{{ is_english ? 'Surprise Me' : 'Bana Karışık Öner' }}</button>
+         <button type="button" class="menu-mode-btn" data-mode="breakfast">{{ is_english ? 'Breakfast' : 'Kahvaltı' }}</button>
+         <button type="button" class="menu-mode-btn" data-mode="light">{{ is_english ? 'Light Choice' : 'Hafif Seçim' }}</button>
+         <button type="button" class="menu-mode-btn" data-mode="hearty">{{ is_english ? 'Hearty Choice' : 'Doyurucu Seçim' }}</button>
+         <button type="button" class="menu-mode-btn" data-mode="dessert_coffee">{{ is_english ? 'Dessert + Coffee' : 'Tatlı + Kahve' }}</button>
+         <button type="button" class="menu-mode-btn" data-mode="drink_only">{{ is_english ? 'Drinks Only' : 'Sadece İçecek' }}</button>
+      </div>
+
+      <div class="menu-ai-panel" id="menuRecContent">
+         <div class="menu-ai-loader"></div>
+      </div>
+   </div>
+
+   <div class="menu-ai-modal" id="menuAiModal">
+   <div class="menu-ai-modal-backdrop" id="menuAiModalBackdrop"></div>
+
+   <div class="menu-ai-modal-dialog menu-ai-image-dialog">
+      <button type="button" class="menu-ai-modal-close" id="menuAiModalClose" aria-label="Close">×</button>
+
+      <div class="menu-ai-modal-media menu-ai-image-only">
+         <img id="menuAiModalImage" src="" alt="">
+      </div>
+   </div>
+</div>
+
+   <script src="{{ serv }}vendor/jquery/jquery.min.js"></script>
+   <script src="{{ serv }}vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+   <script>
+$(document).ready(function() {
+   var currentMode = 'combo';
+   var endpoint = 'index.php?route=common/menu_recommendation/getSuggestion{% if qr %}&qr={{ qr }}{% endif %}';
+   var $content = $('#menuRecContent');
+   var $topWeatherTemp = $('#menuAiTopWeatherTemp');
+   var $topWeatherLabel = $('#menuAiTopWeatherLabel');
+   var $topWeatherIcon = $('.menu-ai-top-weather-icon i');
+   var isEnglish = {{ is_english ? 'true' : 'false' }};
+
+   function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
+      return String(text)
+         .replace(/&/g, '&amp;')
+         .replace(/</g, '&lt;')
+         .replace(/>/g, '&gt;')
+         .replace(/"/g, '&quot;')
+         .replace(/'/g, '&#039;');
+   }
+
+   function renderLoading() {
+      $content.html('<div class="menu-ai-loader"></div>');
+   }
+
+   function getPeriodLabel(period) {
+      if (isEnglish) {
+         if (period === 'breakfast') return 'Breakfast Time';
+         if (period === 'lunch') return 'Lunch Time';
+         if (period === 'dinner') return 'Dinner Time';
+         return 'Today\'s Recommendation';
+      }
+
+      if (period === 'breakfast') return 'Kahvaltı Zamanı';
+      if (period === 'lunch') return 'Öğle Zamanı';
+      if (period === 'dinner') return 'Akşam Zamanı';
+      return 'Günün Önerisi';
+   }
+
+   function getCardLabel(typeKey) {
+      if (isEnglish) {
+         if (typeKey === 'main') return 'Main Choice';
+         if (typeKey === 'drink') return 'Drink Choice';
+         if (typeKey === 'dessert') return 'Dessert Choice';
+         if (typeKey === 'second_drink') return 'Alternative Drink';
+         return 'Recommendation';
+      }
+
+      if (typeKey === 'main') return 'Ana Ürün';
+      if (typeKey === 'drink') return 'İçecek';
+      if (typeKey === 'dessert') return 'Tatlı';
+      if (typeKey === 'second_drink') return 'Alternatif İçecek';
+      return 'Öneri';
+   }
+
+   function getModeLabel(mode, period) {
+      if (isEnglish) {
+         if (mode === 'breakfast') return 'Suggestions for breakfast';
+         if (mode === 'light') return 'Suggestions for a light choice';
+         if (mode === 'hearty') return 'Suggestions for a hearty choice';
+         if (mode === 'dessert_coffee') return 'Dessert and coffee suggestions';
+         if (mode === 'drink_only') return 'Suggestions for drinks only';
+
+         if (period === 'breakfast') return 'Picked for your morning mood';
+         if (period === 'lunch') return 'Picked for your midday mood';
+         if (period === 'dinner') return 'Picked for your evening mood';
+
+         return 'Picked for you today';
+      }
+
+      if (mode === 'breakfast') return 'Kahvaltı için öneriler';
+      if (mode === 'light') return 'Hafif seçim için öneriler';
+      if (mode === 'hearty') return 'Doyurucu seçim için öneriler';
+      if (mode === 'dessert_coffee') return 'Tatlı ve kahve için öneriler';
+      if (mode === 'drink_only') return 'İçecek odaklı öneriler';
+
+      if (period === 'breakfast') return 'Sabah moduna uygun seçimler';
+      if (period === 'lunch') return 'Öğlen için seçtiklerimiz';
+      if (period === 'dinner') return 'Akşam için seçtiklerimiz';
+
+      return 'Bugün senin için seçtiklerimiz';
+   }
+
+   function getHotDrinkNote(useHotDrink) {
+      if (!useHotDrink) return '';
+
+      if (isEnglish) {
+         return 'Because the weather is colder, the drink was selected from hot drinks.';
+      }
+
+      return 'Hava 10°C altına düştüğü için içecek sıcak içeceklerden seçildi.';
+   }
+
+   function getWeatherIconClass(weather) {
+      if (!weather) return 'feather-cloud';
+
+      var label = String(weather.label || weather.condition || '').toLowerCase();
+
+      if (
+         label.indexOf('yağ') !== -1 ||
+         label.indexOf('yag') !== -1 ||
+         label.indexOf('sağanak') !== -1 ||
+         label.indexOf('saganak') !== -1 ||
+         label.indexOf('rain') !== -1 ||
+         label.indexOf('drizzle') !== -1
+      ) {
+         return 'feather-cloud-rain';
+      }
+
+      if (label.indexOf('kar') !== -1 || label.indexOf('snow') !== -1) {
+         return 'feather-cloud-snow';
+      }
+
+      if (
+         label.indexOf('güneş') !== -1 ||
+         label.indexOf('gunes') !== -1 ||
+         label.indexOf('açık') !== -1 ||
+         label.indexOf('acik') !== -1 ||
+         label.indexOf('sun') !== -1 ||
+         label.indexOf('clear') !== -1
+      ) {
+         return 'feather-sun';
+      }
+
+      if (label.indexOf('bulut') !== -1 || label.indexOf('cloud') !== -1) {
+         return 'feather-cloud';
+      }
+
+      return 'feather-cloud';
+   }
+
+   function updateTopWeather(weather) {
+      var tempText = '--°C';
+      var labelText = isEnglish ? 'Weather unavailable' : 'Hava bilgisi alınamadı';
+
+      if (weather && typeof weather.temp !== 'undefined') {
+         tempText = weather.temp + '°C';
+      }
+
+      if (weather) {
+         labelText = weather.label || weather.condition || labelText;
+      }
+
+      $topWeatherTemp.text(tempText);
+      $topWeatherLabel.text(labelText);
+
+      if ($topWeatherIcon.length) {
+         $topWeatherIcon.attr('class', getWeatherIconClass(weather));
+      }
+   }
+
+   function buildCard(typeKey, item) {
+   if (!item || !item.name) return '';
+
+   var payload = encodeURIComponent(JSON.stringify({
+      typeKey: typeKey,
+      name: item.name || '',
+      description: item.description || '',
+      thumb: item.thumb || '',
+      price: item.price || ''
+   }));
+
+   return '' +
+      '<div class="menu-ai-card">' +
+         '<div class="menu-ai-card-media menu-ai-popup-trigger" data-item="' + payload + '">' +
+            '<img src="' + escapeHtml(item.thumb || '') + '" alt="' + escapeHtml(item.name || '') + '">' +
+         '</div>' +
+         '<div class="menu-ai-card-body">' +
+            '<div class="menu-ai-card-tag">' + escapeHtml(getCardLabel(typeKey)) + '</div>' +
+            '<h3 class="menu-ai-card-title">' + escapeHtml(item.name || '') + '</h3>' +
+            '<div class="menu-ai-card-desc">' + escapeHtml(item.description || '') + '</div>' +
+            '<div class="menu-ai-card-price">' + escapeHtml(item.price || '') + '</div>' +
+         '</div>' +
+      '</div>';
+}
+
+   function renderError(message) {
+      updateTopWeather(null);
+
+      $content.html(
+         '<div class="menu-ai-state">' +
+            '<strong>' + escapeHtml(isEnglish ? 'We could not prepare a suggestion right now' : 'Şu an öneri çıkaramadık') + '</strong>' +
+            '<div>' + escapeHtml(message || (isEnglish ? 'Please try again.' : 'Lütfen tekrar deneyin.')) + '</div>' +
+         '</div>'
+      );
+   }
+
+   function renderResult(data) {
+      try {
+         updateTopWeather(data.weather || null);
+
+         var cards = '';
+         var activeMode = data.resolved_mode || data.mode || '';
+
+         if (activeMode === 'drink_only') {
+            if (data.drink && data.drink.name) {
+               cards += buildCard('drink', data.drink);
+            }
+            if (data.second_drink && data.second_drink.name) {
+               cards += buildCard('second_drink', data.second_drink);
+            }
+         } else if (activeMode === 'dessert_coffee') {
+            if (data.dessert && data.dessert.name) {
+               cards += buildCard('dessert', data.dessert);
+            }
+            if (data.drink && data.drink.name) {
+               cards += buildCard('drink', data.drink);
+            }
+            if (data.second_drink && data.second_drink.name) {
+               cards += buildCard('second_drink', data.second_drink);
+            }
+         } else {
+            if (data.main && data.main.name) {
+               cards += buildCard('main', data.main);
+            }
+            if (data.drink && data.drink.name) {
+               cards += buildCard('drink', data.drink);
+            }
+            if (data.dessert && data.dessert.name) {
+               cards += buildCard('dessert', data.dessert);
+            }
+         }
+
+         if (!cards) {
+            renderError(isEnglish ? 'No products available to display.' : 'Gösterilecek ürün bulunamadı.');
+            return;
+         }
+
+         var weatherText = '';
+         if (data.weather && typeof data.weather.temp !== 'undefined') {
+            weatherText = data.weather.temp + '°C';
+
+            if (data.weather.label) {
+               weatherText += ' · ' + data.weather.label;
+            } else if (data.weather.condition) {
+               weatherText += ' · ' + data.weather.condition;
+            }
+         }
+
+         var hotNote = getHotDrinkNote(!!data.use_hot_drink);
+
+         $content.html(
+            '<div class="menu-ai-summary">' +
+               '<div class="menu-ai-summary-top">' +
+                  '<div class="menu-ai-period">' + escapeHtml(getPeriodLabel(data.period || '')) + '</div>' +
+                  (weatherText ? '<div class="menu-ai-weather">' + escapeHtml(weatherText) + '</div>' : '') +
+               '</div>' +
+               '<div class="menu-ai-mode-label">' + escapeHtml(getModeLabel(data.resolved_mode || data.mode || '', data.period || '')) + '</div>' +
+               (hotNote ? '<div class="menu-ai-hot-note">' + escapeHtml(hotNote) + '</div>' : '') +
+               '<h2>' + escapeHtml(data.title || (isEnglish ? 'Today\'s suggestion' : 'Bugünün önerisi')) + '</h2>' +
+               '<p>' + escapeHtml(data.text || '') + '</p>' +
+            '</div>' +
+            '<div class="menu-ai-grid">' + cards + '</div>'
+         );
+      } catch (e) {
+         console.log('renderResult error:', e);
+         renderError(isEnglish ? 'There was a render problem.' : 'Görsel çıktı hazırlanırken sorun oluştu.');
+      }
+   }
+
+   function openProductModal(item) {
+   if (!item) return;
+
+   $('#menuAiModalImage').attr('src', item.thumb || '');
+   $('#menuAiModalImage').attr('alt', item.name || '');
+
+   $('#menuAiModal').addClass('is-open');
+   $('body').css('overflow', 'hidden');
+}
+
+   function closeProductModal() {
+      $('#menuAiModal').removeClass('is-open');
+      $('body').css('overflow', '');
+   }
+
+   $(document).on('click', '.menu-ai-popup-trigger', function() {
+      var raw = $(this).attr('data-item') || '';
+
+      try {
+         var item = JSON.parse(decodeURIComponent(raw));
+         openProductModal(item);
+      } catch (e) {
+         console.log('modal parse error:', e);
+      }
+   });
+
+   $('#menuAiModalClose, #menuAiModalBackdrop').on('click', function() {
+      closeProductModal();
+   });
+
+   $(document).on('keydown', function(e) {
+      if (e.key === 'Escape') {
+         closeProductModal();
+      }
+   });
+
+   function loadSuggestion(mode) {
+      currentMode = mode || 'combo';
+      renderLoading();
+
+      $.ajax({
+         url: endpoint,
+         type: 'GET',
+         dataType: 'json',
+         cache: false,
+         data: {
+            mode: currentMode,
+            _: new Date().getTime()
+         },
+         success: function(data) {
+            console.log('menu_recommendation success:', data);
+
+            if (!data || !data.success) {
+               renderError(data && data.message ? data.message : (isEnglish ? 'Could not fetch suggestion.' : 'Öneri alınamadı.'));
+               return;
+            }
+
+            renderResult(data);
+         },
+         error: function(xhr, status, error) {
+            console.log('menu_recommendation ajax error:', status, error);
+            console.log('responseText:', xhr.responseText);
+            renderError(isEnglish ? 'There was a problem connecting to the server.' : 'Sunucuya bağlanırken bir sorun oluştu.');
+         }
+      });
+   }
+
+   $('.menu-mode-btn').on('click', function() {
+      $('.menu-mode-btn').removeClass('is-active');
+      $(this).addClass('is-active');
+      loadSuggestion($(this).data('mode'));
+   });
+
+   loadSuggestion(currentMode);
+});
+   </script>
+
+   {{ menu_footer }}
+</body>
+</html>

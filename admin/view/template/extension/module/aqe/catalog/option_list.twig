@@ -1,0 +1,228 @@
+{% macro alert_icon(type) %}{% spaceless %}
+		{% if type == 'error' %}
+			fa-times-circle
+		{% elseif type == 'warning' %}
+			fa-exclamation-triangle
+		{% elseif type == 'success' %}
+			fa-check-circle
+		{% elseif type == 'info' %}
+			fa-info-circle
+		{% else %}
+		{% endif %}
+{% endspaceless %}{% endmacro %}
+{{ header }}
+<!-- confirm deletion -->
+<div class="modal fade" id="confirmDelete" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 class="modal-title" id="confirmDeleteLabel">{{ text_confirm_delete }}</h4>
+			</div>
+			<div class="modal-body">
+				<p>{{ text_are_you_sure }}</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal"><i class="fa fa-ban"></i> {{ button_cancel }}</button>
+				<button type="button" class="btn btn-danger delete"><i class="fa fa-trash-o"></i> {{ button_delete }}</button>
+			</div>
+		</div><!-- /.modal-content -->
+	</div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!-- image manager -->
+<div class="modal fade" id="modal-image" tabindex="-1" role="dialog" aria-hidden="true"></div>
+
+<!-- action menu modal -->
+<div class="modal fade" id="aqe-modal" tabindex="-1" role="dialog" aria-labelledby="aqeModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 class="modal-title" id="aqeModalLabel"></h4>
+			</div>
+			<div class="modal-body bull5i-container">
+				<div class="notice">
+				</div>
+				<form enctype="multipart/form-data" id="aqeQuickEditForm" class="form-horizontal">
+					<fieldset class="aqe-modal-contents">
+					</fieldset>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default cancel" data-dismiss="modal"><i class="fa fa-times"></i> {{ button_close }}</button>
+				<button type="button" class="btn btn-primary submit" data-form="#aqeQuickEditForm" data-context="#aqe-modal" data-loading-text="<i class='fa fa-spinner fa-spin'></i> {{ text_saving }}"><i class="fa fa-save"></i> {{ button_save }}</button>
+			</div>
+		</div><!-- /.modal-content -->
+	</div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+{{ column_left }}
+<div id="content">
+	<div class="page-header">
+		<div class="container-fluid">
+			<div class="pull-right">
+				<div class="nav navbar-nav navbar-checkbox hidden" id="batch-edit-container">
+					<div class="checkbox">
+						<label>
+							<input type="checkbox" id="batch-edit"{{ batch_edit ? ' checked' : '' }}> {{ text_batch_edit }}
+						</label>
+					</div>
+				</div>
+				<button type="button" class="btn btn-primary" data-toggle="tooltip" data-container="body" data-placement="bottom" title="{{ button_add }}" data-url="{{ add }}" id="btn-insert" data-form="#pqe-list-form" data-context="#content" data-overlay="#page-overlay"><i class="fa fa-plus"></i></button>
+				<button type="button" class="btn btn-danger" data-toggle="tooltip" data-container="body" data-placement="bottom" title="{{ button_delete }}" data-url="{{ delete }}" id="btn-delete" data-form="#pqe-list-form" data-context="#content" data-overlay="#page-overlay" data-loading-text="<i class='fa fa-spinner fa-spin'></i>" disabled><i class="fa fa-trash-o"></i></button>
+			</div>
+			<h1><i class="fa fa-list fa-fw ext-icon"></i> {{ heading_title }}</h1>
+			<ul class="breadcrumb">
+				{% for breadcrumb in breadcrumbs %}
+				<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+
+	<div class="alerts">
+		<div class="container-fluid" id="alerts">
+			{% for type, _alerts in alerts %}
+				{% for alert in _alerts %}
+					{% if alert %}
+			<div class="alert alert-{% if type == "error" %}danger{% else %}{{ type }}{% endif %} fade in">
+				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+				<i class="fa {{ _self.alert_icon(type) }}"></i>{{ alert }}
+			</div>
+					{% endif %}
+				{% endfor %}
+			{% endfor %}
+		</div>
+	</div>
+
+	<div class="container-fluid bull5i-content bull5i-container">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title"><i class="fa fa-list"></i> {{ text_list }}</h3>
+			</div>
+			<div class="panel-body">
+				<form method="post" enctype="multipart/form-data" id="pqe-list-form" class="form-horizontal" role="form">
+					<fieldset>
+						<div class="table-responsive">
+							<table cellpadding="0" cellspacing="0" border="0" class="table table-bordered table-condensed{{ module_admin_quick_edit_row_hover_highlighting ? ' table-hover' : '' }}{{ module_admin_quick_edit_alternate_row_colour ? ' table-striped' : '' }}" id="dT">
+								<thead>
+									<tr>
+										{% for col in columns %}
+											{% if col == 'selector' %}
+										<th class="{{ column_info[col].align }} col_{{ col }}" width="1"><input type="checkbox" id="global-selector" /></th>
+											{% elseif column_info[col].sort %}
+										<th class="{{ column_info[col].align }} col_{{ col }}"><a href="{{ sorts[col] }}"{{ sort == column_info[col].sort ? ' class="' ~ order|lower() ~ '"' : '' }}>{{ column_info[col].name }}</a></th>
+											{% else %}
+										<th class="{{ column_info[col].align }} col_{{ col }}">{{ column_info[col].name }}</th>
+											{% endif %}
+										{% endfor %}
+									</tr>
+									<tr class="filters">
+										{% for col in columns %}
+											{% if col in ['selector'] %}
+										<th></th>
+											{% elseif col == 'type' %}
+										<th class="{{ column_info[col].align }}">
+											<select name="filter_{{ col }}" class="form-control input-sm search_init fltr {{ col }}" data-column="{{ col }}">
+												<option value=""></option>
+												<optgroup label="{{ text_choose }}">
+													<option value="select"{{ filters[col] == 'select' ? ' selected' : '' }}>{{ text_select }}</option>
+													<option value="radio"{{ filters[col] == 'radio' ? ' selected' : '' }}>{{ text_radio }}</option>
+													<option value="checkbox"{{ filters[col] == 'checkbox' ? ' selected' : '' }}>{{ text_checkbox }}</option>
+												</optgroup>
+												<optgroup label="{{ text_input }}">
+													<option value="text"{{ filters[col] == 'text' ? ' selected' : '' }}>{{ text_text }}</option>
+													<option value="textarea"{{ filters[col] == 'textarea' ? ' selected' : '' }}>{{ text_textarea }}</option>
+												</optgroup>
+												<optgroup label="{{ text_file }}">
+													<option value="file"{{ filters[col] == 'file' ? ' selected' : '' }}>{{ text_file }}</option>
+												</optgroup>
+												<optgroup label="{{ text_date }}">
+													<option value="date"{{ filters[col] == 'date' ? ' selected' : '' }}>{{ text_date }}</option>
+													<option value="time"{{ filters[col] == 'time' ? ' selected' : '' }}>{{ text_time }}</option>
+													<option value="datetime"{{ filters[col] == 'datetime' ? ' selected' : '' }}>{{ text_datetime }}</option>
+												</optgroup>
+											</select>
+										</th>
+											{% elseif col == 'action' %}
+										<th class="{{ column_info[col].align }}">
+											<div class="btn-group btn-group-flex">
+												<button type="button" class="btn btn-sm btn-default" id="filter" data-toggle="tooltip" data-container="body" title="{{ text_filter }}"><i class="fa fa-filter fa-fw"></i></button>
+												<button type="button" class="btn btn-sm btn-default" id="clear-filter" data-toggle="tooltip" data-container="body" title="{{ text_clear_filter }}"><i class="fa fa-times fa-fw"></i></button>
+											</div>
+										</th>
+											{% elseif col in ['name', 'option_value'] %}
+										<th class="{{ column_info[col].align }}"><input type="text" name="filter_{{ col }}" class="form-control input-sm search_init fltr {{ col }} typeahead" data-column="{{ col }}" value="{{ filters[col] }}" placeholder="{{ text_autocomplete }}"></th>
+										</th>
+											{% else %}
+										<th class="{{ column_info[col].align }}"><input type="text" name="filter_{{ col }}" class="form-control input-sm search_init fltr {{ col }}" data-column="{{ col }}" value="{{ filters[col] }}"></th>
+											{% endif %}
+										{% endfor %}
+									</tr>
+								</thead>
+								<tbody>
+									{% if options %}
+										{% for option in options %}
+									<tr>
+										{% for col in columns %}
+											{% if col == 'selector' %}
+										<td style="width:1px" class="text-center">
+											<input type="checkbox" name="selected[]" value="{{ option.option_id }}"{{ option.selected ? ' checked' : '' }}/>
+										</td>
+											{% elseif col == 'action' %}
+										<td class="{{ column_info[col].align }} action">
+											<div class="btn-group btn-group-flex">
+												{% for action in option.action %}
+													{% if action.url %}
+												<a href="{{ action.url }}" class="btn btn-default btn-sm {{ action.type }} {{ action.class }}" id="{{ action.action ~ "-" ~ option.option_id }}" data-toggle="tooltip" data-container="body" title="{{ action.title }}"><i class="fa fa-{{ action.icon }}"></i>{{ action.name }}</a>
+													{% else %}
+												<button type="button" class="btn {{ action.data ? 'btn-warning' : 'btn-default' }} btn-sm action {{ action.type }} {{ action.class }}" id="{{ action.action ~ "-" ~ option.option_id }}" data-toggle="tooltip" data-container="body" title="{{ action.title }}" data-column="{{ action.action }}"{{ action.rel ? " data-rel='" ~ action.rel ~ "'" : "" }}>{% if action.icon %}<i class="fa fa-{{ action.icon }}"></i>{% endif %}{{ action.name }}</button>
+													{% endif %}
+												{% endfor %}
+											</div>
+										</td>
+												{% else %}
+										<td class="{{ column_info[col].align }}{{ column_info[col].qe_status ? ' ' ~ column_info[col].type : '' }}" id="{{ col ~ "-" ~ option.option_id }}">{{ option[col] }}</td>
+												{% endif %}
+											{% endfor %}
+									</tr>
+										{% endfor %}
+									{% else %}
+									<tr>
+										<td class="text-center" colspan="{{ columns|length() + 1 }}">{{ text_no_results }}</td>
+									</tr>
+									{% endif %}
+								</tbody>
+							</table>
+						</div>
+					</fieldset>
+				</form>
+				<div class="row">
+					<div class="col-sm-6 text-left">{{ pagination }}</div>
+					<div class="col-sm-6 text-right">{{ results }}</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript"><!--
+(function(bull5i,$,undefined){
+var related={{ related|json_encode() }};bull5i.batch_edit=parseInt("{{ batch_edit * 1 }}"),bull5i.texts=$.extend({},bull5i.texts,{error_ajax_request:"{{ error_ajax_request|addslashes() }}"}),bull5i.update_image=function(e){var t=e,a=$.Deferred();return $.when($.ajax({url:"index.php?route=common/filemanager&user_token={{ user_token }}&target="+encodeURIComponent(t),dataType:"html"})).done(function(e){$("#"+t).val(""),$("#modal-image").append(e),$("#modal-image").modal("show"),$("#modal-image").on("hide.bs.modal",function(){$("#"+t).val()?a.resolve():a.reject(),$("#modal-image").off("hide.bs.modal")}).on("hidden.bs.modal",function(){$("#modal-image").empty(),$("#modal-image").off("hidden.bs.modal")})}).fail(function(){a.reject()}),a.promise()},bull5i.update_related=function(e,t){if(t&&related[e]&&related[e].length){var a={};return $.each(related[e],function(e,r){a[r]=t,$.each(t,function(e,t){$("#"+r+"-"+t)&&bull5i.cell_updating($("#"+r+"-"+t))})}),$.ajax({url:"{{ refresh_url }}",type:"POST",cache:!1,dataType:"json",data:{data:a}}).done(function(e){e.error?bull5i.display_alert($("#alerts"),e.error,"error",0,!0):e.values&&$.each(e.values,function(e,t){$.each(t,function(t,a){var r=$("#"+t+"-"+e);r.empty().removeClass("updating").removeAttr("style").editable("enable"),setTimeout(function(){r.html(a)},10)})})}).fail(function(e){var t="string"==typeof e?e:e.responseText||e.statusText||"Unknown error!";bull5i.display_alert($("#alerts"),bull5i.texts.error_ajax_request+" "+t,"error",0,!0)}).always(function(){$("td.updating").each(function(){var e=$(this);e.empty().removeClass("updating").removeAttr("style").editable("enable"),setTimeout(function(){e.html(e.data("original-content"))},10)})}),!0}return!1};
+bull5i.filter=function(){url='index.php?route=catalog/option&user_token={{ user_token }}&sort={{ sort }}&order={{ order }}&aqer=1';
+{% for column, val in column_info %}{% if val.filter.show %}{% if val.filter.type == 0 %}
+var filter_{{ column }}=$('input[name=\'filter_{{ column }}\']').not(':disabled').val();
+if(filter_{{ column }}){url+='&filter_{{ column }}='+encodeURIComponent(filter_{{ column }});}
+{% elseif val.filter.type == 1 %}
+var filter_{{ column }}=$('select[name=\'filter_{{ column }}\']').val();
+if (filter_{{ column }}&&filter_{{ column }}!='*'){url+='&filter_{{ column }}='+encodeURIComponent(filter_{{ column }});}
+{% endif %}{% endif %}{% endfor %}location=url;}
+{% for column, val in column_info %}{% if val.filter.autocomplete %}
+$('input[name=\'filter_{{ column }}\']').autocomplete({source:function(request,response){$.ajax({url:'index.php?route=extension/module/admin_quick_edit/catalog__option__autocomplete&user_token={{ user_token }}&filter_{{ column }}='+encodeURIComponent(request),dataType:'json',success:function(json){response($.unique($.map(json,function(item){
+{% if val.filter.autocomplete.return is iterable %}return { {% for k, v in val.filter.autocomplete.return %}{{ k }}:item['{{ v }}'],{% endfor %}}
+{% else %}return item['{{ val.filter.autocomplete.return }}']{% endif %}
+})));}});},select:function(item){$('input[name=\'filter_{{ column }}\']').val(item['label']);return false;}});{% endif %}{% endfor %}
+$(function(){$(".qe").editable(function(e,t){return bull5i.quick_update(this,e,t,"{{ update_url }}").done($.proxy(bull5i.update_finished,{column:$(this).attr("id").split("-")[0]})).fail($.proxy(bull5i.update_failed,this)),t.indicator},{type:"bs_text",indicator:"{{ text_saving }}",tooltip:"{{ module_admin_quick_edit_tooltip }}",event:"{{ module_admin_quick_edit_quick_edit_on }}",onblur:"cancel",placeholder:"",select:!0}),$(".opt_val_qe").editable(function(e,t){return t.indicator},{type:"popup_edit",indicator:"{{ text_saving }}",tooltip:"{{ module_admin_quick_edit_tooltip }}",event:"{{ module_admin_quick_edit_quick_edit_on }}",onblur:"ignore",placeholder:"",loadurl:"{{ load_popup_url }}",saveurl:"{{ update_url }}",loadtype:"POST",loadtext:"{{ text_loading }}"}),$(".opt_vals_qe").on("click",function(e){e.preventDefault();var t=$(this).attr("id"),i=$(this).attr("id").split("-")[1],l=$(this).attr("id").split("-")[0],p={alerts:$.merge($("#aqe-modal .notice"),$("#alerts"))};bull5i.load_popup_data("{{ load_popup_url }}",{id:t}).done(function(e){e.alerts&&bull5i.display_alerts(e.alerts,!0,p.alerts),bull5i.aqe_popup(e.title,e.popup,function(o){e={id:t,old:"","new":""},bull5i.batch_edit&&$("input[name*='selected']:checked").length&&(e.ids=$("input[name*='selected']:checked").serializeObject().selected),$.extend(e,$("#aqeQuickEditForm").serializeHash()),bull5i.aqe_popup_update.call(p,"{{ update_url }}",e).done(function(t){(t===!0||t.success)&&bull5i.update_related(l,$.unique($.merge([i],e.ids||[]))),$.isFunction(o)&&o.call(null,t)}).fail(function(e){$.isFunction(o)&&o.call(null,e)})},"modal-lg")})}){% if single_lang_editing %},$(".name_qe").editable(function(e,t){var i={lang_id:"{{ language_id }}"};return bull5i.quick_update(this,e,t,"{{ update_url }}",i).done($.proxy(bull5i.update_finished,{column:$(this).attr("id").split("-")[0]})).fail($.proxy(bull5i.update_failed,this)),t.indicator},{type:"bs_text",indicator:"{{ text_saving }}",tooltip:"{{ module_admin_quick_edit_tooltip }}",event:"{{ module_admin_quick_edit_quick_edit_on }}",onblur:"cancel",placeholder:"",select:!0}){% else %},$(".name_qe").editable(function(e,t){return t.indicator},{type:"multilingual_edit",indicator:"{{ text_saving }}",tooltip:"{{ module_admin_quick_edit_tooltip }}",event:"{{ module_admin_quick_edit_quick_edit_on }}",onblur:"ignore",placeholder:"",loadurl:"{{ load_popup_url }}",saveurl:"{{ update_url }}",loadtype:"POST",loadtext:"{{ text_loading }}"}){% endif %},$(".type_qe").editable(function(e,t){return bull5i.quick_update(this,e,t,"{{ update_url }}").done($.proxy(bull5i.update_finished,{column:$(this).attr("id").split("-")[0]})).fail($.proxy(bull5i.update_failed,this)),t.indicator},{data:"{{ type_select|trim() }}",type:"bs_select",indicator:"{{ text_saving }}",tooltip:"{{ module_admin_quick_edit_tooltip }}",event:"{{ module_admin_quick_edit_quick_edit_on }}",placeholder:"",onblur:"cancel"})});
+}(window.bull5i=window.bull5i||{},jQuery));
+//--></script>
+{{ footer }}

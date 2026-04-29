@@ -1,0 +1,148 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <button type="submit" form="form-restaurant-home-products" data-toggle="tooltip" title="Kaydet" class="btn btn-primary"><i class="fa fa-save"></i></button>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="Vazgeç" class="btn btn-default"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>Ana Sayfa Ürünler</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+          <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    {% if error_warning %}
+      <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}</div>
+    {% endif %}
+    {% if success %}
+      <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}</div>
+    {% endif %}
+
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-home"></i> Menü Ana Sayfa Ürünleri</h3>
+      </div>
+      <div class="panel-body">
+        <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-restaurant-home-products" class="form-horizontal">
+          <ul class="nav nav-tabs">
+            <li class="active"><a href="#tab-regional" data-toggle="tab">Yöresel Ürünler</a></li>
+            <li><a href="#tab-popular" data-toggle="tab">En Çok Tercih Edilenler</a></li>
+          </ul>
+
+          <div class="tab-content">
+            {% for code, section in sections %}
+              <div class="tab-pane {% if loop.first %}active{% endif %}" id="tab-{{ code }}">
+                <div class="form-group">
+                  <label class="col-sm-2 control-label" for="input-name-{{ code }}">Başlık</label>
+                  <div class="col-sm-10">
+                    {% for language in languages %}
+                      <div class="input-group restaurant-title-input">
+                        <span class="input-group-addon">
+                          <img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}">
+                        </span>
+                        <input type="text" name="sections[{{ code }}][titles][{{ language.language_id }}]" value="{{ section.titles[language.language_id] is defined ? section.titles[language.language_id] : section.name }}" placeholder="{{ language.name }}" id="input-name-{{ code }}-{{ language.language_id }}" class="form-control">
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-sm-2 control-label" for="input-product-{{ code }}">Ürünler</label>
+                  <div class="col-sm-10">
+                    <input type="text" name="product_search_{{ code }}" value="" placeholder="Ürün ara..." id="input-product-{{ code }}" class="form-control restaurant-product-search" data-section="{{ code }}">
+                    <div id="section-products-{{ code }}" class="well well-sm restaurant-selected-products">
+                      {% for product in section.products %}
+                        <div id="section-product-{{ code }}-{{ product.product_id }}" class="restaurant-selected-product">
+                          <i class="fa fa-minus-circle"></i>
+                          <span>{{ product.name }}</span>
+                          <input type="hidden" name="sections[{{ code }}][products][]" value="{{ product.product_id }}">
+                        </div>
+                      {% endfor %}
+                    </div>
+                    <p class="help-block">Ürünleri eklediğiniz sıra ile ana sayfada görünür. Eski OpenCart Seçtiklerimiz modülleri artık bu alanı beslemez.</p>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-sm-2 control-label" for="input-status-{{ code }}">Durum</label>
+                  <div class="col-sm-10">
+                    <select name="sections[{{ code }}][status]" id="input-status-{{ code }}" class="form-control">
+                      {% if section.status %}
+                        <option value="1" selected="selected">Açık</option>
+                        <option value="0">Kapalı</option>
+                      {% else %}
+                        <option value="1">Açık</option>
+                        <option value="0" selected="selected">Kapalı</option>
+                      {% endif %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <style>
+    .restaurant-selected-products{height:180px;overflow:auto;margin-top:10px;background:#f7f9f8;}
+    .restaurant-selected-product{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid #e5e5e5;}
+    .restaurant-selected-product:last-child{border-bottom:0;}
+    .restaurant-selected-product .fa-minus-circle{color:#b94a48;cursor:pointer;font-size:15px;}
+    .restaurant-title-input{margin-bottom:8px;}
+    .restaurant-title-input:last-child{margin-bottom:0;}
+  </style>
+  <script type="text/javascript"><!--
+function restaurantEscapeHtml(text) {
+	return String(text)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+}
+
+$('.restaurant-product-search').each(function() {
+	var input = $(this);
+	var section = input.data('section');
+
+	input.autocomplete({
+		source: function(request, response) {
+			$.ajax({
+				url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+				dataType: 'json',
+				success: function(json) {
+					response($.map(json, function(item) {
+						return {
+							label: item['name'],
+							value: item['product_id']
+						};
+					}));
+				}
+			});
+		},
+		select: function(item) {
+			input.val('');
+
+			$('#section-product-' + section + '-' + item['value']).remove();
+			$('#section-products-' + section).append(
+				'<div id="section-product-' + section + '-' + item['value'] + '" class="restaurant-selected-product">' +
+				'<i class="fa fa-minus-circle"></i>' +
+				'<span>' + restaurantEscapeHtml(item['label']) + '</span>' +
+				'<input type="hidden" name="sections[' + section + '][products][]" value="' + item['value'] + '">' +
+				'</div>'
+			);
+		}
+	});
+});
+
+$('.restaurant-selected-products').delegate('.fa-minus-circle', 'click', function() {
+	$(this).parent().remove();
+});
+//--></script>
+</div>
+{{ footer }}

@@ -1,0 +1,32 @@
+<input type="hidden" name="i_id" value="{{ i_id }}" />
+{% if parameter in ['name', 'customer'] %}
+<div class="row-fluid">
+	<div class="col-sm-12">
+		<div class="form-group">
+			<label for="first_name" class="col-sm-3 col-md-2 control-label">{{ text_first_name }}</label>
+			<div class="col-sm-9 col-md-10">
+				<input type="text" name="first_name" id="first_name" class="form-control" value="{{ first_name }}" />
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="last_name" class="col-sm-3 col-md-2 control-label">{{ text_last_name }}</label>
+			<div class="col-sm-9 col-md-10">
+				<input type="text" name="last_name" id="last_name" class="form-control" value="{{ last_name }}" />
+			</div>
+		</div>
+	</div>
+</div>
+{% elseif parameter in ['multilingual_name'] %}
+<div class="row-fluid">
+	<div class="col-sm-12">
+		{% for language in languages %}
+		<div class="input-group multi-row">
+			<span class="input-group-addon" title="{{ language.name }}"><img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}" /></span>
+			<input type="text" name="value[{{ language.language_id }}]" class="form-control" value="{{ value[language.language_id] }}" />
+		</div>
+		{% endfor %}
+	</div>
+</div>
+{% endif %}
+	</form>
+</div>

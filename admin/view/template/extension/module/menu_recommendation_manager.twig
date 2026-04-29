@@ -1,0 +1,264 @@
+{{ header }}{{ column_left }}
+<div id="content">
+	<div class="page-header">
+		<div class="container-fluid">
+			<div class="pull-right">
+				<button type="submit" form="form-menu-recommendation-manager" class="btn btn-primary">
+					<i class="fa fa-save"></i>
+				</button>
+				<a href="{{ cancel }}" class="btn btn-default">
+					<i class="fa fa-reply"></i>
+				</a>
+			</div>
+			<h1>{{ heading_title }}</h1>
+			<ul class="breadcrumb">
+				{% for breadcrumb in breadcrumbs %}
+					<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		{% if error_warning %}
+			<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}</div>
+		{% endif %}
+
+		<form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-menu-recommendation-manager">
+			<div class="panel panel-default rec-panel">
+				<div class="panel-heading rec-heading">
+					<h3 class="panel-title"><i class="fa fa-magic"></i> {{ text_edit }}</h3>
+					<div class="rec-subtitle">Ürüne rol ve mod ver, sistem mantıklı kombin üretsin.</div>
+				</div>
+
+				<div class="panel-body">
+					<ul class="nav nav-tabs rec-tabs">
+						<li class="active"><a href="#tab-general" data-toggle="tab">{{ text_general }}</a></li>
+						<li><a href="#tab-products" data-toggle="tab">{{ text_products }}</a></li>
+					</ul>
+
+					<div class="tab-content" style="margin-top:20px;">
+						<div class="tab-pane active" id="tab-general">
+							<div class="row">
+								<div class="col-sm-8">
+									<div class="rec-card">
+										<div class="rec-card-head">Genel Ayarlar</div>
+										<div class="rec-card-body">
+											<div class="form-group row">
+												<label class="col-sm-3 control-label">{{ entry_status }}</label>
+												<div class="col-sm-9">
+													<select name="module_status" class="form-control">
+														<option value="1" {{ module_status ? 'selected="selected"' : '' }}>{{ text_enabled }}</option>
+														<option value="0" {{ not module_status ? 'selected="selected"' : '' }}>{{ text_disabled }}</option>
+													</select>
+												</div>
+											</div>
+
+											<div class="form-group row">
+												<label class="col-sm-3 control-label">{{ entry_temperature_threshold }}</label>
+												<div class="col-sm-9">
+													<input type="text" name="temperature_threshold" value="{{ temperature_threshold }}" class="form-control" />
+												</div>
+											</div>
+
+											<div class="form-group row">
+												<label class="col-sm-3 control-label">{{ entry_breakfast_end_hour }}</label>
+												<div class="col-sm-9">
+													<input type="text" name="breakfast_end_hour" value="{{ breakfast_end_hour }}" class="form-control" />
+												</div>
+											</div>
+
+											<div class="form-group row">
+												<label class="col-sm-3 control-label">{{ entry_lunch_end_hour }}</label>
+												<div class="col-sm-9">
+													<input type="text" name="lunch_end_hour" value="{{ lunch_end_hour }}" class="form-control" />
+												</div>
+											</div>
+
+											<div class="form-group row">
+												<label class="col-sm-3 control-label">{{ entry_prevent_duplicates }}</label>
+												<div class="col-sm-9">
+													<select name="prevent_duplicates" class="form-control">
+														<option value="1" {{ prevent_duplicates ? 'selected="selected"' : '' }}>{{ text_enabled }}</option>
+														<option value="0" {{ not prevent_duplicates ? 'selected="selected"' : '' }}>{{ text_disabled }}</option>
+													</select>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="col-sm-4">
+									<div class="rec-card">
+										<div class="rec-card-head">Kural Özeti</div>
+										<div class="rec-card-body rec-note">
+											<p><strong>Normal hava:</strong> Ana Ürün + İçecek + Tatlı</p>
+											<p><strong>10°C altı:</strong> Ana Ürün + Sıcak İçecek + Tatlı</p>
+											<p><strong>pair_tag</strong> aynı olan ürünler birbiriyle eşleşmeye daha yatkın olur.</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="tab-pane" id="tab-products">
+							<div class="rec-toolbar">
+								<input type="text" id="productSearch" class="form-control" placeholder="Ürün ara..." />
+							</div>
+
+							<div class="table-responsive">
+								<table class="table table-bordered table-hover rec-table" id="productTable">
+									<thead>
+										<tr>
+											<th style="width:70px;">{{ column_product_id }}</th>
+											<th>{{ column_name }}</th>
+											<th style="width:180px;">{{ column_category }}</th>
+											<th style="width:90px; text-align:center;">{{ column_status }}</th>
+											<th style="width:160px;">{{ column_role }}</th>
+											<th style="width:180px;">{{ column_pair_tag }}</th>
+											<th style="width:100px;">{{ column_priority }}</th>
+											<th style="min-width:320px;">{{ column_modes }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										{% for product in products %}
+											<tr class="product-row" data-name="{{ product.name|lower }}">
+												<td>#{{ product.product_id }}</td>
+												<td>
+													<strong>{{ product.name }}</strong>
+												</td>
+												<td>{{ product.category_name }}</td>
+												<td style="text-align:center;">
+													<input type="checkbox"
+														   name="profiles[{{ product.product_id }}][status]"
+														   value="1"
+														   {% if product.profile.status %}checked="checked"{% endif %} />
+												</td>
+												<td>
+													<select name="profiles[{{ product.product_id }}][role]" class="form-control input-sm">
+														<option value=""></option>
+														<option value="main" {% if product.profile.role == 'main' %}selected="selected"{% endif %}>{{ text_role_main }}</option>
+														<option value="drink" {% if product.profile.role == 'drink' %}selected="selected"{% endif %}>{{ text_role_drink }}</option>
+														<option value="dessert" {% if product.profile.role == 'dessert' %}selected="selected"{% endif %}>{{ text_role_dessert }}</option>
+														<option value="hot_drink" {% if product.profile.role == 'hot_drink' %}selected="selected"{% endif %}>{{ text_role_hot_drink }}</option>
+													</select>
+												</td>
+												<td>
+													<input type="text"
+														   name="profiles[{{ product.product_id }}][pair_tag]"
+														   value="{{ product.profile.pair_tag }}"
+														   class="form-control input-sm"
+														   placeholder="{{ help_pair_tag }}" />
+												</td>
+												<td>
+													<input type="number"
+														   name="profiles[{{ product.product_id }}][priority]"
+														   value="{{ product.profile.priority }}"
+														   class="form-control input-sm"
+														   placeholder="0" />
+												</td>
+												<td>
+													<label class="rec-mode"><input type="checkbox" name="profiles[{{ product.product_id }}][modes][]" value="breakfast" {% if 'breakfast' in product.profile.modes %}checked="checked"{% endif %}> {{ text_mode_breakfast }}</label>
+													<label class="rec-mode"><input type="checkbox" name="profiles[{{ product.product_id }}][modes][]" value="light" {% if 'light' in product.profile.modes %}checked="checked"{% endif %}> {{ text_mode_light }}</label>
+													<label class="rec-mode"><input type="checkbox" name="profiles[{{ product.product_id }}][modes][]" value="hearty" {% if 'hearty' in product.profile.modes %}checked="checked"{% endif %}> {{ text_mode_hearty }}</label>
+													<label class="rec-mode"><input type="checkbox" name="profiles[{{ product.product_id }}][modes][]" value="dessert_coffee" {% if 'dessert_coffee' in product.profile.modes %}checked="checked"{% endif %}> {{ text_mode_dessert_coffee }}</label>
+													<label class="rec-mode"><input type="checkbox" name="profiles[{{ product.product_id }}][modes][]" value="drink_only" {% if 'drink_only' in product.profile.modes %}checked="checked"{% endif %}> {{ text_mode_drink_only }}</label>
+												</td>
+											</tr>
+										{% endfor %}
+									</tbody>
+								</table>
+							</div>
+
+							<div class="alert alert-info" style="margin-top:15px;">
+								<div><strong>{{ help_pair_tag }}</strong></div>
+								<div>{{ help_priority }}</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<script>
+(function() {
+	var search = document.getElementById('productSearch');
+	if (!search) return;
+
+	search.addEventListener('keyup', function() {
+		var value = this.value.toLowerCase();
+
+		document.querySelectorAll('#productTable .product-row').forEach(function(row) {
+			var name = row.getAttribute('data-name') || '';
+			row.style.display = name.indexOf(value) !== -1 ? '' : 'none';
+		});
+	});
+})();
+</script>
+
+<style>
+.rec-panel {
+	border-radius: 14px;
+	overflow: hidden;
+	border: 1px solid #e6ecf2;
+	box-shadow: 0 10px 30px rgba(0,0,0,.05);
+}
+.rec-heading {
+	background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+	color: #fff;
+	padding: 16px 20px;
+}
+.rec-heading .panel-title {
+	font-size: 18px;
+	font-weight: 700;
+}
+.rec-subtitle {
+	margin-top: 6px;
+	font-size: 12px;
+	opacity: .85;
+}
+.rec-tabs {
+	margin-bottom: 20px;
+}
+.rec-card {
+	background: #fff;
+	border: 1px solid #e7edf3;
+	border-radius: 14px;
+	margin-bottom: 18px;
+	box-shadow: 0 4px 14px rgba(15,23,42,.04);
+}
+.rec-card-head {
+	padding: 14px 16px;
+	border-bottom: 1px solid #eef2f7;
+	font-size: 14px;
+	font-weight: 700;
+	color: #111827;
+}
+.rec-card-body {
+	padding: 16px;
+}
+.rec-note {
+	line-height: 1.7;
+	color: #374151;
+}
+.rec-toolbar {
+	margin-bottom: 15px;
+}
+.rec-table thead th {
+	background: #f8fafc;
+	vertical-align: middle;
+}
+.rec-table tbody td {
+	vertical-align: middle;
+}
+.rec-mode {
+	display: inline-block;
+	margin-right: 10px;
+	margin-bottom: 6px;
+	font-weight: 500;
+}
+</style>
+
+{{ footer }}

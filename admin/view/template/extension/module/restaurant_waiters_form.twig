@@ -1,0 +1,194 @@
+{{ header }}{{ column_left }}
+<div id="content">
+	<div class="page-header">
+		<div class="container-fluid">
+			<div class="pull-right">
+				<button type="submit" form="form-waiter" data-toggle="tooltip" title="Kaydet" class="btn btn-primary"><i class="fa fa-save"></i></button>
+				<a href="{{ cancel }}" data-toggle="tooltip" title="&#304;ptal" class="btn btn-default"><i class="fa fa-reply"></i></a>
+			</div>
+			<h1>Garson Y&ouml;netimi</h1>
+			<ul class="breadcrumb">
+				{% for breadcrumb in breadcrumbs %}
+					<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		{% if error_warning %}
+			<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}</div>
+		{% endif %}
+
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title"><i class="fa fa-user"></i> Garson Formu</h3>
+			</div>
+			<div class="panel-body">
+				<form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-waiter" class="form-horizontal">
+					<div class="form-group required">
+						<label class="col-sm-2 control-label">Kullan&#305;c&#305; Ad&#305;</label>
+						<div class="col-sm-10">
+							<input type="text" name="username" value="{{ username }}" placeholder="Kullan&#305;c&#305; Ad&#305;" class="form-control" />
+							{% if error_username %}
+								<div class="text-danger">{{ error_username }}</div>
+							{% endif %}
+						</div>
+					</div>
+
+					<div class="form-group {% if not is_edit %}required{% endif %}">
+						<label class="col-sm-2 control-label">{% if is_edit %}Yeni &#350;ifre (bo&#351; b&#305;rak&#305;l&#305;rsa de&#287;i&#351;mez){% else %}&#350;ifre{% endif %}</label>
+						<div class="col-sm-10">
+							<input type="password" name="password" value="" placeholder="&#350;ifre" class="form-control" />
+							{% if error_password %}
+								<div class="text-danger">{{ error_password }}</div>
+							{% endif %}
+						</div>
+					</div>
+
+					<div class="form-group required">
+						<label class="col-sm-2 control-label">Garson Ad&#305;</label>
+						<div class="col-sm-10">
+							<input type="text" name="name" value="{{ name }}" placeholder="Garson Ad&#305;" class="form-control" />
+							{% if error_name %}
+								<div class="text-danger">{{ error_name }}</div>
+							{% endif %}
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">Durum</label>
+						<div class="col-sm-10">
+							<select name="status" class="form-control">
+								<option value="1" {% if status %}selected{% endif %}>Aktif</option>
+								<option value="0" {% if not status %}selected{% endif %}>Pasif</option>
+							</select>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">G&uuml;nl&uuml;k &Ccedil;al&#305;&#351;ma S&uuml;resi</label>
+						<div class="col-sm-10">
+							<div class="input-group">
+								<input type="number" name="work_minutes" value="{{ work_minutes }}" min="0" step="5" class="form-control" />
+								<span class="input-group-addon">dk</span>
+							</div>
+							<div class="help-block">&Ouml;rnek: 10 saat &ccedil;al&#305;&#351;ma i&ccedil;in 600 dk.</div>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">G&uuml;nl&uuml;k Mola Hakk&#305;</label>
+						<div class="col-sm-10">
+							<div class="input-group">
+								<input type="number" name="break_limit_minutes" value="{{ break_limit_minutes }}" min="0" step="5" class="form-control" />
+								<span class="input-group-addon">dk</span>
+							</div>
+							<div class="help-block">Garsonun g&uuml;n i&ccedil;inde kullanabilece&#287;i toplam mola s&uuml;resi.</div>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">Atanan Masalar</label>
+						<div class="col-sm-10">
+							<div style="max-height:300px; overflow:auto; border:1px solid #ddd; padding:10px;">
+								{% for table in tables %}
+									<div class="checkbox">
+										<label>
+											<input type="checkbox" name="assigned_tables[]" value="{{ table.table_id }}" {% if table.table_id in assigned_tables %}checked{% endif %} />
+											Masa {{ table.table_no }} - {{ table.name }}
+										</label>
+									</div>
+								{% endfor %}
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		{% if is_edit %}
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title"><i class="fa fa-clock-o"></i> Mola Raporu</h3>
+			</div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="col-sm-3">
+						<div class="well">
+							<strong>&Ccedil;al&#305;&#351;ma S&uuml;resi</strong>
+							<div style="font-size:24px;">{{ break_summary.work_minutes }} dk</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="well">
+							<strong>Mola Hakk&#305;</strong>
+							<div style="font-size:24px;">{{ break_summary.break_limit_minutes }} dk</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="well">
+							<strong>Bug&uuml;n Kullan&#305;lan</strong>
+							<div style="font-size:24px;">{{ break_summary.today_break_minutes }} dk</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="well">
+							<strong>Kalan</strong>
+							<div style="font-size:24px;">{{ break_summary.remaining_minutes }} dk</div>
+							{% if break_summary.limit_exceeded %}
+								<span class="label label-danger">Limit a&#351;&#305;ld&#305;</span>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+
+				<div class="table-responsive">
+					<table class="table table-bordered table-hover">
+						<thead>
+							<tr>
+								<td>&Ccedil;&#305;k&#305;&#351;</td>
+								<td>D&ouml;n&uuml;&#351;</td>
+								<td>S&uuml;re</td>
+								<td>Devredilen Garson</td>
+								<td>Durum</td>
+							</tr>
+						</thead>
+						<tbody>
+							{% if break_history %}
+								{% for break_row in break_history %}
+									<tr>
+										<td>{{ break_row.start_at }}</td>
+										<td>{{ break_row.end_at ? break_row.end_at : '-' }}</td>
+										<td>{{ break_row.duration_minutes }} dk</td>
+										<td>
+											{% if break_row.delegate_name %}
+												{{ break_row.delegate_name }}
+												{% if break_row.delegate_username %}<span class="text-muted">({{ break_row.delegate_username }})</span>{% endif %}
+											{% else %}
+												-
+											{% endif %}
+										</td>
+										<td>
+											{% if break_row.end_at %}
+												<span class="label label-success">Tamamland&#305;</span>
+											{% else %}
+												<span class="label label-warning">Devam ediyor</span>
+											{% endif %}
+										</td>
+									</tr>
+								{% endfor %}
+							{% else %}
+								<tr>
+									<td class="text-center" colspan="5">Mola kayd&#305; bulunamad&#305;.</td>
+								</tr>
+							{% endif %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+</div>
+{{ footer }}

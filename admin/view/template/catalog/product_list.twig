@@ -1,0 +1,833 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <button type="button" data-toggle="tooltip" title="{{ button_filter }}" onclick="$('#filter-product').toggleClass('hidden-sm hidden-xs');" class="btn btn-default hidden-md hidden-lg"><i class="fa fa-filter"></i></button>
+        <a href="{{ add }}" data-toggle="tooltip" title="{{ button_add }}" class="btn btn-primary"><i class="fa fa-plus"></i></a>
+        <button type="submit" form="form-product" formaction="{{ copy }}" data-toggle="tooltip" title="{{ button_copy }}" class="btn btn-default"><i class="fa fa-copy"></i></button>
+        <button type="button" form="form-product" formaction="{{ delete }}" data-toggle="tooltip" title="{{ button_delete }}" class="btn btn-danger" onclick="confirm('{{ text_confirm }}') ? $('#form-product').submit() : false;"><i class="fa fa-trash-o"></i></button>
+      </div>
+      <h1>{{ heading_title }}</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">{% if error_warning %}
+    <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    {% endif %}
+    {% if success %}
+    <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    {% endif %}
+    <div class="row">
+      <div id="filter-product" class="col-md-3 col-md-push-9 col-sm-12 hidden-sm hidden-xs">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-filter"></i> {{ text_filter }}</h3>
+          </div>
+          <div class="panel-body">
+            <div class="form-group">
+              <label class="control-label" for="input-name">{{ entry_name }}</label>
+              <input type="text" name="filter_name" value="{{ filter_name }}" placeholder="{{ entry_name }}" id="input-name" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="control-label" for="input-model">{{ entry_model }}</label>
+              <input type="text" name="filter_model" value="{{ filter_model }}" placeholder="{{ entry_model }}" id="input-model" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="control-label" for="input-price">{{ entry_price }}</label>
+              <input type="text" name="filter_price" value="{{ filter_price }}" placeholder="{{ entry_price }}" id="input-price" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="control-label" for="input-quantity">{{ entry_quantity }}</label>
+              <input type="text" name="filter_quantity" value="{{ filter_quantity }}" placeholder="{{ entry_quantity }}" id="input-quantity" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="control-label" for="input-status">{{ entry_status }}</label>
+              <select name="filter_status" id="input-status" class="form-control">
+                <option value=""></option>
+                
+                
+                
+                  
+                
+
+                  {% if filter_status == '1' %}
+
+                
+                
+                  
+                
+                
+                <option value="1" selected="selected">{{ text_enabled }}</option>
+                
+                
+                
+                  
+                
+
+                  {% else %}
+
+                
+                
+                  
+                
+                
+                <option value="1">{{ text_enabled }}</option>
+                
+                
+                
+                  
+                
+
+                  {% endif %}
+                  {% if filter_status == '0' %}
+
+                
+                
+                  
+                
+                
+                <option value="0" selected="selected">{{ text_disabled }}</option>
+                
+                
+                
+                  
+                
+
+                  {% else %}
+
+                
+                
+                  
+                
+                
+                <option value="0">{{ text_disabled }}</option>
+                
+                
+                
+                  
+                
+
+                  {% endif %}
+
+
+              
+              
+                
+              
+              
+              </select>
+            </div>
+            <div class="form-group text-right">
+              <button type="button" id="button-filter" class="btn btn-default"><i class="fa fa-filter"></i> {{ button_filter }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-9 col-md-pull-3 col-sm-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-list"></i> {{ text_list }}</h3>
+          </div>
+          <div class="panel-body">
+            <style>
+              .quick-edit-value {
+                display:inline-block;
+                min-width:70px;
+                padding:4px 6px;
+                border-radius:4px;
+                cursor:text;
+              }
+              .quick-edit-value:hover {
+                background:#f4f8fb;
+                box-shadow:inset 0 0 0 1px #d9e6ef;
+              }
+              .quick-edit-input {
+                min-width:120px;
+              }
+              .quick-image {
+                cursor:pointer;
+                position:relative;
+              }
+              .quick-image:after {
+                content:"\f040";
+                font-family:FontAwesome;
+                position:absolute;
+                right:-8px;
+                bottom:-8px;
+                width:22px;
+                height:22px;
+                line-height:22px;
+                border-radius:50%;
+                background:#1f6f43;
+                color:#fff;
+                font-size:11px;
+              }
+              .quick-status {
+                min-width:82px;
+              }
+              .quick-save-state {
+                color:#777;
+                font-size:12px;
+                margin-left:6px;
+              }
+              .quick-category-value {
+                display:inline-block;
+                min-width:110px;
+                padding:4px 6px;
+                border-radius:4px;
+                cursor:pointer;
+              }
+              .quick-category-value:hover {
+                background:#f4f8fb;
+                box-shadow:inset 0 0 0 1px #d9e6ef;
+              }
+            </style>
+            <form action="{{ delete }}" method="post" enctype="multipart/form-data" id="form-product">
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <td style="width: 1px;" class="text-center"><input type="checkbox" onclick="$('input[name*=\'selected\']').prop('checked', this.checked);" /></td>
+                      <td class="text-center">{{ column_image }}</td>
+                      <td class="text-left">Kategori</td>
+                      <td class="text-left">{% if sort == 'pd.name' %} <a href="{{ sort_name }}" class="{{ order|lower }}">{{ column_name }}</a> {% else %} <a href="{{ sort_name }}">{{ column_name }}</a> {% endif %}</td>
+                      <td class="text-left">{% if sort == 'p.model' %} <a href="{{ sort_model }}" class="{{ order|lower }}">{{ column_model }}</a> {% else %} <a href="{{ sort_model }}">{{ column_model }}</a> {% endif %}</td>
+                      <td class="text-right">{% if sort == 'p.price' %} <a href="{{ sort_price }}" class="{{ order|lower }}">{{ column_price }}</a> {% else %} <a href="{{ sort_price }}">{{ column_price }}</a> {% endif %}</td>
+                      <td class="text-right">{% if sort == 'p.quantity' %} <a href="{{ sort_quantity }}" class="{{ order|lower }}">{{ column_quantity }}</a> {% else %} <a href="{{ sort_quantity }}">{{ column_quantity }}</a> {% endif %}</td>
+                      <td class="text-left">{% if sort == 'p.status' %} <a href="{{ sort_status }}" class="{{ order|lower }}">{{ column_status }}</a> {% else %} <a href="{{ sort_status }}">{{ column_status }}</a> {% endif %}</td>
+                      <td class="text-right">{{ column_action }}</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  
+                  {% if products %}
+                  {% for product in products %}
+                  <tr class="{{ product.akinsoft_sync_class }}">
+                    <td class="text-center">{% if product.product_id in selected %}
+                      <input type="checkbox" name="selected[]" value="{{ product.product_id }}" checked="checked" />
+                      {% else %}
+                      <input type="checkbox" name="selected[]" value="{{ product.product_id }}" />
+                      {% endif %}</td>
+                    <td class="text-center">
+                      <a href="" id="thumb-product-{{ product.product_id }}" data-toggle="image" class="img-thumbnail quick-image" data-product-id="{{ product.product_id }}">
+                        <img src="{{ product.image }}" alt="{{ product.name }}" title="Resmi değiştir" data-placeholder="{{ product.image }}" />
+                      </a>
+                      <input type="hidden" id="input-product-image-{{ product.product_id }}" value="{{ product.image_path }}" data-product-id="{{ product.product_id }}" data-original="{{ product.image_path }}" />
+                    </td>
+                    <td class="text-left"><span class="quick-category-value" data-product-id="{{ product.product_id }}">{{ product.category }}</span></td>
+                    <td class="text-left"><span class="quick-edit-value" data-product-id="{{ product.product_id }}" data-field="name">{{ product.name }}</span></td>
+                    <td class="text-left">
+                      <span class="quick-edit-value" data-product-id="{{ product.product_id }}" data-field="model">{{ product.model }}</span>
+                      {% if product.akinsoft_sync_label %}
+                        <div>
+                          <span class="label {% if product.akinsoft_sync_status == 'matched' %}label-success{% else %}label-default{% endif %} akinsoft-sync-label">{{ product.akinsoft_sync_label }}</span>
+                        </div>
+                      {% endif %}
+                    </td>
+                    <td class="text-right">{% if product.special %} <span class="quick-edit-value" style="text-decoration: line-through;" data-product-id="{{ product.product_id }}" data-field="price" data-raw="{{ product.price_raw }}">{{ product.price }}</span><br/>
+                      <div class="text-danger">{{ product.special }}</div>
+                      {% else %}
+                      <span class="quick-edit-value" data-product-id="{{ product.product_id }}" data-field="price" data-raw="{{ product.price_raw }}">{{ product.price }}</span>
+                      {% endif %}
+                      {% if product.akinsoft_sync_status == 'matched' %}
+                        <div class="akinsoft-price-note">ERP: {{ product.akinsoft_sync_price }}</div>
+                      {% endif %}
+                    </td>
+                    <td class="text-right">{% if product.quantity <= 0 %} <span class="label label-warning">{{ product.quantity }}</span> {% elseif product.quantity <= 5 %} <span class="label label-danger">{{ product.quantity }}</span> {% else %} <span class="label label-success">{{ product.quantity }}</span> {% endif %}</td>
+                    <td class="text-left">
+                      <button type="button" class="btn btn-xs quick-status {% if product.status_raw %}btn-success{% else %}btn-default{% endif %}" data-product-id="{{ product.product_id }}" data-status="{{ product.status_raw }}">{{ product.status }}</button>
+                    </td>
+                    <td class="text-right">
+                      <button type="button" class="btn btn-info quick-description" data-toggle="tooltip" title="Açıklama" data-product-id="{{ product.product_id }}"><i class="fa fa-align-left"></i></button>
+                      <a href="{{ product.edit }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary"><i class="fa fa-pencil"></i></a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  {% else %}
+                  <tr>
+                    <td class="text-center" colspan="9">{{ text_no_results }}</td>
+                  </tr>
+                  {% endif %}
+                    </tbody>
+                  
+                </table>
+              </div>
+            </form>
+            <style>
+              .akinsoft-row-matched > td {
+                background: #eaf8ee !important;
+              }
+              .akinsoft-row-missing > td {
+                background: #fffdf5 !important;
+              }
+              .akinsoft-sync-label {
+                display: inline-block;
+                margin-top: 5px;
+                font-size: 11px;
+                font-weight: 700;
+              }
+              .akinsoft-price-note {
+                margin-top: 4px;
+                color: #2f7d46;
+                font-size: 11px;
+                font-weight: 700;
+              }
+            </style>
+            <div class="row">
+              <div class="col-sm-6 text-left">{{ pagination }}</div>
+              <div class="col-sm-6 text-right">{{ results }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="modal-product-description" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Ürün Açıklaması</h4>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="quick-description-product-id" value="" />
+          <ul class="nav nav-tabs" id="quick-description-tabs"></ul>
+          <div class="tab-content" id="quick-description-content"></div>
+        </div>
+        <div class="modal-footer">
+          <span class="quick-save-state pull-left" id="quick-description-state"></span>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Kapat</button>
+          <button type="button" class="btn btn-primary" id="button-save-description"><i class="fa fa-save"></i> Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="modal-product-name" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Ürün Adı</h4>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="quick-name-product-id" value="" />
+          <div id="quick-name-fields"></div>
+        </div>
+        <div class="modal-footer">
+          <span class="quick-save-state pull-left" id="quick-name-state"></span>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Kapat</button>
+          <button type="button" class="btn btn-primary" id="button-save-name"><i class="fa fa-save"></i> Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="modal-product-category" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Kategoriler</h4>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="quick-category-product-id" value="" />
+          <input type="text" class="form-control" id="quick-category-filter" placeholder="Kategoriler" style="margin-bottom:10px;" />
+          <div id="quick-category-fields" style="max-height:320px;overflow:auto;border:1px solid #ddd;padding:10px;"></div>
+        </div>
+        <div class="modal-footer">
+          <span class="quick-save-state pull-left" id="quick-category-state"></span>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Kapat</button>
+          <button type="button" class="btn btn-primary" id="button-save-category"><i class="fa fa-save"></i> Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <link href="view/javascript/summernote/summernote.min.css" rel="stylesheet" />
+  <script type="text/javascript" src="view/javascript/summernote/summernote.min.js"></script>
+  <script type="text/javascript" src="view/javascript/summernote/summernote-image-attributes.js"></script>
+  <script type="text/javascript"><!--
+$('#button-filter').on('click', function() {
+	var url = '';
+
+	var filter_name = $('input[name=\'filter_name\']').val();
+
+	if (filter_name) {
+		url += '&filter_name=' + encodeURIComponent(filter_name);
+	}
+
+	var filter_model = $('input[name=\'filter_model\']').val();
+
+	if (filter_model) {
+		url += '&filter_model=' + encodeURIComponent(filter_model);
+	}
+
+	var filter_price = $('input[name=\'filter_price\']').val();
+
+	if (filter_price) {
+		url += '&filter_price=' + encodeURIComponent(filter_price);
+	}
+
+	var filter_quantity = $('input[name=\'filter_quantity\']').val();
+
+	if (filter_quantity) {
+		url += '&filter_quantity=' + encodeURIComponent(filter_quantity);
+	}
+
+	var filter_status = $('select[name=\'filter_status\']').val();
+
+	if (filter_status !== '') {
+		url += '&filter_status=' + encodeURIComponent(filter_status);
+	}
+
+	location = 'index.php?route=catalog/product&user_token={{ user_token }}' + url;
+});
+//--></script> 
+  <script type="text/javascript"><!--
+// IE and Edge fix!
+$('button[form=\'form-product\']').on('click', function(e) {
+	$('#form-product').attr('action', $(this).attr('formaction'));
+});
+
+function quickUpdateProduct(productId, field, value, done, productDescription, productCategory) {
+	var data = {
+		product_id: productId,
+		field: field,
+		value: value
+	};
+
+	if (productDescription) {
+		data.product_description = productDescription;
+	}
+
+	if (productCategory) {
+		data.product_category = productCategory;
+	}
+
+	$.ajax({
+		url: 'index.php?route=catalog/product/quickUpdate&user_token={{ user_token }}',
+		type: 'post',
+		dataType: 'json',
+		data: data,
+		success: function(json) {
+			if (json.error) {
+				alert(json.error);
+			}
+
+			if (done) {
+				done(json);
+			}
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+		}
+	});
+}
+
+$(document).on('dblclick', '.quick-edit-value', function() {
+	var $span = $(this);
+
+	if ($span.data('editing')) {
+		return;
+	}
+
+	var productId = $span.data('product-id');
+	var field = $span.data('field');
+
+	if (field == 'name') {
+		openQuickName(productId);
+		return;
+	}
+
+	var originalDisplay = $.trim($span.text());
+	var originalValue = field == 'price' ? $span.data('raw') : originalDisplay;
+	var $input = $('<input type="text" class="form-control input-sm quick-edit-input" />').val(originalValue);
+
+	$span.data('editing', true).hide().after($input);
+	$input.focus().select();
+
+	function finish(save) {
+		var value = $input.val();
+
+		if (!save || value == originalValue) {
+			$input.remove();
+			$span.show().data('editing', false);
+			return;
+		}
+
+		$input.prop('disabled', true);
+
+		quickUpdateProduct(productId, field, value, function(json) {
+			if (json.success) {
+				if (field == 'price') {
+					$span.text(json.value).data('raw', value);
+				} else {
+					$span.text(json.value);
+				}
+			}
+
+			$input.remove();
+			$span.show().data('editing', false);
+		});
+	}
+
+	$input.on('keydown', function(e) {
+		if (e.keyCode == 13) {
+			e.preventDefault();
+			finish(true);
+		}
+
+		if (e.keyCode == 27) {
+			e.preventDefault();
+			finish(false);
+		}
+	});
+
+	$input.on('blur', function() {
+		finish(false);
+	});
+});
+
+$(document).on('click', '.quick-category-value', function() {
+	var productId = $(this).data('product-id');
+
+	$('#quick-category-state').text('Yükleniyor...');
+	$('#quick-category-product-id').val(productId);
+	$('#quick-category-filter').val('');
+	$('#quick-category-fields').html('');
+	$('#modal-product-category').modal('show');
+
+	$.ajax({
+		url: 'index.php?route=catalog/product/quickCategory&user_token={{ user_token }}&product_id=' + productId,
+		dataType: 'json',
+		success: function(json) {
+			if (json.error) {
+				$('#quick-category-state').text(json.error);
+				return;
+			}
+
+			var html = '';
+			var selected = {};
+
+			$.each(json.selected, function(index, categoryId) {
+				selected[categoryId] = true;
+			});
+
+			$.each(json.categories, function(index, category) {
+				html += '<label class="quick-category-option" style="display:block;font-weight:400;margin-bottom:8px;">';
+				html += '<input type="checkbox" class="quick-category-checkbox" value="' + category.category_id + '"' + (selected[category.category_id] ? ' checked="checked"' : '') + ' /> ';
+				html += $('<div/>').text(category.name).html();
+				html += '</label>';
+			});
+
+			$('#quick-category-fields').html(html);
+			$('#quick-category-state').text('');
+		}
+	});
+});
+
+$('#quick-category-filter').on('keyup', function() {
+	var filter = $(this).val().toLowerCase();
+
+	$('.quick-category-option').each(function() {
+		$(this).toggle($(this).text().toLowerCase().indexOf(filter) !== -1);
+	});
+});
+
+$('#button-save-category').on('click', function() {
+	var $button = $(this);
+	var productId = $('#quick-category-product-id').val();
+	var categories = [];
+
+	$('.quick-category-checkbox:checked').each(function() {
+		categories.push($(this).val());
+	});
+
+	$button.prop('disabled', true);
+	$('#quick-category-state').text('Kaydediliyor...');
+
+	quickUpdateProduct(productId, 'category', '', function(json) {
+		if (json.success) {
+			$('.quick-category-value[data-product-id="' + productId + '"]').text(json.value);
+			$('#quick-category-state').text('Kaydedildi.');
+			setTimeout(function() {
+				$('#modal-product-category').modal('hide');
+				$('#quick-category-state').text('');
+			}, 450);
+		}
+
+		$button.prop('disabled', false);
+	}, null, categories);
+});
+
+function loadProductDescriptions(productId, done) {
+	$.ajax({
+		url: 'index.php?route=catalog/product/quickDescription&user_token={{ user_token }}&product_id=' + productId,
+		dataType: 'json',
+		success: function(json) {
+			if (json.error) {
+				alert(json.error);
+			} else if (done) {
+				done(json);
+			}
+		}
+	});
+}
+
+function languageIcon(language) {
+	return '<img src="language/' + language.code + '/' + language.code + '.png" title="' + language.name + '" /> ';
+}
+
+function decodeHtml(value) {
+	var textarea = document.createElement('textarea');
+	textarea.innerHTML = value || '';
+
+	return textarea.value;
+}
+
+function openQuickName(productId) {
+	$('#quick-name-state').text('Yükleniyor...');
+	$('#quick-name-product-id').val(productId);
+	$('#quick-name-fields').html('');
+	$('#modal-product-name').modal('show');
+
+	loadProductDescriptions(productId, function(json) {
+		var html = '';
+
+		$.each(json.languages, function(index, language) {
+			var description = json.descriptions[language.language_id] || {};
+
+			html += '<div class="input-group" style="margin-bottom:14px;">';
+			html += '<span class="input-group-addon">' + languageIcon(language) + '</span>';
+			html += '<input type="text" class="form-control quick-name-input" data-language-id="' + language.language_id + '" value="' + $('<div/>').text(decodeHtml(description.name || '')).html() + '" />';
+			html += '</div>';
+		});
+
+		$('#quick-name-fields').html(html);
+		$('#quick-name-state').text('');
+		$('#quick-name-fields .quick-name-input:first').focus();
+	});
+}
+
+$(document).on('click', '.quick-status', function() {
+	var $button = $(this);
+	var status = $button.data('status') ? 0 : 1;
+
+	$button.prop('disabled', true);
+
+	quickUpdateProduct($button.data('product-id'), 'status', status, function(json) {
+		if (json.success) {
+			$button.data('status', json.status).text(json.value);
+			$button.toggleClass('btn-success', json.status == 1).toggleClass('btn-default', json.status != 1);
+		}
+
+		$button.prop('disabled', false);
+	});
+});
+
+$(document).on('click', '.quick-image', function() {
+	$('.quick-image').removeClass('quick-image-active');
+	$(this).addClass('quick-image-active');
+});
+
+$(document).on('hidden.bs.modal', '#modal-image', function() {
+	var $active = $('.quick-image-active');
+
+	if (!$active.length) {
+		return;
+	}
+
+	var productId = $active.data('product-id');
+	var $input = $('#input-product-image-' + productId);
+	var value = $input.val();
+
+	$active.removeClass('quick-image-active');
+
+	if (value == $input.data('original')) {
+		return;
+	}
+
+	quickUpdateProduct(productId, 'image', value, function(json) {
+		if (json.success) {
+			$input.data('original', value);
+
+			if (json.thumb) {
+				$('#thumb-product-' + productId).find('img').attr('src', json.thumb);
+			}
+		}
+	});
+});
+
+$(document).on('click', '.quick-description', function() {
+	var productId = $(this).data('product-id');
+
+	$('#quick-description-state').text('Yükleniyor...');
+	$('#quick-description-product-id').val(productId);
+	$('.quick-description-editor').each(function() {
+		if ($(this).next('.note-editor').length) {
+			$(this).summernote('destroy');
+		}
+	});
+	$('#quick-description-tabs').html('');
+	$('#quick-description-content').html('');
+	$('#modal-product-description').modal('show');
+
+	loadProductDescriptions(productId, function(json) {
+		var tabs = '';
+		var content = '';
+
+		$.each(json.languages, function(index, language) {
+			var active = index == 0 ? 'active' : '';
+			var description = json.descriptions[language.language_id] || {};
+
+			tabs += '<li class="' + active + '"><a href="#quick-description-language-' + language.language_id + '" data-toggle="tab">' + languageIcon(language) + language.name + '</a></li>';
+			content += '<div class="tab-pane ' + active + '" id="quick-description-language-' + language.language_id + '">';
+			content += '<div class="form-group"><label>Açıklama</label><textarea id="quick-description-editor-' + language.language_id + '" class="form-control quick-description-input quick-description-editor" data-language-id="' + language.language_id + '" data-field="description" rows="10"></textarea></div>';
+			content += '<div class="form-group"><label>Meta Başlığı</label><input type="text" class="form-control quick-description-input" data-language-id="' + language.language_id + '" data-field="meta_title" value="' + $('<div/>').text(decodeHtml(description.meta_title || description.name || '')).html() + '" /></div>';
+			content += '<div class="form-group"><label>Meta Açıklaması</label><textarea id="quick-meta-description-' + language.language_id + '" class="form-control quick-description-input" data-language-id="' + language.language_id + '" data-field="meta_description" rows="3"></textarea></div>';
+			content += '<div class="form-group"><label>Meta Kelimeleri</label><textarea id="quick-meta-keyword-' + language.language_id + '" class="form-control quick-description-input" data-language-id="' + language.language_id + '" data-field="meta_keyword" rows="3"></textarea></div>';
+			content += '</div>';
+		});
+
+		$('#quick-description-tabs').html(tabs);
+		$('#quick-description-content').html(content);
+
+		$.each(json.languages, function(index, language) {
+			var description = json.descriptions[language.language_id] || {};
+
+			$('#quick-description-editor-' + language.language_id).val(decodeHtml(description.description || ''));
+			$('#quick-meta-description-' + language.language_id).val(decodeHtml(description.meta_description || ''));
+			$('#quick-meta-keyword-' + language.language_id).val(decodeHtml(description.meta_keyword || ''));
+		});
+
+		$('.quick-description-editor').summernote({
+			height: 300,
+			disableDragAndDrop: true,
+			toolbar: [
+				['style', ['style']],
+				['font', ['bold', 'underline', 'clear']],
+				['fontsize', ['fontsize']],
+				['color', ['color']],
+				['para', ['ul', 'ol', 'paragraph']],
+				['table', ['table']],
+				['insert', ['link', 'picture', 'video']],
+				['view', ['fullscreen', 'codeview', 'help']]
+			]
+		});
+
+		$('.quick-description-editor').each(function() {
+			$(this).summernote('code', $(this).val());
+		});
+		$('#quick-description-state').text('');
+	});
+});
+
+$('#button-save-name').on('click', function() {
+	var $button = $(this);
+	var productId = $('#quick-name-product-id').val();
+	var productDescription = {};
+
+	$('.quick-name-input').each(function() {
+		var languageId = $(this).data('language-id');
+		productDescription[languageId] = {
+			name: $(this).val()
+		};
+	});
+
+	$button.prop('disabled', true);
+	$('#quick-name-state').text('Kaydediliyor...');
+
+	quickUpdateProduct(productId, 'name', '', function(json) {
+		if (json.success) {
+			$('.quick-edit-value[data-product-id="' + productId + '"][data-field="name"]').text(json.value);
+			$('#quick-name-state').text('Kaydedildi.');
+			setTimeout(function() {
+				$('#modal-product-name').modal('hide');
+				$('#quick-name-state').text('');
+			}, 450);
+		}
+
+		$button.prop('disabled', false);
+	}, productDescription);
+});
+
+$('#button-save-description').on('click', function() {
+	var $button = $(this);
+	var productId = $('#quick-description-product-id').val();
+	var productDescription = {};
+
+	$('.quick-description-input').each(function() {
+		var languageId = $(this).data('language-id');
+		var field = $(this).data('field');
+
+		if (!productDescription[languageId]) {
+			productDescription[languageId] = {};
+		}
+
+		productDescription[languageId][field] = field == 'description' && $(this).next('.note-editor').length ? $(this).summernote('code') : $(this).val();
+	});
+
+	$button.prop('disabled', true);
+	$('#quick-description-state').text('Kaydediliyor...');
+
+	quickUpdateProduct(productId, 'description', '', function(json) {
+		if (json.success) {
+			$('#quick-description-state').text('Kaydedildi.');
+			setTimeout(function() {
+				$('#modal-product-description').modal('hide');
+				$('#quick-description-state').text('');
+			}, 450);
+		}
+
+		$button.prop('disabled', false);
+	}, productDescription);
+});
+  
+$('input[name=\'filter_name\']').autocomplete({
+	'source': function(request, response) {
+		$.ajax({
+			url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_name=' +  encodeURIComponent(request),
+			dataType: 'json',
+			success: function(json) {
+				response($.map(json, function(item) {
+					return {
+						label: item['name'],
+						value: item['product_id']
+					}
+				}));
+			}
+		});
+	},
+	'select': function(item) {
+		$('input[name=\'filter_name\']').val(item['label']);
+	}
+});
+
+$('input[name=\'filter_model\']').autocomplete({
+	'source': function(request, response) {
+		$.ajax({
+			url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_model=' +  encodeURIComponent(request),
+			dataType: 'json',
+			success: function(json) {
+				response($.map(json, function(item) {
+					return {
+						label: item['model'],
+						value: item['product_id']
+					}
+				}));
+			}
+		});
+	},
+	'select': function(item) {
+		$('input[name=\'filter_model\']').val(item['label']);
+	}
+});
+//--></script></div>
+{{ footer }} 

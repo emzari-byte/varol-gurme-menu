@@ -1,0 +1,126 @@
+{{ header }}
+{{ column_left }}
+
+<div id="content">
+
+<div class="page-header">
+<div class="container-fluid">
+<h1>Masa Yönetimi</h1>
+</div>
+</div>
+
+<div class="container-fluid">
+
+<div class="panel panel-default">
+<div class="panel-heading">
+<h3 class="panel-title">
+Masalar
+</h3>
+</div>
+
+<div class="panel-body">
+
+<form method="post">
+
+<div class="row">
+
+<div class="col-sm-2">
+<input name="table_no"
+placeholder="Masa No"
+class="form-control">
+</div>
+
+<div class="col-sm-2">
+<input name="name"
+placeholder="Masa Adı"
+class="form-control">
+</div>
+
+<div class="col-sm-2">
+<input name="capacity"
+value="4"
+class="form-control">
+</div>
+
+<div class="col-sm-2">
+<select name="area" class="form-control">
+<option>Salon</option>
+<option>Teras</option>
+<option>VIP</option>
+</select>
+</div>
+
+<div class="col-sm-2">
+<input name="sort_order"
+value="0"
+class="form-control">
+</div>
+
+<div class="col-sm-2">
+<button
+name="save"
+class="btn btn-primary">
+Ekle
+</button>
+</div>
+
+</div>
+
+</form>
+
+<hr>
+
+<table class="table table-bordered">
+<thead>
+<tr>
+<th>No</th>
+<th>Ad</th>
+<th>Kapasite</th>
+<th>Bölüm</th>
+<th>Durum</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for row in tables %}
+
+<tr>
+<td>{{ row.table_no }}</td>
+<td>{{ row.name }}</td>
+<td>{{ row.capacity }}</td>
+<td>{{ row.area }}</td>
+
+<td>
+{% if row.status %}
+Aktif
+{% else %}
+Pasif
+{% endif %}
+</td>
+
+<td>
+
+<a
+href="index.php?route=extension/module/restaurant_tables/delete&user_token={{ user_token }}&table_id={{ row.table_id }}"
+class="btn btn-danger">
+Sil
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+</div>
+</div>
+
+</div>
+</div>
+
+{{ footer }}

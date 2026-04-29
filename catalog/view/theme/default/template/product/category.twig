@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="{{ language_code == 'en-gb' ? 'en' : 'tr' }}">
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, shrink-to-fit=no">
+      <meta name="description" content="{{ description }}">
+      <meta name="author" content="Varol Veranda">
+      <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+      <meta http-equiv="Pragma" content="no-cache">
+      <meta http-equiv="Expires" content="0">
+      <link rel="icon" type="image/png" href="{{ logo }}?v=20">
+      <title>{{ title }}</title>
+
+      <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick.min.css?v=20"/>
+      <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick-theme.min.css?v=20"/>
+      <link href="{{ serv }}vendor/icons/feather.css?v=20" rel="stylesheet" type="text/css">
+      <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=20" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=30" rel="stylesheet">
+      <link href="{{ serv }}vendor/sidebar/demo.css?v=20" rel="stylesheet">
+   </head>
+   <body>
+      <div class="osahan-home-page">
+         <div class="fixed-bottom-bar">
+            <div class="osahan-popular">
+
+               <div class="category-topbar">
+                  <div class="cat-slider">
+                     {% for item in top_menu_categories %}
+                     <div class="cat-item{% if item.active %} active{% endif %}"{% if item.active %} id="activeTopCategory"{% endif %}>
+                        <a href="{{ item.href }}">
+                           <span class="cat-thumb-ring">
+                              <span class="cat-thumb-inner">
+                                 <img src="{{ item.thumb }}?v=20" alt="{{ item.name }}">
+                              </span>
+                           </span>
+                           <span class="cat-label">{{ item.name }}</span>
+                        </a>
+                     </div>
+                     {% endfor %}
+                  </div>
+               </div>
+
+               {% if group_mode %}
+
+               <div class="px-3 pt-4 pb-3 title d-flex align-items-center">
+                  <h6 class="m-0 font-weight-bold">{{ category_info.name }}</h6>
+               </div>
+
+               <div class="most_sale px-3 pb-4">
+                  <div class="encok-grid">
+
+                     {% for group in group_categories %}
+                     <a href="{{ group.href }}" class="encok-card text-decoration-none">
+                        <div class="encok-image">
+                           <img src="{{ group.thumb }}?v=20" alt="{{ group.name }}">
+                        </div>
+
+                        <div class="encok-content">
+                           <div class="encok-top">
+                              <h6>{{ group.name }}</h6>
+                              <p class="encok-desc">{{ text_group_card_description }}</p>
+                           </div>
+
+                           <div class="encok-bottom">
+                              <div class="encok-meta">
+                                 <div class="encok-tags">
+                                    {% if group.top %}
+                                    <span class="food-chip">
+                                       <i class="feather-grid"></i>&nbsp;{{ text_group }}
+                                    </span>
+                                    {% else %}
+                                    <span class="food-chip">
+                                       <i class="feather-menu"></i>&nbsp;{{ text_category }}
+                                    </span>
+                                    {% endif %}
+                                 </div>
+                              </div>
+
+                              <div class="encok-options">
+                                 <span class="food-chip">
+                                    <i class="feather-chevron-right"></i>
+                                 </span>
+                              </div>
+                           </div>
+                        </div>
+                     </a>
+                     {% endfor %}
+
+                  </div>
+               </div>
+
+               {% else %}
+
+               {% for category in categories %}
+               <div class="px-3 pt-4 pb-3 title d-flex align-items-center">
+                  <h6 class="m-0 font-weight-bold">{{ category.name }}</h6>
+               </div>
+
+               <div class="most_sale px-3 pb-4">
+                  <div class="encok-grid">
+
+                     {% for product in category.products %}
+                     <div class="encok-card category-product-card">
+
+                        <div class="encok-image menu-image-zoom"
+                             onclick="openMenuLightbox('{{ product.thumb }}?v=20', '{{ product.name|e('js') }}')">
+                           <img src="{{ product.thumb }}?v=20" alt="{{ product.name }}">
+
+                        </div>
+
+                        <div class="encok-content">
+                           <div class="encok-top">
+                              <h6 class="mb-1">{{ product.name }}</h6>
+
+                              {% if product.description %}
+                              <div class="encok-desc-wrap">
+                                 <p class="encok-desc js-encok-desc">{{ product.description|striptags }}</p>
+                                 <button type="button" class="encok-desc-toggle" onclick="toggleEncokDesc(this)">{{ text_view_more }}</button>
+                              </div>
+                              {% endif %}
+                           </div>
+
+                           <div class="encok-bottom">
+                              <div class="encok-meta">
+                                 <div class="encok-tags">
+                                    {% if product.tag %}
+                                    <span class="food-chip">
+                                       <i class="feather-clock"></i>&nbsp;{{ product.tag }}
+                                    </span>
+                                    {% endif %}
+
+                                    {% if product.upc %}
+                                    <span class="food-chip">
+                                       <i class="feather-fire"></i>&nbsp;
+                                       <img src="image/kcal.png?v=20" width="14" alt="kcal">
+                                       {{ product.upc }} <b>Kcal</b>
+                                       {% if product.ean %}&nbsp;<b>P</b>&nbsp;{{ product.ean }}{% endif %}
+                                       {% if product.jan %}&nbsp;<b>C</b>&nbsp;{{ product.jan }}{% endif %}
+                                       {% if product.isbn %}&nbsp;<b>F</b>&nbsp;{{ product.isbn }}{% endif %}
+                                    </span>
+                                    {% endif %}
+                                 </div>
+
+                                 <div class="order-price-row">
+                                    <small class="food-price encok-price">{{ product.price }}</small>
+
+                                    {% if can_order %}
+                                    <button type="button"
+                                            class="order-add-btn"
+                                            data-product-id="{{ product.product_id }}">
+                                       {{ text_menu_add }}
+                                    </button>
+                                    {% endif %}
+                                 </div>
+                              </div>
+
+                              {% if product.options %}
+                              <div class="encok-options">
+                                 {% for opt in product.options %}
+                                 <img
+                                    src="{{ opt.img }}?v=20"
+                                    title="{{ opt.name }}"
+                                    alt="{{ opt.name }}"
+                                    data-toggle="tooltip"
+                                 >
+                                 {% endfor %}
+                              </div>
+                              {% endif %}
+                           </div>
+                        </div>
+                     </div>
+                     {% endfor %}
+
+                  </div>
+               </div>
+               {% endfor %}
+
+               {% endif %}
+
+               <div class="menu-lightbox" id="menuLightbox" onclick="closeMenuLightbox(event)">
+                  <div class="menu-lightbox-inner">
+                     <button type="button" class="menu-lightbox-close" aria-label="{{ text_modal_close }}" onclick="forceCloseMenuLightbox()">×</button>
+                     <img src="" alt="" class="menu-lightbox-img" id="menuLightboxImg">
+                  </div>
+               </div>
+
+               <script src="{{ serv }}vendor/jquery/jquery.min.js?v=20"></script>
+               <script src="{{ serv }}vendor/bootstrap/js/bootstrap.bundle.min.js?v=20"></script>
+               <script type="text/javascript" src="{{ serv }}vendor/slick/slick.min.js?v=20"></script>
+               <script type="text/javascript" src="{{ serv }}vendor/sidebar/hc-offcanvas-nav.js?v=20"></script>
+               <script src="{{ serv }}js/osahan.js?v=20"></script>
+
+               <script>
+               function openMenuLightbox(src, alt) {
+                  var lightbox = document.getElementById('menuLightbox');
+                  var img = document.getElementById('menuLightboxImg');
+
+                  if (!lightbox || !img) return;
+
+                  img.src = src;
+                  img.alt = alt || '';
+                  lightbox.classList.add('open');
+                  document.body.style.overflow = 'hidden';
+               }
+
+               function closeMenuLightbox(event) {
+                  if (event.target.id === 'menuLightbox') {
+                     forceCloseMenuLightbox();
+                  }
+               }
+
+               function forceCloseMenuLightbox() {
+                  var lightbox = document.getElementById('menuLightbox');
+                  var img = document.getElementById('menuLightboxImg');
+
+                  if (!lightbox || !img) return;
+
+                  lightbox.classList.remove('open');
+                  img.src = '';
+                  img.alt = '';
+                  document.body.style.overflow = '';
+               }
+
+               function toggleEncokDesc(button) {
+                  var wrap = button.closest('.encok-desc-wrap');
+                  if (!wrap) return;
+
+                  var desc = wrap.querySelector('.js-encok-desc');
+                  if (!desc) return;
+
+                  if (desc.classList.contains('expanded')) {
+                     desc.classList.remove('expanded');
+                     button.innerText = menuOrderLocale.viewMore;
+                  } else {
+                     desc.classList.add('expanded');
+                     button.innerText = menuOrderLocale.viewLess;
+                  }
+               }
+
+               document.addEventListener('DOMContentLoaded', function() {
+                  var wraps = document.querySelectorAll('.encok-desc-wrap');
+
+                  wraps.forEach(function(wrap) {
+                     var desc = wrap.querySelector('.js-encok-desc');
+                     var btn = wrap.querySelector('.encok-desc-toggle');
+
+                     if (!desc || !btn) return;
+
+                     setTimeout(function() {
+                        if (desc.scrollHeight > desc.clientHeight + 4) {
+                           btn.style.display = 'inline-block';
+                        }
+                     }, 50);
+                  });
+
+                  var activeItem = document.getElementById('activeTopCategory');
+                  var slider = document.querySelector('.cat-slider');
+
+                  if (activeItem && slider) {
+                     requestAnimationFrame(function() {
+                        var itemLeft = activeItem.offsetLeft;
+                        var itemWidth = activeItem.offsetWidth;
+                        var sliderWidth = slider.offsetWidth;
+                        var targetScroll = itemLeft - ((sliderWidth / 2) - (itemWidth / 2));
+
+                        slider.scrollLeft = Math.max(0, targetScroll);
+                     });
+                  }
+               });
+
+               document.addEventListener('keydown', function(e) {
+                  if (e.key === 'Escape') {
+                     forceCloseMenuLightbox();
+                  }
+               });
+               </script>
+{% if can_order %}
+<a href="javascript:void(0);"
+   id="callWaiterBtn"
+   class="floating-waiter-btn"
+   aria-label="{{ text_call_waiter }}">
+   <i class="feather-bell"></i>
+   <span>{{ text_call_waiter }}</span>
+</a>
+{% endif %}
+               <a href="{{ menu_home|default('index.php?route=common/menu') }}" class="floating-home-btn" aria-label="{{ text_menu_home }}">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                     <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 2 8h1v5a1 1 0 0 0 1 1h3V10h2v4h3a1 1 0 0 0 1-1V8h1a.5.5 0 0 0 .354-.854z"/>
+                  </svg>
+               </a>
+
+            </div>
+         </div>
+      </div>
+      {% if can_order %}
+<div id="menuOrderBar" class="menu-order-bar" style="display:none;">
+   <button type="button" class="menu-order-bar-btn" id="menuOrderBarBtn">
+      <span class="menu-order-bar-text">
+         <strong id="menuOrderCount">{{ text_menu_order }}</strong>
+         <small id="menuOrderTable">{{ text_table }} {{ table_no }}</small>
+      </span>
+      <span class="menu-order-bar-action">{{ text_menu_choices }}</span>
+   </button>
+</div>
+
+<div id="menuOrderModal" class="menu-order-modal" style="display:none;">
+   <div class="menu-order-backdrop"></div>
+
+   <div class="menu-order-sheet">
+      <div class="menu-order-sheet-head">
+   <div>
+      <h3>{{ text_menu_choices }}</h3>
+      <p>{{ text_table }} {{ table_no }}</p>
+   </div>
+
+   <button type="button"
+      class="menu-order-close"
+      id="menuOrderClose"
+      aria-label="{{ text_modal_close }}">×</button>
+</div>
+
+<div id="menuOrderInfoText"
+style="
+margin:12px 0 16px;
+font-size:13px;
+color:#6d7d74;
+display:none;
+">
+{{ text_active_order_info }}
+</div>
+    <div id="menuOrderActiveWrap" class="menu-order-active-wrap"></div>
+      <div id="menuOrderItems" class="menu-order-items"></div>
+
+      <div id="menuOrderNoteWrap" class="menu-order-note-wrap">
+         <label for="menuOrderNote">{{ text_order_note }}</label>
+         <textarea id="menuOrderNote" class="menu-order-note" placeholder="{{ text_order_note_placeholder }}"></textarea>
+      </div>
+
+      <div id="menuOrderFooter" class="menu-order-sheet-foot">
+   <div class="menu-order-total">
+      <span>{{ text_new_order }}</span>
+      <strong id="menuOrderTotalQty">0</strong>
+   </div>
+
+   <div class="menu-order-actions">
+      <button type="button"
+              id="menuRequestBill"
+              class="menu-order-submit menu-order-submit-secondary"
+              style="display:none;">
+         {{ text_request_bill }}
+      </button>
+
+      <button type="button"
+              id="menuOrderSubmit"
+              class="menu-order-submit">
+         {{ text_send_order }}
+      </button>
+   </div>
+</div>
+   </div>
+</div>
+
+<div id="billPaymentModal" class="bill-payment-modal" style="display:none;">
+   <div class="bill-payment-backdrop"></div>
+   <div class="bill-payment-card">
+      <h4>{{ text_bill_payment_title }}</h4>
+      <p>{{ text_bill_payment_subtitle }}</p>
+      <button type="button" class="bill-payment-choice" data-payment-method="cash">{{ text_bill_payment_cash }}</button>
+      <button type="button" class="bill-payment-choice" data-payment-method="card">{{ text_bill_payment_card }}</button>
+      <button type="button" class="bill-payment-cancel">{{ text_bill_payment_cancel }}</button>
+   </div>
+</div>
+
+<div id="menuOrderToast" class="menu-order-toast" style="display:none;"></div>
+{% endif %}
+{% if can_order %}
+<script>
+(function() {
+   var addEndpoint = '{{ menu_order_endpoint|e('js') }}';
+var updateEndpoint = 'index.php?route=common/menu_order/update';
+var summaryEndpoint = 'index.php?route=common/menu_order/summary';
+var submitEndpoint = 'index.php?route=common/menu_order/submit';
+var requestBillEndpoint = 'index.php?route=common/menu_order/requestBill';
+var requestWaiterEndpoint = 'index.php?route=common/menu_order/requestWaiter';
+
+var menuOrderLocale = {
+   orderTitle: '{{ text_menu_order|e('js') }}',
+   tableLabel: '{{ text_table|e('js') }}',
+   choices: '{{ text_menu_choices|e('js') }}',
+   add: '{{ text_menu_add|e('js') }}',
+   added: '{{ text_menu_added|e('js') }}',
+   orderNote: '{{ text_order_note|e('js') }}',
+   orderNotePlaceholder: '{{ text_order_note_placeholder|e('js') }}',
+   activeOrderInfo: '{{ text_active_order_info|e('js') }}',
+   newOrder: '{{ text_new_order|e('js') }}',
+   additionalOrder: '{{ text_additional_order|e('js') }}',
+   requestBill: '{{ text_request_bill|e('js') }}',
+   billRequested: '{{ text_bill_requested|e('js') }}',
+   billRequestSeen: '{{ text_bill_request_seen|e('js') }}',
+   billPaymentCash: '{{ text_bill_payment_cash|e('js') }}',
+   billPaymentCard: '{{ text_bill_payment_card|e('js') }}',
+   sendOrder: '{{ text_send_order|e('js') }}',
+   orderSendFailed: '{{ text_order_send_failed|e('js') }}',
+   orderSent: '{{ text_order_sent|e('js') }}',
+   orderItemAddFailed: '{{ text_order_item_add_failed|e('js') }}',
+   orderItemAdded: '{{ text_order_item_added|e('js') }}',
+   requestBillFailed: '{{ text_request_bill_failed|e('js') }}',
+   waiterConfirm: '{{ text_waiter_confirm|e('js') }}',
+   waiterCallFailed: '{{ text_waiter_call_failed|e('js') }}',
+   waiterCalled: '{{ text_waiter_called|e('js') }}',
+   waiterCallWaiting: 'Garson çağrıldı',
+   waiterCallSeen: 'Garson çağrınızı gördü',
+   tableBill: '{{ text_table_bill|e('js') }}',
+   billSummary: '{{ text_bill_summary|e('js') }}',
+   activeOrdersTitle: '{{ text_active_orders|e('js') }}',
+   tableTotalLabel: '{{ text_table_total|e('js') }}',
+   orderStatusWaiting: '{{ text_order_waiting|e('js') }}',
+   orderStatusKitchen: '{{ text_order_in_kitchen|e('js') }}',
+   orderStatusReadyForService: '{{ text_order_ready_for_service|e('js') }}',
+   orderStatusOutForService: '{{ text_order_out_for_service|e('js') }}',
+   orderStatusServed: '{{ text_order_served|e('js') }}',
+   orderHistory: '{{ text_order_history|e('js') }}',
+   orderSentToWaiter: '{{ text_order_sent_to_waiter|e('js') }}',
+   viewMore: '{{ text_view_more|e('js') }}',
+   viewLess: '{{ text_view_less|e('js') }}'
+};
+var waiterCallPosting = false;
+var billRequestPosting = false;
+
+function getBillRequestButtonText(state) {
+   return state && state.bill_request && state.bill_request.status == 'seen'
+      ? menuOrderLocale.billRequestSeen
+      : menuOrderLocale.billRequested;
+}
+
+function openBillPaymentModal() {
+   $('#billPaymentModal').fadeIn(120);
+}
+
+function closeBillPaymentModal() {
+   $('#billPaymentModal').fadeOut(120);
+}
+
+function submitBillRequest(paymentMethod) {
+   if (billRequestPosting) {
+      return;
+   }
+
+   var paymentLabel = paymentMethod === 'card' ? menuOrderLocale.billPaymentCard : menuOrderLocale.billPaymentCash;
+   billRequestPosting = true;
+   $('.bill-payment-choice').prop('disabled', true);
+
+   $.post(requestBillEndpoint, { note: 'Ödeme tercihi: ' + paymentLabel }, function(resp) {
+      if (!resp || !resp.success) {
+         toast(resp && resp.message ? resp.message : menuOrderLocale.requestBillFailed);
+         return;
+      }
+
+      closeBillPaymentModal();
+
+      if (resp.state) {
+         applyState(resp.state);
+      }
+
+      toast(resp.message || menuOrderLocale.orderSentToWaiter);
+   }, 'json').always(function() {
+      billRequestPosting = false;
+      $('.bill-payment-choice').prop('disabled', false);
+   });
+}
+
+   function toast(message) {
+      var el = document.getElementById('menuOrderToast');
+      if (!el) return;
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(function() {
+         el.style.display = 'none';
+      }, 2600);
+   }
+
+   function updateBar(state) {
+      var bar = document.getElementById('menuOrderBar');
+      var count = document.getElementById('menuOrderCount');
+      var totalQty = document.getElementById('menuOrderTotalQty');
+
+      if (!bar || !count || !totalQty) return;
+
+      if ((!state.cart.total_qty || state.cart.total_qty == 0) && !state.has_open_orders) {
+   bar.style.display = 'none';
+   document.body.classList.remove('has-order-bar');
+   count.textContent = menuOrderLocale.choices;
+   totalQty.textContent = '0';
+   return;
+}
+
+      bar.style.display = 'block';
+    document.body.classList.add('has-order-bar');
+      if (state.has_open_orders) {
+   count.textContent = menuOrderLocale.orderTitle;
+} else {
+   count.textContent = menuOrderLocale.newOrder;
+}
+
+     if(state.has_open_orders && (!state.cart.total_qty || state.cart.total_qty==0)){
+   totalQty.textContent='';
+}else{
+   totalQty.textContent=state.cart.total_qty || 0;
+}
+   }
+
+   function getOrderStatusText(status) {
+      return status == 'waiting_order'
+         ? menuOrderLocale.orderStatusWaiting
+         : status == 'in_kitchen'
+         ? menuOrderLocale.orderStatusKitchen
+         : status == 'ready_for_service'
+         ? menuOrderLocale.orderStatusReadyForService
+         : status == 'out_for_service'
+         ? menuOrderLocale.orderStatusOutForService
+         : status == 'served'
+         ? menuOrderLocale.orderStatusServed
+         : status;
+   }
+
+   function getOrderTimelineIndex(status) {
+      if (status == 'waiting_order') return 0;
+      if (status == 'in_kitchen') return 1;
+      if (status == 'ready_for_service' || status == 'out_for_service') return 2;
+      if (status == 'served') return 3;
+
+      return 0;
+   }
+
+   function renderOrderTimeline(order) {
+      var activeIndex = getOrderTimelineIndex(order.status);
+      var serviceLabel = order.status == 'out_for_service'
+         ? menuOrderLocale.orderStatusOutForService
+         : menuOrderLocale.orderStatusReadyForService;
+      var steps = [
+         menuOrderLocale.orderStatusWaiting,
+         menuOrderLocale.orderStatusKitchen,
+         serviceLabel,
+         menuOrderLocale.orderStatusServed
+      ];
+      var html = '<div class="menu-order-timeline status-' + order.status + '">';
+
+      steps.forEach(function(label, index) {
+         var cls = index < activeIndex ? 'done' : (index == activeIndex ? 'current' : 'pending');
+         html += '<div class="menu-order-timeline-step ' + cls + '">';
+         html += '<span></span>';
+         html += '<small>' + label + '</small>';
+         html += '</div>';
+      });
+
+      html += '</div>';
+
+      return html;
+   }
+
+   function renderActiveOrders(state) {
+
+   var wrap = document.getElementById('menuOrderActiveWrap');
+   if (!wrap) return;
+
+   if (!state || !state.has_open_orders || !state.active_orders || !state.active_orders.length) {
+      wrap.innerHTML='';
+      return;
+   }
+
+   var html = '<div class="menu-order-active-title">' + menuOrderLocale.activeOrdersTitle + '</div>';
+
+   if (state.table_total) {
+      html += '<div class="menu-order-table-total">';
+      html += '<span>' + menuOrderLocale.tableTotalLabel + '</span>';
+      html += '<strong>' + state.table_total + '</strong>';
+      html += '</div>';
+   }
+
+   state.active_orders.forEach(function(order){
+
+      html += '<div class="menu-order-history-card status-' + order.status + '">';
+      html += '<div class="menu-order-history-head">';
+      html += '<div class="menu-order-history-time">' + menuOrderLocale.orderHistory + ' ' + order.time + '</div>';
+      html += '<div class="menu-order-history-status">' + getOrderStatusText(order.status) + '</div>';
+      html += '</div>';
+      html += renderOrderTimeline(order);
+
+      if (order.status === 'in_kitchen' && order.prep_minutes) {
+         html += '<div class="menu-order-prep-timer" data-deadline="' + (order.prep_deadline_ts || 0) + '">';
+         html += '<span>Tahmini süre</span>';
+         html += '<strong>' + (order.prep_label || (order.prep_minutes + ' dk')) + '</strong>';
+
+         if (order.prep_deadline_ts) {
+            html += '<em class="js-customer-prep-countdown">' + formatCustomerPrepRemaining(order.prep_deadline_ts) + '</em>';
+         }
+
+         html += '</div>';
+      }
+
+      order.items.forEach(function(item){
+         html += '<div class="menu-order-history-item">'
+              + item.name + ' x' + item.qty +
+              '</div>';
+      });
+
+      html += '</div>';
+
+   });
+
+   wrap.innerHTML = html;
+}
+
+function formatCustomerPrepRemaining(deadlineTs) {
+   deadlineTs = parseInt(deadlineTs, 10) || 0;
+
+   if (!deadlineTs) {
+      return '';
+   }
+
+   var remaining = Math.floor((deadlineTs * 1000 - Date.now()) / 1000);
+   var overdue = remaining < 0;
+   remaining = Math.abs(remaining);
+
+   var minutes = Math.floor(remaining / 60);
+   var seconds = remaining % 60;
+   var text = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+
+   return overdue ? '-' + text : text;
+}
+
+function tickCustomerPrepCountdowns() {
+   var timers = document.querySelectorAll('.menu-order-prep-timer[data-deadline]');
+
+   timers.forEach(function(timer) {
+      var countdown = timer.querySelector('.js-customer-prep-countdown');
+      var deadline = parseInt(timer.getAttribute('data-deadline'), 10) || 0;
+
+      if (!countdown || !deadline) {
+         return;
+      }
+
+      countdown.textContent = formatCustomerPrepRemaining(deadline);
+
+      if ((deadline * 1000 - Date.now()) < 0) {
+         timer.classList.add('overdue');
+      } else {
+         timer.classList.remove('overdue');
+      }
+   });
+}
+
+   function renderCart(summary) {
+      var wrap = document.getElementById('menuOrderItems');
+      if (!wrap) return;
+
+      if (!summary || !summary.items || !summary.items.length) {
+         wrap.innerHTML = '';
+         return;
+      }
+
+      var html = '';
+
+      summary.items.forEach(function(item) {
+         html += ''
+         + '<div class="menu-order-item">'
+         + '  <div>'
+         + '    <div class="menu-order-item-name">' + item.name + '</div>'
+         + '    <div class="menu-order-item-meta">' + item.price + '</div>'
+         + '  </div>'
+         + '  <div class="menu-order-qty">'
+         + '    <button type="button" class="menu-order-minus" data-product-id="' + item.product_id + '" data-qty="' + item.quantity + '">-</button>'
+         + '    <strong>' + item.quantity + '</strong>'
+         + '    <button type="button" class="menu-order-plus" data-product-id="' + item.product_id + '" data-qty="' + item.quantity + '">+</button>'
+         + '  </div>'
+         + '</div>';
+      });
+
+      wrap.innerHTML = html;
+   }
+
+   function applyState(state) {
+   if (!state) return;
+
+   updateBar(state);
+   renderActiveOrders(state);
+   renderCart(state.cart || {});
+   updateWaiterCallButton(state);
+
+   var cartCount = 0;
+
+   if (state.cart && state.cart.items) {
+      cartCount = state.cart.items.length;
+   }
+
+   var noteWrap   = document.getElementById('menuOrderNoteWrap');
+   var footerWrap = document.getElementById('menuOrderFooter');
+   var infoText   = document.getElementById('menuOrderInfoText');
+   var modalTitle = document.querySelector('.menu-order-sheet-head h3');
+   var submitBtn  = document.getElementById('menuOrderSubmit');
+   var billBtn    = document.getElementById('menuRequestBill');
+
+   if (state.has_open_orders && cartCount === 0) {
+      if (modalTitle) {
+         modalTitle.innerHTML = menuOrderLocale.orderTitle;
+      }
+
+      if (noteWrap) {
+         noteWrap.style.display = 'none';
+      }
+
+      if (submitBtn) {
+         submitBtn.style.display = 'none';
+      }
+
+      var showBillButton = false;
+
+      if (billBtn) {
+         if (state.can_request_bill && !state.has_pending_bill_request) {
+            billBtn.style.display = 'inline-flex';
+            billBtn.textContent = menuOrderLocale.requestBill;
+            billBtn.disabled = false;
+            showBillButton = true;
+         } else if (state.has_pending_bill_request) {
+            billBtn.style.display = 'inline-flex';
+            billBtn.textContent = getBillRequestButtonText(state);
+            billBtn.disabled = true;
+            showBillButton = true;
+         } else {
+            billBtn.style.display = 'none';
+            billBtn.disabled = false;
+         }
+      }
+
+      if (footerWrap) {
+         footerWrap.style.display = showBillButton ? 'flex' : 'none';
+      }
+
+      if (infoText) {
+         infoText.style.display = 'block';
+      }
+
+   } else {
+      if (cartCount > 0) {
+         if (modalTitle) {
+            modalTitle.innerHTML = menuOrderLocale.additionalOrder;
+         }
+      } else {
+         if (modalTitle) {
+            modalTitle.innerHTML = menuOrderLocale.choices;
+         }
+      }
+
+      if (noteWrap) {
+         noteWrap.style.display = '';
+      }
+
+      if (submitBtn) {
+         submitBtn.style.display = '';
+      }
+
+      var showBillButtonInCartMode = false;
+
+      if (billBtn) {
+         if (state.can_request_bill && !state.has_pending_bill_request) {
+            billBtn.style.display = 'inline-flex';
+            billBtn.textContent = menuOrderLocale.requestBill;
+            billBtn.disabled = false;
+            showBillButtonInCartMode = true;
+         } else if (state.has_pending_bill_request) {
+            billBtn.style.display = 'inline-flex';
+            billBtn.textContent = getBillRequestButtonText(state);
+            billBtn.disabled = true;
+            showBillButtonInCartMode = true;
+         } else {
+            billBtn.style.display = 'none';
+            billBtn.disabled = false;
+         }
+      }
+
+      if (footerWrap) {
+         footerWrap.style.display = (cartCount > 0 || showBillButtonInCartMode) ? 'flex' : 'none';
+      }
+
+      if (infoText) {
+         infoText.style.display = 'none';
+      }
+   }
+}
+
+function updateWaiterCallButton(state) {
+   var btn = document.getElementById('callWaiterBtn');
+   if (!btn) return;
+
+   var label = btn.querySelector('span');
+   var waiterCall = state && state.waiter_call ? state.waiter_call : {};
+
+   if (waiterCall && waiterCall.call_id) {
+      btn.classList.add('disabled');
+      btn.setAttribute('aria-disabled', 'true');
+      if (label) {
+         label.textContent = waiterCall.status === 'seen' ? menuOrderLocale.waiterCallSeen : menuOrderLocale.waiterCallWaiting;
+      }
+   } else {
+      btn.classList.remove('disabled');
+      btn.removeAttribute('aria-disabled');
+      if (label) {
+         label.textContent = '{{ text_call_waiter|e('js') }}';
+      }
+   }
+}
+
+   function refreshState(openIfHasItems) {
+      $.get(summaryEndpoint, function(resp) {
+         if (!resp || !resp.success) return;
+
+         applyState(resp.state);
+
+         if (openIfHasItems) {
+            $('#menuOrderModal').show();
+         }
+      }, 'json');
+   }
+
+   $(document).on('click', '.order-add-btn', function() {
+      var btn = $(this);
+      var productId = btn.data('product-id');
+
+      $.post(addEndpoint, { product_id: productId }, function(resp) {
+         if (!resp || !resp.success) {
+            toast(resp && resp.message ? resp.message : menuOrderLocale.orderItemAddFailed);
+            return;
+         }
+
+         btn.addClass('added').text(menuOrderLocale.added);
+
+         setTimeout(function() {
+            btn.removeClass('added').text(menuOrderLocale.add);
+         }, 1200);
+
+         applyState(resp.state);
+         toast(resp.message || menuOrderLocale.orderItemAdded);
+      }, 'json');
+   });
+
+   $('#menuOrderBarBtn').on('click', function() {
+      refreshState(true);
+   });
+
+   $('#menuOrderClose, .menu-order-backdrop').on('click', function() {
+      $('#menuOrderModal').hide();
+   });
+
+   $(document).on('click', '.menu-order-plus', function() {
+      var productId = $(this).data('product-id');
+      var qty = parseInt($(this).data('qty'), 10) || 0;
+
+      $.post(updateEndpoint, {
+         product_id: productId,
+         quantity: qty + 1
+      }, function(resp) {
+         if (resp && resp.success) {
+            applyState(resp.state);
+         }
+      }, 'json');
+   });
+
+   $(document).on('click', '.menu-order-minus', function() {
+      var productId = $(this).data('product-id');
+      var qty = parseInt($(this).data('qty'), 10) || 0;
+
+      $.post(updateEndpoint, {
+         product_id: productId,
+         quantity: qty - 1
+      }, function(resp) {
+         if (resp && resp.success) {
+            applyState(resp.state);
+         }
+      }, 'json');
+   });
+
+   $('#menuOrderSubmit').on('click', function() {
+      var note = $('#menuOrderNote').val() || '';
+
+      $.post(submitEndpoint, { note: note }, function(resp) {
+         if (!resp || !resp.success) {
+            toast(resp && resp.message ? resp.message : menuOrderLocale.orderSendFailed);
+            return;
+         }
+
+         $('#menuOrderNote').val('');
+         $('#menuOrderModal').hide();
+
+         if (resp.state) {
+            applyState(resp.state);
+         }
+
+         toast(resp.message || menuOrderLocale.orderSent);
+      }, 'json');
+   });
+$('#menuRequestBill').on('click', function() {
+   openBillPaymentModal();
+});
+
+$('.bill-payment-choice').on('click', function() {
+   submitBillRequest($(this).attr('data-payment-method'));
+});
+
+$('.bill-payment-cancel, .bill-payment-backdrop').on('click', function() {
+   closeBillPaymentModal();
+});
+function watchMenuFooterVisibility(){
+	var footer = document.querySelector('#vvMenuFooterWatch');
+
+	if(!footer){
+		return;
+	}
+
+	function checkFooter(){
+		var rect = footer.getBoundingClientRect();
+		var windowHeight = window.innerHeight || document.documentElement.clientHeight;
+
+		if(rect.top < windowHeight && rect.bottom > 0){
+			document.body.classList.add('footer-visible');
+		}else{
+			document.body.classList.remove('footer-visible');
+		}
+	}
+
+	window.addEventListener('scroll', checkFooter, { passive:true });
+	window.addEventListener('resize', checkFooter);
+	checkFooter();
+}
+
+setTimeout(function(){
+	watchMenuFooterVisibility();
+}, 300);
+
+setInterval(tickCustomerPrepCountdowns, 1000);
+setInterval(function(){
+   refreshState(false);
+}, 10000);
+
+refreshState(false);
+   $('#callWaiterBtn').on('click', function(e){
+
+e.preventDefault();
+
+if(!e.originalEvent || e.originalEvent.isTrusted === false || waiterCallPosting){
+	return;
+}
+
+if($(this).hasClass('disabled')){
+	return;
+}
+
+if(!confirm(menuOrderLocale.waiterConfirm)){
+	return;
+}
+
+var btn=$(this);
+waiterCallPosting = true;
+btn.addClass('disabled');
+
+$.post(requestWaiterEndpoint,{},function(resp){
+
+	if(!resp || !resp.success){
+		toast(
+			resp && resp.message
+			? resp.message
+			: menuOrderLocale.waiterCallFailed
+		);
+		btn.removeClass('disabled');
+		return;
+	}
+
+toast(resp.message || menuOrderLocale.waiterCalled);
+
+	if (resp.state) {
+		applyState(resp.state);
+	} else {
+		btn.addClass('disabled');
+	}
+
+},'json').always(function(){
+	waiterCallPosting = false;
+});
+
+});
+})();
+</script>
+{% endif %}
+      <div id="vvMenuFooterWatch">
+   {{ menu_footer }}
+</div>
+   </body>
+</html>
