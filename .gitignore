@@ -5,6 +5,7 @@
 # Local/server configuration with secrets and absolute paths
 /config.php
 /admin/config.php
+/bridge/akinsoft_bridge_config.php
 /php.ini
 
 # Logs and temporary files

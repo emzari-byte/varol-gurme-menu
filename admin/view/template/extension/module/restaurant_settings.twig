@@ -262,7 +262,7 @@
                 <div class="col-sm-9">
                   <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_mode" value="local_firebird" {% if restaurant_akinsoft_mode == 'local_firebird' %}checked{% endif %}> Local Firebird</label>
                   <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_mode" value="bridge_agent" {% if restaurant_akinsoft_mode == 'bridge_agent' %}checked{% endif %}> Canlı Bridge Agent</label>
-                  <p class="help-block">Local testte XAMPP doğrudan Firebird veritabanına bağlanır. Canlıda restoran bilgisayarındaki bridge servis kullanılacak.</p>
+                  <p class="help-block">Local testte XAMPP doğrudan Firebird veritabanına bağlanır. Canlıda restoran bilgisayarındaki agent canlı siteden siparişleri çekip Akınsoft'a yazar.</p>
                 </div>
               </div>
 
@@ -305,10 +305,10 @@
 
               <div class="akinsoft-bridge-fields">
                 <div class="form-group">
-                  <label class="col-sm-3 control-label">Bridge URL</label>
+                  <label class="col-sm-3 control-label">Canlı Site URL</label>
                   <div class="col-sm-9">
-                    <input type="text" name="restaurant_akinsoft_bridge_url" value="{{ restaurant_akinsoft_bridge_url }}" placeholder="https://restoran-pc-domain/akinsoft-bridge" class="form-control">
-                    <p class="help-block">Canlı siteden local Akınsoft Firebird'e doğrudan bağlanmayacağız. Restoran bilgisayarında çalışan bridge siparişleri güvenli şekilde Firebird'e yazacak.</p>
+                    <input type="text" name="restaurant_akinsoft_bridge_url" value="{{ restaurant_akinsoft_bridge_url }}" placeholder="https://varolveranda.com/deneme/menu/" class="form-control">
+                    <p class="help-block">Restoran bilgisayarındaki agent bu canlı site adresinden bekleyen siparişleri çeker. Firebird dış dünyaya açılmaz.</p>
                   </div>
                 </div>
 

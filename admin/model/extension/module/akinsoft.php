@@ -603,17 +603,25 @@ class ModelExtensionModuleAkinsoft extends Model {
 
 	private function testBridge($settings) {
 		$url = !empty($settings['restaurant_akinsoft_bridge_url']) ? trim((string)$settings['restaurant_akinsoft_bridge_url']) : '';
+		$token = !empty($settings['restaurant_akinsoft_bridge_token']) ? trim((string)$settings['restaurant_akinsoft_bridge_token']) : '';
 
 		if ($url === '') {
 			return array(
 				'success' => false,
-				'message' => 'Bridge URL bos. Canli kullanimda restorandaki bilgisayarda calisacak bridge servis adresi girilecek.'
+				'message' => 'Canli site URL bos. Ornek: https://varolveranda.com/deneme/menu/'
+			);
+		}
+
+		if ($token === '') {
+			return array(
+				'success' => false,
+				'message' => 'Bridge token bos. Restoran bilgisayarindaki agent bu token ile canli sisteme baglanacak.'
 			);
 		}
 
 		return array(
-			'success' => false,
-			'message' => 'Bridge modu altyapisi hazir, baglanti istemcisi V2 adiminda eklenecek.'
+			'success' => true,
+			'message' => 'Bridge API hazir. Agent bekleyen siparisleri ' . rtrim($url, '/') . '/index.php?route=extension/module/akinsoft_bridge/pending adresinden cekecek.'
 		);
 	}
 }
