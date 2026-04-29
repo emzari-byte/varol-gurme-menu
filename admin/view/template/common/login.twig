@@ -1,51 +1,377 @@
 {{ header }}
+<style>
+  body {
+    background: #eef5f0;
+  }
+
+  #content {
+    min-height: calc(100vh - 40px);
+    padding: 0;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(118, 162, 135, .22), transparent 30%),
+      linear-gradient(135deg, #f7fbf8 0%, #edf5ef 48%, #e7f0ea 100%);
+  }
+
+  .vg-login {
+    min-height: calc(100vh - 40px);
+    display: flex;
+    align-items: stretch;
+    color: #173228;
+    font-family: "Open Sans", Arial, sans-serif;
+  }
+
+  .vg-login__brand,
+  .vg-login__panel {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .vg-login__brand {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 56px;
+    overflow: hidden;
+    background:
+      linear-gradient(rgba(15, 42, 31, .74), rgba(15, 42, 31, .82)),
+      url('../image/varol-veranda.jpg') center/cover no-repeat;
+  }
+
+  .vg-login__brand-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+  }
+
+  .vg-login__logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 220px;
+    height: 78px;
+    padding: 0 24px;
+    margin-bottom: 52px;
+    border: 1px solid rgba(255,255,255,.22);
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 24px 60px rgba(0,0,0,.18);
+  }
+
+  .vg-login__logo img {
+    max-width: 188px;
+    max-height: 56px;
+    display: block;
+  }
+
+  .vg-login__eyebrow {
+    margin: 0 0 16px;
+    color: #e4c27a;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .vg-login__title {
+    margin: 0;
+    color: #fff;
+    font-size: 48px;
+    line-height: 1.08;
+    font-weight: 800;
+  }
+
+  .vg-login__copy {
+    max-width: 480px;
+    margin: 22px 0 0;
+    color: rgba(255,255,255,.82);
+    font-size: 17px;
+    line-height: 1.7;
+  }
+
+  .vg-login__features {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 38px;
+  }
+
+  .vg-login__feature {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 11px 14px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(255,255,255,.09);
+    color: rgba(255,255,255,.9);
+    font-weight: 700;
+    backdrop-filter: blur(8px);
+  }
+
+  .vg-login__feature i {
+    color: #e4c27a;
+    font-size: 17px;
+    width: 18px;
+    text-align: center;
+  }
+
+  .vg-login__panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+  }
+
+  .vg-login__card {
+    width: 100%;
+    max-width: 440px;
+    padding: 0;
+    background: #fff;
+    border: 1px solid rgba(45, 78, 61, .12);
+    box-shadow: 0 28px 70px rgba(36, 58, 47, .16);
+  }
+
+  .vg-login__card-head {
+    padding: 34px 38px 20px;
+    border-bottom: 1px solid #edf1ed;
+  }
+
+  .vg-login__card-head h1 {
+    margin: 0;
+    color: #173228;
+    font-size: 28px;
+    line-height: 1.25;
+    font-weight: 800;
+  }
+
+  .vg-login__card-head p {
+    margin: 10px 0 0;
+    color: #6f7c75;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .vg-login__card-body {
+    padding: 28px 38px 34px;
+  }
+
+  .vg-login .alert {
+    margin-bottom: 18px;
+    border-radius: 6px;
+  }
+
+  .vg-login .form-group {
+    margin-bottom: 18px;
+  }
+
+  .vg-login label {
+    margin-bottom: 8px;
+    color: #273d33;
+    font-weight: 800;
+  }
+
+  .vg-login .input-group {
+    width: 100%;
+  }
+
+  .vg-login .input-group-addon {
+    width: 48px;
+    color: #47735d;
+    background: #f3f7f4;
+    border-color: #dbe6df;
+  }
+
+  .vg-login .form-control {
+    height: 48px;
+    border-color: #dbe6df;
+    box-shadow: none;
+    font-size: 15px;
+  }
+
+  .vg-login .form-control:focus {
+    border-color: #6fa285;
+    box-shadow: 0 0 0 3px rgba(111, 162, 133, .16);
+  }
+
+  .vg-login__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .vg-login__forgot {
+    color: #557164;
+    font-weight: 700;
+  }
+
+  .vg-login__forgot:hover {
+    color: #315d45;
+  }
+
+  .vg-login__submit {
+    min-width: 160px;
+    height: 48px;
+    border: 0;
+    border-radius: 6px;
+    background: #2f6f4e;
+    color: #fff;
+    font-weight: 800;
+    box-shadow: 0 12px 28px rgba(47, 111, 78, .24);
+  }
+
+  .vg-login__submit:hover,
+  .vg-login__submit:focus {
+    background: #285e43;
+    color: #fff;
+  }
+
+  .vg-login__meta {
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid #edf1ed;
+    color: #7a877f;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 991px) {
+    .vg-login {
+      display: block;
+      min-height: calc(100vh - 40px);
+    }
+
+    .vg-login__brand {
+      min-height: 360px;
+      padding: 36px 28px;
+    }
+
+    .vg-login__title {
+      font-size: 38px;
+    }
+
+    .vg-login__panel {
+      padding: 28px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .vg-login__brand {
+      min-height: auto;
+      padding: 28px 20px;
+    }
+
+    .vg-login__logo {
+      min-width: 180px;
+      height: 64px;
+      margin-bottom: 28px;
+    }
+
+    .vg-login__logo img {
+      max-width: 150px;
+    }
+
+    .vg-login__title {
+      font-size: 30px;
+    }
+
+    .vg-login__copy {
+      font-size: 15px;
+    }
+
+    .vg-login__features {
+      grid-template-columns: 1fr;
+      margin-top: 24px;
+    }
+
+    .vg-login__panel {
+      padding: 20px;
+    }
+
+    .vg-login__card-head,
+    .vg-login__card-body {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    .vg-login__actions {
+      align-items: stretch;
+      flex-direction: column-reverse;
+    }
+
+    .vg-login__submit {
+      width: 100%;
+    }
+  }
+</style>
+
 <div id="content">
-  <div class="container-fluid"><br/>
-    <br/>
-    <div class="row">
-      <div class="col-sm-offset-4 col-sm-4">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h1 class="panel-title"><i class="fa fa-lock"></i> {{ text_login }}</h1>
-          </div>
-          <div class="panel-body">
-            {% if success %}
-            <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}
-              <button type="button" class="close" data-dismiss="alert">&times;</button>
-            </div>
-            {% endif %}
-            {% if error_warning %}
-            <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
-              <button type="button" class="close" data-dismiss="alert">&times;</button>
-            </div>
-            {% endif %}
-            <form action="{{ action }}" method="post" enctype="multipart/form-data">
-              <div class="form-group">
-                <label for="input-username">{{ entry_username }}</label>
-                <div class="input-group"><span class="input-group-addon"><i class="fa fa-user"></i></span>
-                  <input type="text" name="username" value="{{ username }}" placeholder="{{ entry_username }}" id="input-username" class="form-control" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="input-password">{{ entry_password }}</label>
-                <div class="input-group"><span class="input-group-addon"><i class="fa fa-lock"></i></span>
-                  <input type="password" name="password" value="{{ password }}" placeholder="{{ entry_password }}" id="input-password" class="form-control" />
-                </div>
-                {% if forgotten %}
-                <span class="help-block"><a href="{{ forgotten }}">{{ text_forgotten }}</a></span>
-                {% endif %}
-              </div>
-              <div class="text-right">
-                <button type="submit" class="btn btn-primary"><i class="fa fa-key"></i> {{ button_login }}</button>
-              </div>
-              {% if redirect %}
-              <input type="hidden" name="redirect" value="{{ redirect }}" />
-              {% endif %}
-            </form>
-          </div>
+  <div class="vg-login">
+    <section class="vg-login__brand" aria-label="Varol Gurme">
+      <div class="vg-login__brand-inner">
+        <div class="vg-login__logo">
+          <img src="../image/veranda-logo-.png" alt="Veranda">
+        </div>
+        <p class="vg-login__eyebrow">Restoran Yönetimi</p>
+        <h2 class="vg-login__title">QR menüden servise kadar tek panel.</h2>
+        <p class="vg-login__copy">Masa, garson, mutfak, ödeme ve Akınsoft akışını Veranda operasyon düzeninde yönetin.</p>
+        <div class="vg-login__features">
+          <div class="vg-login__feature"><i class="fa fa-qrcode"></i><span>QR Menü</span></div>
+          <div class="vg-login__feature"><i class="fa fa-cutlery"></i><span>Garson Paneli</span></div>
+          <div class="vg-login__feature"><i class="fa fa-desktop"></i><span>Mutfak Ekranı</span></div>
+          <div class="vg-login__feature"><i class="fa fa-exchange"></i><span>ERP Akışı</span></div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <section class="vg-login__panel">
+      <div class="vg-login__card">
+        <div class="vg-login__card-head">
+          <h1>Yönetim Paneli</h1>
+          <p>Varol Gurme restoran operasyon paneline giriş yapın.</p>
+        </div>
+        <div class="vg-login__card-body">
+          {% if success %}
+          <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+          </div>
+          {% endif %}
+          {% if error_warning %}
+          <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+          </div>
+          {% endif %}
+          <form action="{{ action }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+              <label for="input-username">Kullanıcı Adı</label>
+              <div class="input-group">
+                <span class="input-group-addon"><i class="fa fa-user"></i></span>
+                <input type="text" name="username" value="{{ username }}" placeholder="Kullanıcı adınızı girin" id="input-username" class="form-control" autocomplete="username" autofocus>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="input-password">Parola</label>
+              <div class="input-group">
+                <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                <input type="password" name="password" value="{{ password }}" placeholder="Parolanızı girin" id="input-password" class="form-control" autocomplete="current-password">
+              </div>
+            </div>
+            <div class="vg-login__actions">
+              {% if forgotten %}
+              <a class="vg-login__forgot" href="{{ forgotten }}">Parolamı unuttum</a>
+              {% else %}
+              <span></span>
+              {% endif %}
+              <button type="submit" class="btn vg-login__submit"><i class="fa fa-sign-in"></i> Panele Giriş Yap</button>
+            </div>
+            {% if redirect %}
+            <input type="hidden" name="redirect" value="{{ redirect }}">
+            {% endif %}
+          </form>
+          <div class="vg-login__meta">QR menü, masa yönetimi, garson çağrısı, mutfak ekranı ve Akınsoft entegrasyonu için güvenli yönetim alanı.</div>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 {{ footer }}
