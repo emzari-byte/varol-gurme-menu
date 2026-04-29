@@ -1,6 +1,6 @@
 <?php
 return array(
-	'site_base_url' => 'https://varolveranda.com/deneme/menu/',
+	'site_base_url' => 'https://varolveranda.com/menu/',
 	'bridge_token' => 'RESTORAN_AYARLARI_ERP_BRIDGE_TOKEN',
 	'poll_seconds' => 5,
 	'limit' => 20,

@@ -1,15 +1,15 @@
 <?php
 // HTTP
-define('HTTP_SERVER', 'https://example.com/deneme/menu/');
+define('HTTP_SERVER', 'https://example.com/menu/');
 
 // HTTPS
-define('HTTPS_SERVER', 'https://example.com/deneme/menu/');
+define('HTTPS_SERVER', 'https://example.com/menu/');
 
 // DIR
-define('DIR_APPLICATION', '/home/USERNAME/public_html/deneme/menu/catalog/');
-define('DIR_SYSTEM', '/home/USERNAME/public_html/deneme/menu/system/');
-define('DIR_IMAGE', '/home/USERNAME/public_html/deneme/menu/image/');
-define('DIR_STORAGE', '/home/USERNAME/public_html/deneme/menu/storage/');
+define('DIR_APPLICATION', '/home/USERNAME/public_html/menu/catalog/');
+define('DIR_SYSTEM', '/home/USERNAME/public_html/menu/system/');
+define('DIR_IMAGE', '/home/USERNAME/public_html/menu/image/');
+define('DIR_STORAGE', '/home/USERNAME/public_html/menu/storage/');
 define('DIR_LANGUAGE', DIR_APPLICATION . 'language/');
 define('DIR_TEMPLATE', DIR_APPLICATION . 'view/theme/');
 define('DIR_CONFIG', DIR_SYSTEM . 'config/');
