@@ -30,7 +30,7 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 				}
 			}
 
-			if (empty($this->request->post['restaurant_akinsoft_mode']) || !in_array($this->request->post['restaurant_akinsoft_mode'], array('local_firebird', 'bridge_agent'), true)) {
+			if (empty($this->request->post['restaurant_akinsoft_mode']) || !in_array($this->request->post['restaurant_akinsoft_mode'], array('local_firebird', 'bridge_agent', 'web_ent'), true)) {
 				$this->request->post['restaurant_akinsoft_mode'] = 'local_firebird';
 			}
 

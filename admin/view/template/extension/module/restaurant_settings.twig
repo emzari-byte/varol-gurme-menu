@@ -262,7 +262,8 @@
                 <div class="col-sm-9">
                   <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_mode" value="local_firebird" {% if restaurant_akinsoft_mode == 'local_firebird' %}checked{% endif %}> Local Firebird</label>
                   <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_mode" value="bridge_agent" {% if restaurant_akinsoft_mode == 'bridge_agent' %}checked{% endif %}> Canlı Bridge Agent</label>
-                  <p class="help-block">Local testte XAMPP doğrudan Firebird veritabanına bağlanır. Canlıda restoran bilgisayarındaki agent canlı siteden siparişleri çekip Akınsoft'a yazar.</p>
+                  <label class="radio-inline"><input type="radio" name="restaurant_akinsoft_mode" value="web_ent" {% if restaurant_akinsoft_mode == 'web_ent' %}checked{% endif %}> Akınsoft Web Entegrasyon</label>
+                  <p class="help-block">Local testte XAMPP doğrudan Firebird veritabanına bağlanır. Canlıda Bridge Agent veya Akınsoft Web Entegrasyon programı canlı siteden siparişleri çeker.</p>
                 </div>
               </div>
 
@@ -316,6 +317,16 @@
                   <label class="col-sm-3 control-label">Bridge Token</label>
                   <div class="col-sm-9">
                     <input type="password" name="restaurant_akinsoft_bridge_token" value="{{ restaurant_akinsoft_bridge_token }}" class="form-control" autocomplete="new-password">
+                  </div>
+                </div>
+              </div>
+
+              <div class="akinsoft-webent-fields">
+                <div class="form-group">
+                  <label class="col-sm-3 control-label">Web Entegrasyon URL</label>
+                  <div class="col-sm-9">
+                    <input type="text" value="https://varolveranda.com" class="form-control" readonly>
+                    <p class="help-block">Akınsoft Web Entegrasyon programında site adresi olarak kök domain kullanılmalı. Siparişler /Api/WebEnt9 uçlarından çekilir; bu modda sunucu Firebird bağlantısı kurmaz.</p>
                   </div>
                 </div>
               </div>
@@ -390,6 +401,7 @@
 
     $('.akinsoft-local-fields').toggle(mode == 'local_firebird');
     $('.akinsoft-bridge-fields').toggle(mode == 'bridge_agent');
+    $('.akinsoft-webent-fields').toggle(mode == 'web_ent');
   }
 
   $('input[name="restaurant_akinsoft_mode"]').on('change', toggleAkinsoftMode);

@@ -17,7 +17,7 @@ class ControllerExtensionModuleWaiterPanel extends Controller {
 
 		$current_user_id = (int)$this->user->getId();
 
-		if ($this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)) {
+		if ($this->isAkinsoftDirectFirebirdMode()) {
 			$this->load->model('extension/module/restaurant_settings');
 			$this->load->model('extension/module/akinsoft');
 			$this->model_extension_module_akinsoft->syncClosedRestaurantOrders(
@@ -86,7 +86,7 @@ true
 
 			$current_user_id = (int)$this->user->getId();
 
-			if ($this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)) {
+			if ($this->isAkinsoftDirectFirebirdMode()) {
 				$this->load->model('extension/module/restaurant_settings');
 				$this->load->model('extension/module/akinsoft');
 				$this->model_extension_module_akinsoft->syncClosedRestaurantOrders(
@@ -266,12 +266,24 @@ true
 
 					if ($ok && $service_status === 'in_kitchen' && $this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)) {
 						$this->load->model('extension/module/restaurant_settings');
-						$this->load->model('extension/module/akinsoft');
 
-						$export = $this->model_extension_module_akinsoft->exportRestaurantOrder(
-							$this->model_extension_module_restaurant_settings->getSettings(),
-							$restaurant_order_id
-						);
+						$settings = $this->model_extension_module_restaurant_settings->getSettings();
+						$akinsoft_mode = !empty($settings['restaurant_akinsoft_mode']) ? $settings['restaurant_akinsoft_mode'] : 'local_firebird';
+
+						if ($akinsoft_mode === 'local_firebird') {
+							$this->load->model('extension/module/akinsoft');
+
+							$export = $this->model_extension_module_akinsoft->exportRestaurantOrder(
+								$settings,
+								$restaurant_order_id
+							);
+						} else {
+							$export = array(
+								'success' => true,
+								'mode' => $akinsoft_mode,
+								'message' => 'AKINSOFT Web Entegrasyon kuyruguna alindi.'
+							);
+						}
 
 						$json['akinsoft'] = $export;
 
@@ -439,5 +451,30 @@ public function addManualOrder() {
 		}
 
 		return (int)$query->row['ayar_value'] === 1;
+	}
+
+	private function getRestaurantSettingValue($key, $default = '') {
+		$table = DB_PREFIX . 'ayarlar';
+
+		$exists = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+
+		if (!$exists->num_rows) {
+			return $default;
+		}
+
+		$query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
+			WHERE ayar_key = '" . $this->db->escape($key) . "'
+			LIMIT 1");
+
+		if (!$query->num_rows || $query->row['ayar_value'] === '') {
+			return $default;
+		}
+
+		return $query->row['ayar_value'];
+	}
+
+	private function isAkinsoftDirectFirebirdMode() {
+		return $this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)
+			&& $this->getRestaurantSettingValue('restaurant_akinsoft_mode', 'local_firebird') === 'local_firebird';
 	}
 }

@@ -7,6 +7,13 @@ class ModelExtensionModuleAkinsoft extends Model {
 			return $this->testBridge($settings);
 		}
 
+		if ($mode === 'web_ent') {
+			return array(
+				'success' => true,
+				'message' => 'AKINSOFT Web Entegrasyon modu aktif. Akis, Akınsoft Web Entegrasyon programinin siparisleri web sitesinden cekmesiyle calisir.'
+			);
+		}
+
 		return $this->testLocalFirebird($settings);
 	}
 
