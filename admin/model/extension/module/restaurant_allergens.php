@@ -1,7 +1,5 @@
 <?php
 class ModelExtensionModuleRestaurantAllergens extends Model {
-	private $option_id = 14;
-
 	public function install() {
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_allergen` (
 			`allergen_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -26,12 +24,35 @@ class ModelExtensionModuleRestaurantAllergens extends Model {
 		$this->migrateFromOption();
 	}
 
+	private function getLegacyAllergenOptionIds() {
+		$option_ids = array(14);
+
+		$query = $this->db->query("SELECT DISTINCT option_id FROM `" . DB_PREFIX . "option_description`
+			WHERE LOWER(name) LIKE '%alerjen%'
+			OR LOWER(name) LIKE '%alerji%'
+			OR LOWER(name) LIKE '%allergen%'");
+
+		foreach ($query->rows as $row) {
+			$option_ids[] = (int)$row['option_id'];
+		}
+
+		return array_values(array_unique(array_filter($option_ids)));
+	}
+
 	public function migrateFromOption() {
 		$language_id = (int)$this->config->get('config_language_id');
+		$option_ids = $this->getLegacyAllergenOptionIds();
+
+		if (!$option_ids) {
+			return;
+		}
+
+		$option_id_sql = implode(',', array_map('intval', $option_ids));
+
 		$query = $this->db->query("SELECT ov.option_value_id, ov.image, ov.sort_order, ovd.name
 			FROM `" . DB_PREFIX . "option_value` ov
 			LEFT JOIN `" . DB_PREFIX . "option_value_description` ovd ON (ov.option_value_id = ovd.option_value_id AND ovd.language_id = '" . $language_id . "')
-			WHERE ov.option_id = '" . (int)$this->option_id . "'
+			WHERE ov.option_id IN (" . $option_id_sql . ")
 			ORDER BY ov.sort_order ASC, ovd.name ASC");
 
 		foreach ($query->rows as $row) {
@@ -55,7 +76,7 @@ class ModelExtensionModuleRestaurantAllergens extends Model {
 			SELECT DISTINCT pov.product_id, ra.allergen_id
 			FROM `" . DB_PREFIX . "product_option_value` pov
 			INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.old_option_value_id = pov.option_value_id)
-			WHERE pov.option_id = '" . (int)$this->option_id . "'");
+			WHERE pov.option_id IN (" . $option_id_sql . ")");
 	}
 
 	public function getAllergens() {
@@ -72,13 +93,20 @@ class ModelExtensionModuleRestaurantAllergens extends Model {
 		$seen = array();
 
 		foreach ((array)$rows as $row) {
+			$allergen_id = (int)($row['allergen_id'] ?? 0);
+
+			if ($allergen_id && !empty($row['delete'])) {
+				$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_product_allergen` WHERE allergen_id = '" . $allergen_id . "'");
+				$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_allergen` WHERE allergen_id = '" . $allergen_id . "'");
+				continue;
+			}
+
 			$name = trim((string)($row['name'] ?? ''));
 
 			if ($name === '') {
 				continue;
 			}
 
-			$allergen_id = (int)($row['allergen_id'] ?? 0);
 			$image = trim((string)($row['image'] ?? ''));
 			$sort_order = (int)($row['sort_order'] ?? 0);
 			$status = !empty($row['status']) ? 1 : 0;

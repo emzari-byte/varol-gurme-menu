@@ -370,6 +370,48 @@ class ControllerCatalogProduct extends Controller {
 		$this->response->setOutput(json_encode($json));
 	}
 
+	public function quickAllergen() {
+		$this->load->language('catalog/product');
+		$this->load->model('catalog/product');
+		$this->load->model('tool/image');
+
+		$json = array();
+		$product_id = isset($this->request->post['product_id']) ? (int)$this->request->post['product_id'] : (isset($this->request->get['product_id']) ? (int)$this->request->get['product_id'] : 0);
+
+		if ($this->request->server['REQUEST_METHOD'] == 'POST') {
+			if (!$this->user->hasPermission('modify', 'catalog/product')) {
+				$json['error'] = $this->language->get('error_permission');
+			} elseif (!$product_id || !$this->model_catalog_product->getProduct($product_id)) {
+				$json['error'] = 'Urun bulunamadi.';
+			} else {
+				$allergens = isset($this->request->post['allergen']) ? (array)$this->request->post['allergen'] : array();
+				$this->model_catalog_product->saveProductRestaurantAllergens($product_id, $allergens);
+				$json['success'] = true;
+				$json['html'] = $this->renderQuickAllergenBadges($product_id);
+			}
+		} elseif (!$this->user->hasPermission('access', 'catalog/product')) {
+			$json['error'] = $this->language->get('error_permission');
+		} elseif (!$product_id || !$this->model_catalog_product->getProduct($product_id)) {
+			$json['error'] = 'Urun bulunamadi.';
+		} else {
+			$json['selected'] = $this->model_catalog_product->getProductRestaurantAllergenIds($product_id);
+			$json['allergens'] = array();
+
+			foreach ($this->model_catalog_product->getRestaurantAllergens() as $allergen) {
+				$image = !empty($allergen['image']) && is_file(DIR_IMAGE . $allergen['image']) ? $allergen['image'] : 'no_image.png';
+
+				$json['allergens'][] = array(
+					'allergen_id' => (int)$allergen['allergen_id'],
+					'name' => html_entity_decode($allergen['name'], ENT_QUOTES, 'UTF-8'),
+					'thumb' => $this->model_tool_image->resize($image, 36, 36)
+				);
+			}
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
 	protected function getList() {
 		if (isset($this->request->get['filter_name'])) {
 			$filter_name = $this->request->get['filter_name'];
@@ -517,12 +559,15 @@ class ControllerCatalogProduct extends Controller {
 				}
 			}
 
+			$product_allergens = $this->getProductAllergenBadges($result['product_id']);
+
 			$data['products'][] = array(
 				'product_id' => $result['product_id'],
 				'image'      => $image,
 				'image_path' => $result['image'],
 				'category'   => $category_names ? implode(' > ', $category_names) : '-',
 				'name'       => $result['name'],
+				'allergens'  => $product_allergens,
 				'model'      => $result['model'],
 				'akinsoft_sync_class' => isset($akinsoft_sync_map[$result['product_id']]) ? 'akinsoft-row-' . $akinsoft_sync_map[$result['product_id']]['status'] : '',
 				'akinsoft_sync_label' => isset($akinsoft_sync_map[$result['product_id']]) ? ($akinsoft_sync_map[$result['product_id']]['status'] == 'matched' ? 'Akınsoft eşleşti' : 'Akınsoft eşleşmedi') : '',
@@ -654,6 +699,38 @@ class ControllerCatalogProduct extends Controller {
 		$data['footer'] = $this->load->controller('common/footer');
 
 		$this->response->setOutput($this->load->view('catalog/product_list', $data));
+	}
+
+	private function getProductAllergenBadges($product_id) {
+		$allergens = array();
+
+		foreach ($this->model_catalog_product->getProductRestaurantAllergens($product_id) as $allergen) {
+			$image = !empty($allergen['image']) && is_file(DIR_IMAGE . $allergen['image']) ? $allergen['image'] : 'no_image.png';
+
+			$allergens[] = array(
+				'allergen_id' => (int)$allergen['allergen_id'],
+				'name' => $allergen['name'],
+				'thumb' => $this->model_tool_image->resize($image, 28, 28)
+			);
+		}
+
+		return $allergens;
+	}
+
+	private function renderQuickAllergenBadges($product_id) {
+		$html = '';
+
+		foreach ($this->getProductAllergenBadges($product_id) as $allergen) {
+			$html .= '<span class="product-allergen-icon" title="' . htmlspecialchars($allergen['name'], ENT_QUOTES, 'UTF-8') . '">';
+			$html .= '<img src="' . $allergen['thumb'] . '" alt="' . htmlspecialchars($allergen['name'], ENT_QUOTES, 'UTF-8') . '">';
+			$html .= '</span>';
+		}
+
+		if ($html === '') {
+			$html = '<span class="product-allergen-empty">Alerjen yok</span>';
+		}
+
+		return $html;
 	}
 
 	private function getAkinsoftProductSyncMap($products) {
@@ -1144,8 +1221,10 @@ class ControllerCatalogProduct extends Controller {
 			$product_options = array();
 		}
 
+		$legacy_allergen_option_ids = $this->model_catalog_product->getLegacyAllergenOptionIds();
+
 		foreach ($product_options as $key => $product_option) {
-			if ((int)$product_option['option_id'] === 14) {
+			if (in_array((int)$product_option['option_id'], $legacy_allergen_option_ids)) {
 				unset($product_options[$key]);
 			}
 		}

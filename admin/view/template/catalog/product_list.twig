@@ -27,7 +27,7 @@
     </div>
     {% endif %}
     <div class="row">
-      <div id="filter-product" class="col-md-3 col-md-push-9 col-sm-12 hidden-sm hidden-xs">
+      <div id="filter-product" class="col-md-2 col-md-push-10 col-sm-12 hidden-sm hidden-xs product-filter-compact">
         <div class="panel panel-default">
           <div class="panel-heading">
             <h3 class="panel-title"><i class="fa fa-filter"></i> {{ text_filter }}</h3>
@@ -132,7 +132,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-9 col-md-pull-3 col-sm-12">
+      <div class="col-md-10 col-md-pull-2 col-sm-12">
         <div class="panel panel-default">
           <div class="panel-heading">
             <h3 class="panel-title"><i class="fa fa-list"></i> {{ text_list }}</h3>
@@ -190,6 +190,20 @@
                 background:#f4f8fb;
                 box-shadow:inset 0 0 0 1px #d9e6ef;
               }
+              .product-filter-compact .panel-body{padding:12px;}
+              .product-filter-compact .form-group{margin-bottom:10px;}
+              .product-filter-compact label{font-size:12px;margin-bottom:4px;}
+              .product-filter-compact .form-control{height:32px;padding:5px 8px;font-size:12px;}
+              .product-allergen-cell{min-width:150px;}
+              .product-allergen-icons{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:32px;}
+              .product-allergen-icon{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border:1px solid #dfe8e2;border-radius:9px;background:#fff;}
+              .product-allergen-icon img{max-width:23px;max-height:23px;object-fit:contain;}
+              .product-allergen-empty{font-size:11px;color:#9a9a9a;}
+              .quick-allergen-trigger{margin-left:5px;border-radius:50%;width:28px;height:28px;padding:0;}
+              .quick-allergen-option{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #dfe8e2;border-radius:10px;margin-bottom:8px;cursor:pointer;}
+              .quick-allergen-option:hover{background:#f7fbf8;border-color:#9dc2ad;}
+              .quick-allergen-option input{margin:0;}
+              .quick-allergen-option img{width:32px;height:32px;object-fit:contain;border:1px solid #e6eee8;border-radius:9px;padding:4px;background:#fff;}
             </style>
             <form action="{{ delete }}" method="post" enctype="multipart/form-data" id="form-product">
               <div class="table-responsive">
@@ -200,6 +214,7 @@
                       <td class="text-center">{{ column_image }}</td>
                       <td class="text-left">Kategori</td>
                       <td class="text-left">{% if sort == 'pd.name' %} <a href="{{ sort_name }}" class="{{ order|lower }}">{{ column_name }}</a> {% else %} <a href="{{ sort_name }}">{{ column_name }}</a> {% endif %}</td>
+                      <td class="text-left">Alerjen</td>
                       <td class="text-left">{% if sort == 'p.model' %} <a href="{{ sort_model }}" class="{{ order|lower }}">{{ column_model }}</a> {% else %} <a href="{{ sort_model }}">{{ column_model }}</a> {% endif %}</td>
                       <td class="text-right">{% if sort == 'p.price' %} <a href="{{ sort_price }}" class="{{ order|lower }}">{{ column_price }}</a> {% else %} <a href="{{ sort_price }}">{{ column_price }}</a> {% endif %}</td>
                       <td class="text-right">{% if sort == 'p.quantity' %} <a href="{{ sort_quantity }}" class="{{ order|lower }}">{{ column_quantity }}</a> {% else %} <a href="{{ sort_quantity }}">{{ column_quantity }}</a> {% endif %}</td>
@@ -225,6 +240,18 @@
                     </td>
                     <td class="text-left"><span class="quick-category-value" data-product-id="{{ product.product_id }}">{{ product.category }}</span></td>
                     <td class="text-left"><span class="quick-edit-value" data-product-id="{{ product.product_id }}" data-field="name">{{ product.name }}</span></td>
+                    <td class="text-left product-allergen-cell">
+                      <div class="product-allergen-icons" id="product-allergens-{{ product.product_id }}">
+                        {% if product.allergens %}
+                          {% for allergen in product.allergens %}
+                            <span class="product-allergen-icon" title="{{ allergen.name }}"><img src="{{ allergen.thumb }}" alt="{{ allergen.name }}"></span>
+                          {% endfor %}
+                        {% else %}
+                          <span class="product-allergen-empty">Alerjen yok</span>
+                        {% endif %}
+                        <button type="button" class="btn btn-default btn-xs quick-allergen-trigger" data-product-id="{{ product.product_id }}" data-product-name="{{ product.name|e('html_attr') }}" title="Alerjen sec"><i class="fa fa-plus"></i></button>
+                      </div>
+                    </td>
                     <td class="text-left">
                       <span class="quick-edit-value" data-product-id="{{ product.product_id }}" data-field="model">{{ product.model }}</span>
                       {% if product.akinsoft_sync_label %}
@@ -254,7 +281,7 @@
                   {% endfor %}
                   {% else %}
                   <tr>
-                    <td class="text-center" colspan="9">{{ text_no_results }}</td>
+                    <td class="text-center" colspan="10">{{ text_no_results }}</td>
                   </tr>
                   {% endif %}
                     </tbody>
@@ -346,6 +373,26 @@
           <span class="quick-save-state pull-left" id="quick-category-state"></span>
           <button type="button" class="btn btn-default" data-dismiss="modal">Kapat</button>
           <button type="button" class="btn btn-primary" id="button-save-category"><i class="fa fa-save"></i> Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="modal-product-allergen" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Alerjenler</h4>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="quick-allergen-product-id" value="" />
+          <div id="quick-allergen-product-name" style="font-weight:700;margin-bottom:12px;"></div>
+          <div id="quick-allergen-fields" style="max-height:360px;overflow:auto;"></div>
+        </div>
+        <div class="modal-footer">
+          <span class="quick-save-state pull-left" id="quick-allergen-state"></span>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Kapat</button>
+          <button type="button" class="btn btn-primary" id="button-save-allergen"><i class="fa fa-save"></i> Kaydet</button>
         </div>
       </div>
     </div>
@@ -565,6 +612,91 @@ $('#button-save-category').on('click', function() {
 
 		$button.prop('disabled', false);
 	}, null, categories);
+});
+
+$(document).on('click', '.quick-allergen-trigger', function() {
+	var productId = $(this).data('product-id');
+	var productName = $(this).data('product-name');
+
+	$('#quick-allergen-state').text('Yukleniyor...');
+	$('#quick-allergen-product-id').val(productId);
+	$('#quick-allergen-product-name').text(productName);
+	$('#quick-allergen-fields').html('');
+	$('#modal-product-allergen').modal('show');
+
+	$.ajax({
+		url: 'index.php?route=catalog/product/quickAllergen&user_token={{ user_token }}&product_id=' + productId,
+		dataType: 'json',
+		success: function(json) {
+			if (json.error) {
+				$('#quick-allergen-state').text(json.error);
+				return;
+			}
+
+			var selected = {};
+			var html = '';
+
+			$.each(json.selected, function(index, allergenId) {
+				selected[allergenId] = true;
+			});
+
+			if (!json.allergens.length) {
+				html = '<div class="alert alert-warning">Alerjen tanimi bulunamadi. Restoran Ayarlari > Alerjen Tanimlari ekranini acarak eski secimleri tasiyabilir veya yeni alerjen ekleyebilirsiniz.</div>';
+			}
+
+			$.each(json.allergens, function(index, allergen) {
+				html += '<label class="quick-allergen-option">';
+				html += '<input type="checkbox" class="quick-allergen-checkbox" value="' + allergen.allergen_id + '"' + (selected[allergen.allergen_id] ? ' checked="checked"' : '') + ' />';
+				html += '<img src="' + allergen.thumb + '" alt="">';
+				html += '<span>' + $('<div/>').text(allergen.name).html() + '</span>';
+				html += '</label>';
+			});
+
+			$('#quick-allergen-fields').html(html);
+			$('#quick-allergen-state').text('');
+		}
+	});
+});
+
+$('#button-save-allergen').on('click', function() {
+	var $button = $(this);
+	var productId = $('#quick-allergen-product-id').val();
+	var allergens = [];
+
+	$('.quick-allergen-checkbox:checked').each(function() {
+		allergens.push($(this).val());
+	});
+
+	$button.prop('disabled', true);
+	$('#quick-allergen-state').text('Kaydediliyor...');
+
+	$.ajax({
+		url: 'index.php?route=catalog/product/quickAllergen&user_token={{ user_token }}',
+		type: 'post',
+		dataType: 'json',
+		data: {
+			product_id: productId,
+			allergen: allergens
+		},
+		success: function(json) {
+			if (json.error) {
+				$('#quick-allergen-state').text(json.error);
+			} else if (json.success) {
+				$('#product-allergens-' + productId).html(json.html + '<button type="button" class="btn btn-default btn-xs quick-allergen-trigger" data-product-id="' + productId + '" data-product-name="' + $('<div/>').text($('#quick-allergen-product-name').text()).html() + '" title="Alerjen sec"><i class="fa fa-plus"></i></button>');
+				$('#quick-allergen-state').text('Kaydedildi.');
+				setTimeout(function() {
+					$('#modal-product-allergen').modal('hide');
+					$('#quick-allergen-state').text('');
+				}, 450);
+			}
+
+			$button.prop('disabled', false);
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			$button.prop('disabled', false);
+		}
+	});
 });
 
 function loadProductDescriptions(productId, done) {

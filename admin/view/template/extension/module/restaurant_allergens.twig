@@ -5,7 +5,7 @@
       <div class="pull-right">
         <button type="submit" form="form-allergens" class="btn btn-primary" data-toggle="tooltip" title="Kaydet"><i class="fa fa-save"></i></button>
       </div>
-      <h1>Alerjen Tanımları</h1>
+      <h1>Alerjen Tan&#305;mlar&#305;</h1>
     </div>
   </div>
   <div class="container-fluid">
@@ -21,17 +21,18 @@
           .allergen-thumb{display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border:1px solid #dfe8e2;border-radius:12px;background:#fbfcfb;}
           .allergen-thumb img{max-width:48px;max-height:48px;object-fit:contain;}
         </style>
-        <div class="allergen-admin-note">Eski seçeneklerde tanımlı ikonlar ve ürün seçimleri otomatik taşındı. Buradan sonra alerjenler bağımsız restoran verisi olarak yönetilir.</div>
+        <div class="allergen-admin-note">Eski se&#231;eneklerde tan&#305;ml&#305; ikonlar ve &#252;r&#252;n se&#231;imleri otomatik ta&#351;&#305;n&#305;r. Buradan sonra alerjenler ba&#287;&#305;ms&#305;z restoran verisi olarak y&#246;netilir.</div>
         <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-allergens">
           <div class="table-responsive">
             <table class="table table-bordered table-hover allergen-table" id="allergen-table">
               <thead>
                 <tr>
-                  <td style="width:90px;">İkon</td>
+                  <td style="width:90px;">&#304;kon</td>
                   <td>Ad</td>
-                  <td style="width:130px;">Sıralama</td>
+                  <td style="width:130px;">S&#305;ralama</td>
                   <td style="width:120px;">Durum</td>
-                  <td style="width:130px;">Ürün</td>
+                  <td style="width:130px;">&#220;r&#252;n</td>
+                  <td style="width:90px;">Sil</td>
                 </tr>
               </thead>
               <tbody>
@@ -51,7 +52,8 @@
                         <option value="0" {% if not allergen.status %}selected{% endif %}>Pasif</option>
                       </select>
                     </td>
-                    <td><span class="label label-info">{{ allergen.product_count }} üründe</span></td>
+                    <td><span class="label label-info">{{ allergen.product_count }} &#252;r&#252;nde</span></td>
+                    <td class="text-center"><label class="btn btn-default btn-sm"><input type="checkbox" name="allergen[{{ row }}][delete]" value="1"> Sil</label></td>
                   </tr>
                   {% set row = row + 1 %}
                 {% endfor %}
@@ -61,10 +63,11 @@
                     <input type="hidden" name="allergen[{{ row }}][image]" value="" id="input-allergen{{ row }}">
                     <input type="hidden" name="allergen[{{ row }}][allergen_id]" value="0">
                   </td>
-                  <td><input type="text" name="allergen[{{ row }}][name]" value="" placeholder="Yeni alerjen adı" class="form-control"></td>
+                  <td><input type="text" name="allergen[{{ row }}][name]" value="" placeholder="Yeni alerjen ad&#305;" class="form-control"></td>
                   <td><input type="number" name="allergen[{{ row }}][sort_order]" value="{{ row + 1 }}" class="form-control"></td>
                   <td><select name="allergen[{{ row }}][status]" class="form-control"><option value="1">Aktif</option><option value="0">Pasif</option></select></td>
                   <td><span class="text-muted">Yeni</span></td>
+                  <td></td>
                 </tr>
               </tbody>
             </table>

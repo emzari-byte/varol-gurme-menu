@@ -420,13 +420,30 @@ class ControllerProductCategory extends Controller {
         ) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 
         $language_id = (int)$this->config->get('config_language_id');
-        $option_id = 14;
+        $option_ids = array(14);
+
+        $option_query = $this->db->query("SELECT DISTINCT option_id FROM `" . DB_PREFIX . "option_description`
+            WHERE LOWER(name) LIKE '%alerjen%'
+            OR LOWER(name) LIKE '%alerji%'
+            OR LOWER(name) LIKE '%allergen%'");
+
+        foreach ($option_query->rows as $row) {
+            $option_ids[] = (int)$row['option_id'];
+        }
+
+        $option_ids = array_values(array_unique(array_filter($option_ids)));
+
+        if (!$option_ids) {
+            return;
+        }
+
+        $option_id_sql = implode(',', array_map('intval', $option_ids));
 
         $this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "restaurant_allergen` (old_option_value_id, name, image, sort_order, status, date_added, date_modified)
             SELECT ov.option_value_id, ovd.name, ov.image, ov.sort_order, 1, NOW(), NOW()
             FROM `" . DB_PREFIX . "option_value` ov
             LEFT JOIN `" . DB_PREFIX . "option_value_description` ovd ON (ov.option_value_id = ovd.option_value_id AND ovd.language_id = '" . $language_id . "')
-            WHERE ov.option_id = '" . (int)$option_id . "'
+            WHERE ov.option_id IN (" . $option_id_sql . ")
             AND NOT EXISTS (
                 SELECT 1 FROM `" . DB_PREFIX . "restaurant_allergen` ra WHERE ra.old_option_value_id = ov.option_value_id
             )");
@@ -435,6 +452,6 @@ class ControllerProductCategory extends Controller {
             SELECT DISTINCT pov.product_id, ra.allergen_id
             FROM `" . DB_PREFIX . "product_option_value` pov
             INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.old_option_value_id = pov.option_value_id)
-            WHERE pov.option_id = '" . (int)$option_id . "'");
+            WHERE pov.option_id IN (" . $option_id_sql . ")");
     }
 }

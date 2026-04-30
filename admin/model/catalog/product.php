@@ -477,14 +477,35 @@ class ModelCatalogProduct extends Model {
 		$this->migrateRestaurantAllergensFromOption();
 	}
 
+	public function getLegacyAllergenOptionIds() {
+		$option_ids = array(14);
+
+		$query = $this->db->query("SELECT DISTINCT option_id FROM `" . DB_PREFIX . "option_description`
+			WHERE LOWER(name) LIKE '%alerjen%'
+			OR LOWER(name) LIKE '%alerji%'
+			OR LOWER(name) LIKE '%allergen%'");
+
+		foreach ($query->rows as $row) {
+			$option_ids[] = (int)$row['option_id'];
+		}
+
+		return array_values(array_unique(array_filter($option_ids)));
+	}
+
 	private function migrateRestaurantAllergensFromOption() {
-		$option_id = 14;
+		$option_ids = $this->getLegacyAllergenOptionIds();
 		$language_id = (int)$this->config->get('config_language_id');
+
+		if (!$option_ids) {
+			return;
+		}
+
+		$option_id_sql = implode(',', array_map('intval', $option_ids));
 
 		$option_values = $this->db->query("SELECT ov.option_value_id, ov.image, ov.sort_order, ovd.name
 			FROM `" . DB_PREFIX . "option_value` ov
 			LEFT JOIN `" . DB_PREFIX . "option_value_description` ovd ON (ov.option_value_id = ovd.option_value_id AND ovd.language_id = '" . $language_id . "')
-			WHERE ov.option_id = '" . (int)$option_id . "'
+			WHERE ov.option_id IN (" . $option_id_sql . ")
 			ORDER BY ov.sort_order ASC, ovd.name ASC");
 
 		foreach ($option_values->rows as $option_value) {
@@ -508,10 +529,10 @@ class ModelCatalogProduct extends Model {
 			SELECT DISTINCT pov.product_id, ra.allergen_id
 			FROM `" . DB_PREFIX . "product_option_value` pov
 			INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.old_option_value_id = pov.option_value_id)
-			WHERE pov.option_id = '" . (int)$option_id . "'");
+			WHERE pov.option_id IN (" . $option_id_sql . ")");
 	}
 
-	private function saveProductRestaurantAllergens($product_id, $allergens) {
+	public function saveProductRestaurantAllergens($product_id, $allergens) {
 		$this->ensureRestaurantAllergenTables();
 
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_product_allergen` WHERE product_id = '" . (int)$product_id . "'");
@@ -544,6 +565,16 @@ class ModelCatalogProduct extends Model {
 		}
 
 		return $allergens;
+	}
+
+	public function getProductRestaurantAllergens($product_id) {
+		$this->ensureRestaurantAllergenTables();
+
+		return $this->db->query("SELECT ra.* FROM `" . DB_PREFIX . "restaurant_product_allergen` rpa
+			INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.allergen_id = rpa.allergen_id)
+			WHERE rpa.product_id = '" . (int)$product_id . "'
+			AND ra.status = '1'
+			ORDER BY ra.sort_order ASC, ra.name ASC")->rows;
 	}
 
 	public function getProduct($product_id) {
