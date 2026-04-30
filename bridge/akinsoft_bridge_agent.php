@@ -19,6 +19,17 @@ if (!is_file($config_file)) {
 
 $config = require $config_file;
 $agent = new AkinsoftBridgeAgent($config);
+
+if (in_array('--check', $argv, true)) {
+	$agent->check();
+	exit;
+}
+
+if (in_array('--once', $argv, true)) {
+	$agent->runOnce();
+	exit;
+}
+
 $agent->run();
 
 class AkinsoftBridgeAgent {
@@ -33,15 +44,48 @@ class AkinsoftBridgeAgent {
 		$this->log('Bridge agent basladi.');
 
 		while (true) {
-			try {
-				$this->syncPendingOrders();
-				$this->syncClosedOrders();
-			} catch (Exception $e) {
-				$this->log('HATA: ' . $e->getMessage());
-			}
+			$this->runOnce();
 
 			sleep(max(2, (int)$this->get('poll_seconds', 5)));
 		}
+	}
+
+	public function runOnce() {
+		try {
+			$this->syncPendingOrders();
+			$this->syncClosedOrders();
+		} catch (Exception $e) {
+			$this->log('HATA: ' . $e->getMessage());
+		}
+	}
+
+	public function check() {
+		$this->log('Bridge kontrol basladi.');
+		$this->log('PHP: ' . PHP_VERSION);
+		$this->log('cURL: ' . (extension_loaded('curl') ? 'aktif' : 'eksik'));
+		$this->log('pdo_firebird: ' . (extension_loaded('pdo_firebird') ? 'aktif' : 'eksik'));
+
+		$site_url = rtrim((string)$this->get('site_base_url', ''), '/');
+		$token = (string)$this->get('bridge_token', '');
+
+		$this->log('Canli site URL: ' . ($site_url !== '' ? $site_url : 'bos'));
+		$this->log('Bridge token: ' . ($token !== '' ? 'var' : 'bos'));
+
+		try {
+			$response = $this->request('extension/module/akinsoft_bridge/pending', array('limit' => 1));
+			$this->log('Canli site baglantisi: ' . (!empty($response['success']) ? 'basarili' : 'basarisiz - ' . $this->message($response)));
+		} catch (Exception $e) {
+			$this->log('Canli site baglantisi: basarisiz - ' . $e->getMessage());
+		}
+
+		try {
+			$this->firebird();
+			$this->log('Firebird baglantisi: basarili');
+		} catch (Exception $e) {
+			$this->log('Firebird baglantisi: basarisiz - ' . $e->getMessage());
+		}
+
+		$this->log('Bridge kontrol bitti.');
 	}
 
 	private function syncPendingOrders() {

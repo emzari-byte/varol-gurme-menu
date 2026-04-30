@@ -12,7 +12,7 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 		$limit = max(1, min(100, (int)$limit));
 		$language_id = $this->getTurkishLanguageId();
 
-		$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.table_id, ro.total_amount, ro.customer_note, ro.payment_method,
+		$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.table_id, ro.total_amount, ro.customer_note,
 				ro.date_added, ro.date_modified, rt.table_no, rt.name AS table_name
 			FROM `" . DB_PREFIX . "restaurant_order` ro
 			LEFT JOIN `" . DB_PREFIX . "restaurant_table` rt ON (rt.table_id = ro.table_id)
