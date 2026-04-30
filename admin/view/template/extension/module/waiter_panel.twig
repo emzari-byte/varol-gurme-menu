@@ -791,14 +791,7 @@ function renderProductResults(products) {
 
 		try {
 			notifyAudio.volume = 1;
-			var playPromise = notifyAudio.play();
-
-			if (playPromise !== undefined) {
-				playPromise.then(function() {
-					notifyAudio.pause();
-					notifyAudio.currentTime = 0;
-				}).catch(function() {});
-			}
+			notifyAudio.load();
 		} catch (e) {}
 	}
 

@@ -330,18 +330,7 @@
     try {
       kitchenAudio.volume = 1;
       kitchenAudio.currentTime = 0;
-
-      var playPromise = kitchenAudio.play();
-
-      if (playPromise && playPromise.then) {
-        playPromise.then(function(){
-          kitchenAudio.pause();
-          kitchenAudio.currentTime = 0;
-        }).catch(function(){});
-      } else {
-        kitchenAudio.pause();
-        kitchenAudio.currentTime = 0;
-      }
+      kitchenAudio.load();
     } catch(e) {}
 
     try {
