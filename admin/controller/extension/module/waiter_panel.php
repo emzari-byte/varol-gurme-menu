@@ -12,7 +12,7 @@ class ControllerExtensionModuleWaiterPanel extends Controller {
 		}
 
 		$this->document->setTitle('Garson Paneli');
-        $this->document->addStyle('/menu/css/waiter-panel.css?v=4');
+        $this->document->addStyle('/menu/css/waiter-panel.css?v=5');
 		$this->load->model('extension/module/waiter_panel');
 
 		$current_user_id = (int)$this->user->getId();
@@ -44,6 +44,7 @@ class ControllerExtensionModuleWaiterPanel extends Controller {
 		$data['new_calls']     = $summary['new_calls'];
 		$data['paid_count']    = $summary['paid_count'];
 		$data['waiter_status'] = $this->model_extension_module_waiter_panel->getCurrentWaiterStatus($current_user_id);
+		$data['admin_notification_controls'] = empty($data['waiter_status']['is_waiter']) ? 1 : 0;
 		$data['active_waiters'] = $this->model_extension_module_waiter_panel->getActiveWaiterDelegates($current_user_id);
 
 		$data['user_token']       = $this->session->data['user_token'];

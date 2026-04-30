@@ -138,6 +138,49 @@
 	color:var(--wp-text);
 }
 
+.waiter-admin-alert-controls{
+	display:flex;
+	justify-content:flex-end;
+	align-items:center;
+	gap:10px;
+	margin:-6px 0 16px;
+}
+
+.waiter-alert-toggle{
+	display:inline-flex;
+	align-items:center;
+	gap:8px;
+	min-height:38px;
+	padding:0 14px;
+	border:1px solid var(--wp-border);
+	border-radius:999px;
+	background:#ffffff;
+	color:var(--wp-text);
+	font-size:12px;
+	font-weight:900;
+	box-shadow:0 8px 22px rgba(25,48,36,.08);
+	transition:background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
+}
+
+.waiter-alert-toggle:hover,
+.waiter-alert-toggle:focus{
+	background:#f7fbf8;
+	border-color:#cddbd2;
+	color:var(--wp-accent);
+	outline:none;
+}
+
+.waiter-alert-toggle.is-muted{
+	background:#fff4f2;
+	border-color:#f1c1bb;
+	color:#b64237;
+}
+
+.waiter-alert-toggle:disabled{
+	cursor:not-allowed;
+	opacity:.62;
+}
+
 .panel.panel-default{
 	border:1px solid var(--wp-border);
 	border-radius:18px;

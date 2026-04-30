@@ -32,6 +32,19 @@
 			</div>
 		</div>
 
+		{% if admin_notification_controls %}
+			<div class="waiter-admin-alert-controls" id="waiterAdminAlertControls">
+				<button type="button" class="waiter-alert-toggle" id="toggleAdminNotifications" title="Bildirimleri kapat" aria-label="Bildirimleri kapat">
+					<i class="fa fa-bell"></i>
+					<span>Bildirimler</span>
+				</button>
+				<button type="button" class="waiter-alert-toggle" id="toggleAdminSound" title="Sesi kapat" aria-label="Sesi kapat">
+					<i class="fa fa-volume-up"></i>
+					<span>Ses</span>
+				</button>
+			</div>
+		{% endif %}
+
 		<div class="panel panel-default">
 			<div class="panel-heading">
 				<h3 class="panel-title"><i class="fa fa-cutlery"></i> Masalar</h3>
@@ -200,9 +213,12 @@ Mutfağa Gönder
     var currentBillRequestStatus = '';
     var currentMainAction = null;
     var productSearchTimer = null;
-    var manualOrderUrl='{{ manual_order_url|replace({'&amp;':'&'}) }}';
+	var manualOrderUrl='{{ manual_order_url|replace({'&amp;':'&'}) }}';
     var kitchenPanelEnabled = {{ kitchen_panel_enabled ? 1 : 0 }};
     var akinsoftEnabled = {{ akinsoft_enabled ? 1 : 0 }};
+	var adminNotificationControls = {{ admin_notification_controls ? 1 : 0 }};
+	var notificationsMuted = adminNotificationControls ? getLocalFlag('waiter_admin_notifications_muted') : false;
+	var soundMuted = adminNotificationControls ? getLocalFlag('waiter_admin_sound_muted') : false;
 	function statusText(status) {
 		var map = {
 empty:'Boş',
@@ -215,6 +231,52 @@ paid:'Ödeme Alındı',
 cancelled:'İptal'
 };
 		return map[status] || status;
+	}
+
+	function getLocalFlag(key) {
+		try {
+			return localStorage.getItem(key) === '1';
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function setLocalFlag(key, value) {
+		try {
+			localStorage.setItem(key, value ? '1' : '0');
+		} catch (e) {}
+	}
+
+	function notificationsEnabled() {
+		return !notificationsMuted;
+	}
+
+	function soundEnabled() {
+		return notificationsEnabled() && !soundMuted;
+	}
+
+	function updateAdminAlertControls() {
+		if (!adminNotificationControls) return;
+
+		var $notifications = $('#toggleAdminNotifications');
+		var $sound = $('#toggleAdminSound');
+
+		$notifications
+			.toggleClass('is-muted', notificationsMuted)
+			.attr('title', notificationsMuted ? 'Bildirimleri ac' : 'Bildirimleri kapat')
+			.attr('aria-label', notificationsMuted ? 'Bildirimleri ac' : 'Bildirimleri kapat')
+			.find('i')
+			.removeClass('fa-bell fa-bell-slash')
+			.addClass(notificationsMuted ? 'fa-bell-slash' : 'fa-bell');
+
+		$sound
+			.prop('disabled', notificationsMuted)
+			.toggleClass('is-muted', soundMuted || notificationsMuted)
+			.attr('title', soundMuted ? 'Sesi ac' : 'Sesi kapat')
+			.attr('aria-label', soundMuted ? 'Sesi ac' : 'Sesi kapat')
+			.find('i')
+			.removeClass('fa-volume-up fa-volume-off')
+			.addClass((soundMuted || notificationsMuted) ? 'fa-volume-off' : 'fa-volume-up');
 	}
 
 	function escapeHtml(text) {
@@ -776,6 +838,7 @@ function renderProductResults(products) {
 	$('#manualProductResults').html(html);
 }
 	function requestNotificationPermission() {
+		if (!notificationsEnabled()) return;
 		if (!('Notification' in window)) return;
 
 		if (!notificationPermissionAsked && Notification.permission === 'default') {
@@ -785,6 +848,7 @@ function renderProductResults(products) {
 	}
 
 	function unlockAudio() {
+		if (!soundEnabled()) return;
 		if (audioUnlocked) return;
 
 		audioUnlocked = true;
@@ -796,6 +860,8 @@ function renderProductResults(products) {
 	}
 
 	function playNotifySound() {
+		if (!soundEnabled()) return;
+
 		try {
 			notifyAudio.currentTime = 0;
 			notifyAudio.play().catch(function() {});
@@ -803,12 +869,16 @@ function renderProductResults(products) {
 	}
 
 	function vibratePhone(pattern) {
+		if (!notificationsEnabled()) return;
+
 		if (navigator.vibrate) {
 			navigator.vibrate(pattern || [250, 120, 250]);
 		}
 	}
 
 	function showToast(message) {
+		if (!notificationsEnabled()) return;
+
 		var $oldToast = $('#waiter-new-order-toast');
 
 		if ($oldToast.length) {
@@ -841,6 +911,7 @@ function renderProductResults(products) {
 	}
 
 	function showBrowserNotification(title, body) {
+		if (!notificationsEnabled()) return;
 		if (!('Notification' in window)) return;
 
 		if (Notification.permission === 'granted') {
@@ -854,6 +925,8 @@ function renderProductResults(products) {
 	}
 
 	function startTitleBlink(message) {
+	if (!notificationsEnabled()) return;
+
 	if (titleBlinkInterval) {
 		clearInterval(titleBlinkInterval);
 	}
@@ -881,6 +954,11 @@ function renderProductResults(products) {
 	}
 
 	function setAlertTitle(count) {
+		if (!notificationsEnabled()) {
+			document.title = originalTitle;
+			return;
+		}
+
 		if (!alarmOpen) {
 			if (count > 0) {
 				document.title = '(' + count + ') Yeni Sipariş - ' + originalTitle;
@@ -891,6 +969,7 @@ function renderProductResults(products) {
 	}
 
 	function showFullAlarm(message, type) {
+	if (!notificationsEnabled()) return;
 	if (alarmOpen) return;
 
 	alarmOpen = true;
@@ -918,16 +997,20 @@ function renderProductResults(products) {
 	startTitleBlink(message);
 
 	try {
-		notifyAudio.currentTime = 0;
-		notifyAudio.play().catch(function() {});
+		if (soundEnabled()) {
+			notifyAudio.currentTime = 0;
+			notifyAudio.play().catch(function() {});
+		}
 	} catch (e) {}
 
 	vibratePhone([400, 200, 400, 200, 700]);
 
 	alarmLoop = setInterval(function() {
 		try {
-			notifyAudio.currentTime = 0;
-			notifyAudio.play().catch(function() {});
+			if (soundEnabled()) {
+				notifyAudio.currentTime = 0;
+				notifyAudio.play().catch(function() {});
+			}
 		} catch (e) {}
 
 		vibratePhone([250, 120, 250, 120, 250]);
@@ -985,7 +1068,7 @@ function renderProductResults(products) {
 			}
 		});
 
-		if (firstRefreshCompleted && newOrders.length > 0) {
+		if (firstRefreshCompleted && newOrders.length > 0 && notificationsEnabled()) {
 			var firstOrder = newOrders[0];
 			var toastMessage = 'Yeni Sipariş! Masa ' + firstOrder.table_no;
 
@@ -1214,6 +1297,43 @@ function checkNewBillRequests(tables) {
 	$(document).on('click touchstart', function() {
 		requestNotificationPermission();
 		unlockAudio();
+	});
+
+	$('#toggleAdminNotifications').on('click', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+
+		notificationsMuted = !notificationsMuted;
+		setLocalFlag('waiter_admin_notifications_muted', notificationsMuted);
+
+		if (notificationsMuted) {
+			closeFullAlarm();
+			stopTitleBlink();
+			$('#waiter-new-order-toast').remove();
+		}
+
+		updateAdminAlertControls();
+	});
+
+	$('#toggleAdminSound').on('click', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+
+		if (notificationsMuted) {
+			return;
+		}
+
+		soundMuted = !soundMuted;
+		setLocalFlag('waiter_admin_sound_muted', soundMuted);
+
+		if (soundMuted) {
+			try {
+				notifyAudio.pause();
+				notifyAudio.currentTime = 0;
+			} catch (error) {}
+		}
+
+		updateAdminAlertControls();
 	});
 
 	$(document).on('click', '#alarmOkBtn', function() {
@@ -1518,6 +1638,7 @@ function processMainAction(button) {
 }
 
 bindCards();
+updateAdminAlertControls();
 refreshPanel();
 setInterval(refreshPanel, 10000);
 })(jQuery);
