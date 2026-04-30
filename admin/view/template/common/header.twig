@@ -18,7 +18,7 @@
 <meta name="apple-mobile-web-app-title" content="Garson Paneli" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="manifest" href="/menu/admin/waiter-pwa.webmanifest" />
-<link rel="apple-touch-icon" href="/menu/image/catalog/veranda-logo2.png" />
+<link rel="apple-touch-icon" href="{{ pwa_icon }}" />
 {% endif %}
 <script type="text/javascript" src="view/javascript/jquery/jquery-2.1.1.min.js"></script>
 <script type="text/javascript" src="view/javascript/bootstrap/js/bootstrap.min.js"></script>
@@ -77,7 +77,7 @@
 <div id="container">
 <header id="header" class="navbar navbar-static-top">
   <div class="container-fluid">
-    <div id="header-logo" class="navbar-header"><a href="{{ home }}" class="navbar-brand"><img src="view/image/logo.png" alt="{{ heading_title }}" title="{{ heading_title }}" /></a></div>
+    <div id="header-logo" class="navbar-header"><a href="{{ home }}" class="navbar-brand"><img src="{{ admin_brand_logo }}" alt="Varol Gurme" title="Varol Gurme" /></a></div>
     {% if logged %}<a href="#" id="button-menu" class="hidden-md hidden-lg"><span class="fa fa-bars"></span></a>
     <ul class="nav navbar-nav navbar-right">
       <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><img src="{{ image }}" alt="{{ firstname }} {{ lastname }}" title="{{ username }}" id="user-profile" class="img-circle" />{{ firstname }} {{ lastname }} <i class="fa fa-caret-down fa-fw"></i></a>
@@ -110,11 +110,6 @@
           {% for store in stores %}
           <li><a href="{{ store.href }}" target="_blank">{{ store.name }}</a></li>
           {% endfor %}
-          <li role="separator" class="divider"></li>
-          <li class="dropdown-header">{{ text_help }}</li>
-          <li><a href="https://www.opencart.com" target="_blank"><i class="fa fa-opencart fa-fw"></i> {{ text_homepage }}</a></li>
-          <li><a href="http://docs.opencart.com" target="_blank"><i class="fa fa-file-text-o fa-fw"></i> {{ text_documentation }}</a></li>
-          <li><a href="https://forum.opencart.com" target="_blank"><i class="fa fa-comments-o fa-fw"></i> {{ text_support }}</a></li>
           {% endif %}
         </ul>
       </li>

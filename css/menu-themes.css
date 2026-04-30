@@ -1,0 +1,127 @@
+/*
+ * Customer menu visual themes.
+ * Selected by restaurant_menu_theme in Restaurant Settings.
+ */
+
+.menu-theme-v1 {
+  --vg-page: #f4faf6;
+  --vg-card: #ffffff;
+  --vg-text: #22372c;
+  --vg-muted: #6d7d74;
+  --vg-accent: #5f9078;
+  --vg-accent-2: #d6a846;
+}
+
+.menu-theme-v2 {
+  --vg-page: #151817;
+  --vg-card: #222725;
+  --vg-text: #f6f1e8;
+  --vg-muted: #c8bfae;
+  --vg-accent: #d16742;
+  --vg-accent-2: #6fb1a7;
+}
+
+.menu-theme-v3 {
+  --vg-page: #f7f7f4;
+  --vg-card: #ffffff;
+  --vg-text: #1d2428;
+  --vg-muted: #71797f;
+  --vg-accent: #2f6f8f;
+  --vg-accent-2: #cf6f4f;
+}
+
+.menu-theme-v4 {
+  --vg-page: #10131c;
+  --vg-card: #1b2130;
+  --vg-text: #f4efe5;
+  --vg-muted: #b8c0cc;
+  --vg-accent: #b8894f;
+  --vg-accent-2: #7f9cc6;
+}
+
+.menu-theme-v5 {
+  --vg-page: #fff7ec;
+  --vg-card: #ffffff;
+  --vg-text: #2d2520;
+  --vg-muted: #7a6f67;
+  --vg-accent: #e4572e;
+  --vg-accent-2: #2f9c95;
+}
+
+body[class*="menu-theme-"] {
+  background: var(--vg-page) !important;
+  color: var(--vg-text);
+}
+
+body[class*="menu-theme-"] .osahan-home-page,
+body[class*="menu-theme-"] .fixed-bottom-bar,
+body[class*="menu-theme-"] .page-wrap {
+  background: var(--vg-page) !important;
+}
+
+body[class*="menu-theme-"] .entry-card,
+body[class*="menu-theme-"] .list-card,
+body[class*="menu-theme-"] .encok-card,
+body[class*="menu-theme-"] .menu-order-sheet,
+body[class*="menu-theme-"] .bill-payment-card,
+body[class*="menu-theme-"] .feedback-card,
+body[class*="menu-theme-"] .menu-page-footer-inner {
+  background: var(--vg-card) !important;
+  color: var(--vg-text) !important;
+  border-color: rgba(120, 140, 130, 0.22) !important;
+}
+
+body[class*="menu-theme-"] h1,
+body[class*="menu-theme-"] h2,
+body[class*="menu-theme-"] h3,
+body[class*="menu-theme-"] h4,
+body[class*="menu-theme-"] h5,
+body[class*="menu-theme-"] h6,
+body[class*="menu-theme-"] .headline,
+body[class*="menu-theme-"] .cat-label,
+body[class*="menu-theme-"] .food-price,
+body[class*="menu-theme-"] .feedback-title {
+  color: var(--vg-text) !important;
+}
+
+body[class*="menu-theme-"] p,
+body[class*="menu-theme-"] small,
+body[class*="menu-theme-"] .text-gray,
+body[class*="menu-theme-"] .feedback-subtitle,
+body[class*="menu-theme-"] .brand-tags,
+body[class*="menu-theme-"] .footer-note {
+  color: var(--vg-muted) !important;
+}
+
+body[class*="menu-theme-"] .order-add-btn,
+body[class*="menu-theme-"] .menu-order-submit,
+body[class*="menu-theme-"] .lang-card.primary,
+body[class*="menu-theme-"] .contact-btn,
+body[class*="menu-theme-"] .feedback-submit,
+body[class*="menu-theme-"] .floating-waiter-btn {
+  background: var(--vg-accent) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 24px rgba(40, 60, 54, 0.18) !important;
+}
+
+body[class*="menu-theme-"] .food-chip,
+body[class*="menu-theme-"] .mini-badge,
+body[class*="menu-theme-"] .lang-card,
+body[class*="menu-theme-"] .feedback-btn {
+  background: var(--vg-card) !important;
+  color: var(--vg-text) !important;
+  border-color: rgba(120, 140, 130, 0.22) !important;
+}
+
+.menu-theme-v2 .cat-slider,
+.menu-theme-v4 .cat-slider,
+.menu-theme-v2 .category-topbar,
+.menu-theme-v4 .category-topbar {
+  background: var(--vg-card) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.menu-theme-v2 img.logo,
+.menu-theme-v4 img.logo {
+  filter: drop-shadow(0 12px 24px rgba(0,0,0,0.35));
+}

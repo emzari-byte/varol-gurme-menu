@@ -53,6 +53,8 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 		return array(
 			'restaurant_plain_qr_menu' => '1',
 			'restaurant_qr_order_menu' => '1',
+			'restaurant_menu_theme' => 'v1',
+			'restaurant_brand_logo' => 'catalog/veranda-logo2.png',
 			'restaurant_waiter_panel' => '1',
 			'restaurant_kitchen_panel' => '1',
 			'restaurant_waiter_call_reset_minutes' => '5',

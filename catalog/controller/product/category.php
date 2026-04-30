@@ -9,6 +9,23 @@ class ControllerProductCategory extends Controller {
 		$this->load->model('catalog/category');
 		$this->load->model('catalog/product');
 		$this->load->model('tool/image');
+		$this->load->model('common/restaurant_settings');
+
+		$data['title'] = $this->config->get('config_meta_title');
+		$data['description'] = $this->config->get('config_meta_description');
+		$data['serv'] = HTTPS_SERVER;
+		$brand_logo = (string)$this->model_common_restaurant_settings->get('restaurant_brand_logo', $this->config->get('config_logo'));
+
+		if (is_file(DIR_IMAGE . $brand_logo)) {
+			$data['logo'] = HTTPS_SERVER . 'image/' . $brand_logo;
+		} elseif (is_file(DIR_IMAGE . $this->config->get('config_logo'))) {
+			$data['logo'] = HTTPS_SERVER . 'image/' . $this->config->get('config_logo');
+		} else {
+			$data['logo'] = '';
+		}
+
+		$menu_theme = (string)$this->model_common_restaurant_settings->get('restaurant_menu_theme', 'v1');
+		$data['restaurant_menu_theme'] = in_array($menu_theme, array('v1', 'v2', 'v3', 'v4', 'v5'), true) ? $menu_theme : 'v1';
 
         $qr = !empty($this->session->data['menu_qr_token']) ? $this->session->data['menu_qr_token'] : '';
         $table_id = !empty($this->session->data['menu_table_id']) ? (int)$this->session->data['menu_table_id'] : 0;

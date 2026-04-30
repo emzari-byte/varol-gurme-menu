@@ -24,10 +24,14 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 				$this->request->post['restaurant_feedback_email'] = trim((string)$this->request->post['restaurant_feedback_email']);
 			}
 
-			foreach (array('restaurant_akinsoft_host', 'restaurant_akinsoft_port', 'restaurant_akinsoft_db_path', 'restaurant_akinsoft_charset', 'restaurant_akinsoft_bridge_url', 'restaurant_akinsoft_bridge_token', 'restaurant_akinsoft_company', 'restaurant_akinsoft_branch', 'restaurant_akinsoft_user') as $key) {
+			foreach (array('restaurant_brand_logo', 'restaurant_akinsoft_host', 'restaurant_akinsoft_port', 'restaurant_akinsoft_db_path', 'restaurant_akinsoft_charset', 'restaurant_akinsoft_bridge_url', 'restaurant_akinsoft_bridge_token', 'restaurant_akinsoft_company', 'restaurant_akinsoft_branch', 'restaurant_akinsoft_user') as $key) {
 				if (isset($this->request->post[$key])) {
 					$this->request->post[$key] = trim((string)$this->request->post[$key]);
 				}
+			}
+
+			if (empty($this->request->post['restaurant_menu_theme']) || !in_array($this->request->post['restaurant_menu_theme'], array('v1', 'v2', 'v3', 'v4', 'v5'), true)) {
+				$this->request->post['restaurant_menu_theme'] = 'v1';
 			}
 
 			if (empty($this->request->post['restaurant_akinsoft_mode']) || !in_array($this->request->post['restaurant_akinsoft_mode'], array('local_firebird', 'bridge_agent'), true)) {
@@ -83,6 +87,15 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 		$data['akinsoft_test_url'] = $this->url->link('extension/module/restaurant_settings/testAkinsoftConnection', 'user_token=' . $this->session->data['user_token'], true);
 		$data['akinsoft_sync_tables_url'] = $this->url->link('extension/module/restaurant_settings/syncAkinsoftTables', 'user_token=' . $this->session->data['user_token'], true);
 		$data['akinsoft_sync_prices_url'] = $this->url->link('extension/module/restaurant_settings/syncAkinsoftPrices', 'user_token=' . $this->session->data['user_token'], true);
+		$this->load->model('tool/image');
+
+		if (!empty($data['restaurant_brand_logo']) && is_file(DIR_IMAGE . $data['restaurant_brand_logo'])) {
+			$data['restaurant_brand_logo_thumb'] = $this->model_tool_image->resize($data['restaurant_brand_logo'], 100, 100);
+		} else {
+			$data['restaurant_brand_logo_thumb'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+		}
+
+		$data['placeholder'] = $this->model_tool_image->resize('no_image.png', 100, 100);
 
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');

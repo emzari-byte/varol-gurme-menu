@@ -30,6 +30,17 @@ class ControllerCommonHeader extends Controller {
 		$data['waiter_status'] = array('is_waiter' => false, 'on_break' => false);
 		$data['active_waiters'] = array();
 		$data['waiter_panel_pwa'] = (isset($this->request->get['route']) && $this->request->get['route'] === 'extension/module/waiter_panel');
+		$data['admin_brand_logo'] = 'view/image/logo.png';
+		$data['pwa_icon'] = '/menu/image/catalog/veranda-logo2.png';
+
+		$this->load->model('extension/module/restaurant_settings');
+		$restaurant_settings = $this->model_extension_module_restaurant_settings->getSettings();
+		$brand_logo = !empty($restaurant_settings['restaurant_brand_logo']) ? (string)$restaurant_settings['restaurant_brand_logo'] : '';
+
+		if ($brand_logo !== '' && is_file(DIR_IMAGE . $brand_logo)) {
+			$data['admin_brand_logo'] = HTTP_CATALOG . 'image/' . $brand_logo;
+			$data['pwa_icon'] = '/menu/image/' . $brand_logo;
+		}
 
 		$this->load->language('common/header');
 
