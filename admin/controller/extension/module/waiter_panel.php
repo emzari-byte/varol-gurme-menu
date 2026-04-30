@@ -281,7 +281,7 @@ true
 							$export = array(
 								'success' => true,
 								'mode' => $akinsoft_mode,
-								'message' => 'AKINSOFT Web Entegrasyon kuyruguna alindi.'
+								'message' => 'AKINSOFT Bridge Agent kuyruguna alindi.'
 							);
 						}
 

@@ -30,12 +30,6 @@ Live site root:
 https://varolveranda.com/menu
 ```
 
-Akınsoft Web Entegrasyon base URL:
-
-```text
-https://varolveranda.com
-```
-
 ## Current Architecture
 
 The system is now restaurant-focused rather than default OpenCart-focused.
@@ -160,92 +154,57 @@ Do not keep secrets in Git.
 
 ## Akınsoft ERP Integration
 
-There are multiple integration modes:
+There are two remaining integration modes:
 
-- `local_firebird`
 - `bridge_agent`
-- `web_ent`
+- `local_firebird`
 
 Current active direction:
 
 ```text
-Akınsoft Web Entegrasyon
+Bridge Agent
 ```
 
 Reason:
 
-- Live server should not directly connect to local Firebird.
-- Firebird port should not be exposed publicly unless absolutely required.
-- Akınsoft Web Entegrasyon can call the website endpoints and pull orders.
+- Firebird port should not be exposed publicly.
+- The live server does not need `pdo_firebird`.
+- A single PHP bridge script runs on the restaurant computer, reads local Firebird, pulls pending orders from the live site, writes Akinsoft receipts, and reports status back.
+- WebEnt was removed because it did not reliably expose the needed order-detail flow and limited field control.
 
-Important recent fix:
-
-If `pdo_firebird` is not installed, waiter panel must not fail when sending an order to kitchen. It now falls back to WebEnt queue.
-
-Recent commit:
+Bridge files:
 
 ```text
-58ecea9 Fallback Akinsoft waiter export to WebEnt queue
+bridge/akinsoft_bridge_agent.php
+bridge/akinsoft_bridge_config.php
 ```
 
-## Akınsoft WebEnt Endpoints
+Bridge live endpoints:
 
-Root API folder deployed outside `/menu`:
+```text
+index.php?route=extension/module/akinsoft_bridge/pending
+index.php?route=extension/module/akinsoft_bridge/mark
+index.php?route=extension/module/akinsoft_bridge/sent
+index.php?route=extension/module/akinsoft_bridge/paid
+```
+
+Important:
+
+- `restaurant_akinsoft_enabled` must be `1`.
+- `restaurant_akinsoft_mode` should be `bridge_agent`.
+- `restaurant_akinsoft_bridge_url` should be `https://varolveranda.com/menu/`.
+- `restaurant_akinsoft_bridge_token` must match `bridge/akinsoft_bridge_config.php`.
+- Waiter-created manual orders are queued with `integration_status = 'pending_export'` when they go to kitchen and Akinsoft integration is enabled.
+
+## Removed WebEnt Flow
+
+WebEnt API files and restaurant settings option have been removed. Do not deploy or depend on:
 
 ```text
 /home/varolver/public_html/Api/WebEnt9
 ```
 
-Akınsoft Web Entegrasyon program should use site address:
-
-```text
-https://varolveranda.com
-```
-
-Known calls observed from Akınsoft:
-
-```text
-POST /Api/WebEnt9/Test/
-GET  /Api/WebEnt9/SiparisSayiGetirV2
-```
-
-Request log file:
-
-```text
-/home/varolver/public_html/menu/akinsoft_webent_request.log
-```
-
-Do not commit this log.
-
-Current status:
-
-- Test endpoint is reached.
-- SiparisSayiGetirV2 endpoint is reached.
-- Waiter panel can send order without pdo_firebird error.
-- WebEnt order list/detail handler is implemented for likely Akinsoft endpoints:
-  - `SiparisGetir`
-  - `SiparisGetirV2`
-  - `SiparisDetayGetir`
-  - `SiparisDetayGetirV2`
-  - `SiparisleriGetir`
-  - `SiparisleriGetirV2`
-  - `SiparisListesiGetir`
-  - `SiparisListesiGetirV2`
-- Handler returns table number/name, customer note, total, Turkish product names, product quantities, prices and row totals.
-- Waiter-created manual orders now set `integration_status = 'pending_export'` when they go directly to kitchen and Akinsoft integration is enabled.
-- WebEnt count/detail queries also include `in_kitchen` orders where `integration_status` is empty, to recover orders created before that fix.
-- Export marking is separated into likely confirmation endpoints:
-  - `SiparisAktarildi`
-  - `SiparisAktarildiV2`
-  - `SiparisDurumGuncelle`
-  - `SiparisDurumGuncelleV2`
-  - `SiparisOnayla`
-  - `SiparisOnaylaV2`
-  - `SiparisKapat`
-  - `SiparisKapatV2`
-- Next task is to deploy, let Akinsoft call the live endpoint, then inspect `akinsoft_webent_request.log` for the exact detail/confirmation endpoint names and adjust response keys if needed.
-
-When Akınsoft logs a new endpoint after `SiparisSayiGetirV2`, inspect that endpoint and implement the expected response format.
+If the old live folder remains on hosting, it can be manually deleted after cPanel deploy.
 
 ## cPanel Deploy
 
@@ -268,7 +227,6 @@ Important deployment file:
 It deploys:
 
 - OpenCart app files into `/public_html/menu`
-- WebEnt API into `/public_html/Api/WebEnt9`
 
 ## Known Caution
 
@@ -282,10 +240,10 @@ Do not revert or stage it unless the user explicitly asks.
 
 ## Next Tasks
 
-1. Deploy WebEnt order detail endpoint and test with Akınsoft Web Entegrasyon.
-2. Inspect live `akinsoft_webent_request.log` after Akınsoft detects pending orders.
-3. Adjust exact response keys if Akınsoft expects XML or a different JSON envelope.
-4. Later, sync paid/closed status from Akınsoft back to restaurant table/session state.
+1. Simplify Bridge Agent setup so it can run with one PHP command or a tiny Windows launcher.
+2. Test bridge pending-order pull against the live site.
+3. Test local Firebird receipt write from the bridge agent.
+4. Later, sync paid/closed status from Akinsoft back to restaurant table/session state.
 5. Move remaining footer feedback email and logo settings if not fully completed.
 6. Continue polishing customer menu UX after ERP flow is stable.
 
@@ -294,5 +252,5 @@ Do not revert or stage it unless the user explicitly asks.
 Use this in a new conversation:
 
 ```text
-Varol Gurme QR Menü projesine devam ediyoruz. Repo: https://github.com/emzari-byte/varol-gurme-menu. Local yol: C:\xampp\htdocs\menu. Canlı yol: /home/varolver/public_html/menu. PROJECT_NOTES.md dosyasını oku ve kaldığımız yerden devam et. Şu an Akınsoft Web Entegrasyon akışındayız: /Api/WebEnt9/Test ve /Api/WebEnt9/SiparisSayiGetirV2 çağrılıyor. Sıradaki iş Akınsoft'un sipariş detay endpointini yakalayıp ürün/adet/fiyat/masa bilgilerini doğru formatta döndürmek.
+Varol Gurme QR Menü projesine devam ediyoruz. Repo: https://github.com/emzari-byte/varol-gurme-menu. Local yol: C:\xampp\htdocs\menu. Canlı yol: /home/varolver/public_html/menu. PROJECT_NOTES.md dosyasını oku ve kaldığımız yerden devam et. Akınsoft WebEnt akışı kaldırıldı; Bridge Agent yoluna geçiyoruz. Sıradaki iş bridge agent kurulumunu sadeleştirmek, canlı siteden pending sipariş çekmesini ve restoran bilgisayarındaki Firebird'e adisyon yazmasını test etmek.
 ```

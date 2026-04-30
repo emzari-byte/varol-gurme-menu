@@ -64,7 +64,7 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			'restaurant_whatsapp_phone' => '905337843120',
 			'restaurant_feedback_email' => 'can@varoltekstil.com.tr',
 			'restaurant_akinsoft_enabled' => '0',
-			'restaurant_akinsoft_mode' => 'local_firebird',
+			'restaurant_akinsoft_mode' => 'bridge_agent',
 			'restaurant_akinsoft_host' => 'localhost',
 			'restaurant_akinsoft_port' => '3050',
 			'restaurant_akinsoft_db_path' => 'C:\\AKINSOFT\\Wolvox9\\Database_FB\\DEMOWOLVOX\\2026\\WOLVOX.FDB',

@@ -3,7 +3,6 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/varolver/public_html/menu/
     - /bin/mkdir -p $DEPLOYPATH
-    - /bin/mkdir -p /home/varolver/public_html/Api
+    - /bin/rm -rf /home/varolver/public_html/Api/WebEnt9
     - /bin/cp -R admin catalog css image img js sound storage system vendor $DEPLOYPATH
-    - /bin/cp -R Api/WebEnt9 /home/varolver/public_html/Api/
     - /bin/cp -f .htaccess favicon.ico index.php robots.txt akinsoft_api.php config.example.php $DEPLOYPATH
