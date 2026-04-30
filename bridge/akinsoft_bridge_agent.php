@@ -155,6 +155,13 @@ class AkinsoftBridgeAgent {
 
 				$pdo->commit();
 				$this->log('Demo acik adisyon yoktu, masa durumu temizlendi. Girilen=' . $identifier . ', masa=' . $cleared_table);
+
+				try {
+					$this->syncClosedOrders();
+				} catch (Exception $sync_exception) {
+					$this->log('Demo kapanis site senkronu basarisiz: ' . $sync_exception->getMessage());
+				}
+
 				return;
 			}
 
