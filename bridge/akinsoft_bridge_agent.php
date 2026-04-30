@@ -288,6 +288,7 @@ class AkinsoftBridgeAgent {
 			throw new Exception('Sipariste urun yok.');
 		}
 
+		$this->resetFirebirdConnection();
 		$pdo = $this->firebird();
 		$this->closeOpenFirebirdTransaction($pdo);
 		$pdo->beginTransaction();
@@ -463,6 +464,10 @@ class AkinsoftBridgeAgent {
 		$this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		return $this->pdo;
+	}
+
+	private function resetFirebirdConnection() {
+		$this->pdo = null;
 	}
 
 	private function closeOpenFirebirdTransaction(PDO $pdo) {
