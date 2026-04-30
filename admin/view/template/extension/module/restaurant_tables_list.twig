@@ -44,6 +44,14 @@
 		</div>
 		{% endif %}
 
+		{% if unassigned_table_count %}
+		<div class="alert alert-danger">
+			<i class="fa fa-exclamation-triangle"></i>
+			<strong>{{ unassigned_table_count }} aktif masa garsona atanmamış.</strong>
+			Bu masalardan gelen garson çağrıları hiçbir garsona düşmeyebilir.
+		</div>
+		{% endif %}
+
 
 		<div class="panel panel-default">
 
@@ -54,6 +62,35 @@
 			</div>
 
 			<div class="panel-body">
+				<style>
+					.restaurant-table-list > tbody > tr > td { vertical-align: middle; }
+					.restaurant-table-list tr.table-unassigned > td {
+						background:#fff5f5 !important;
+						border-color:#f0c4bf !important;
+					}
+					.table-assignment-ok {
+						display:inline-flex;
+						align-items:center;
+						gap:6px;
+						color:#2f5f49;
+						background:#f4faf6;
+						border:1px solid #cfe0d5;
+						border-radius:999px;
+						padding:5px 10px;
+						font-weight:700;
+					}
+					.table-assignment-danger {
+						display:inline-flex;
+						align-items:center;
+						gap:6px;
+						color:#a94442;
+						background:#fff1f0;
+						border:1px solid #efb7b0;
+						border-radius:999px;
+						padding:5px 10px;
+						font-weight:800;
+					}
+				</style>
 
 				<form action="{{ delete }}"
 					  method="post"
@@ -62,7 +99,7 @@
 
 					<div class="table-responsive">
 
-						<table class="table table-bordered table-hover">
+						<table class="table table-bordered table-hover restaurant-table-list">
 
 							<thead>
 								<tr>
@@ -75,6 +112,7 @@
 									<td class="text-left">Masa Adı</td>
 									<td class="text-left">Kapasite</td>
 									<td class="text-left">Bölüm</td>
+									<td class="text-left">Atanan Garson</td>
 									<td class="text-left">Sıralama</td>
 									<td class="text-left">Durum</td>
 									<td class="text-right">İşlem</td>
@@ -87,7 +125,7 @@
 							{% if tables %}
 
 								{% for table in tables %}
-								<tr>
+								<tr class="{% if table.status and not table.waiter_count %}table-unassigned{% endif %}">
 
 									<td class="text-center">
 										{% if table.table_id in selected %}
@@ -117,6 +155,14 @@
 
 									<td class="text-left">
 										{{ table.area }}
+									</td>
+
+									<td class="text-left">
+										{% if table.waiter_count %}
+											<span class="table-assignment-ok"><i class="fa fa-user"></i> {{ table.waiter_names }}</span>
+										{% else %}
+											<span class="table-assignment-danger"><i class="fa fa-exclamation-triangle"></i> Atanmamış</span>
+										{% endif %}
 									</td>
 
 									<td class="text-left">
@@ -157,7 +203,7 @@
 							{% else %}
 
 								<tr>
-									<td class="text-center" colspan="8">
+									<td class="text-center" colspan="9">
 										Kayıt bulunamadı.
 									</td>
 								</tr>

@@ -75,12 +75,15 @@ class ControllerExtensionModuleRestaurantWaiters extends Controller {
 		$results = $this->model_extension_module_restaurant_waiters->getWaiters();
 
 		foreach ($results as $result) {
+			$assigned_tables = !empty($result['assigned_table_names']) ? explode('||', $result['assigned_table_names']) : array();
+
 			$data['waiters'][] = array(
 				'waiter_id' => $result['waiter_id'],
 				'username' => $result['username'],
 				'name' => $result['name'],
 				'status' => $result['status'],
 				'table_count' => $result['table_count'],
+				'assigned_tables' => $assigned_tables,
 				'work_minutes' => (int)$result['work_minutes'],
 				'break_limit_minutes' => (int)$result['break_limit_minutes'],
 				'today_break_minutes' => (int)$result['today_break_minutes'],

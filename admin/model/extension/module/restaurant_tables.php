@@ -1,7 +1,23 @@
 <?php
 class ModelExtensionModuleRestaurantTables extends Model {
 	public function getTables() {
-		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_table` ORDER BY sort_order ASC, table_no ASC");
+		$query = $this->db->query("SELECT rt.*,
+				(
+					SELECT COUNT(*)
+					FROM `" . DB_PREFIX . "restaurant_waiter_table` rwt
+					INNER JOIN `" . DB_PREFIX . "restaurant_waiter` rw ON (rw.waiter_id = rwt.waiter_id)
+					WHERE rwt.table_id = rt.table_id
+					AND rw.status = '1'
+				) AS waiter_count,
+				(
+					SELECT GROUP_CONCAT(rw.name ORDER BY rw.name ASC SEPARATOR ', ')
+					FROM `" . DB_PREFIX . "restaurant_waiter_table` rwt
+					INNER JOIN `" . DB_PREFIX . "restaurant_waiter` rw ON (rw.waiter_id = rwt.waiter_id)
+					WHERE rwt.table_id = rt.table_id
+					AND rw.status = '1'
+				) AS waiter_names
+			FROM `" . DB_PREFIX . "restaurant_table` rt
+			ORDER BY rt.sort_order ASC, rt.table_no ASC");
 		return $query->rows;
 	}
 

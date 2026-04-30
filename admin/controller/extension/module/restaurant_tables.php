@@ -85,6 +85,7 @@ class ControllerExtensionModuleRestaurantTables extends Controller {
 		$data['delete'] = $this->url->link('extension/module/restaurant_tables/delete', 'user_token=' . $this->session->data['user_token'], true);
 
 		$data['tables'] = array();
+		$data['unassigned_table_count'] = 0;
 
 		$results = $this->model_extension_module_restaurant_tables->getTables();
 
@@ -105,6 +106,8 @@ class ControllerExtensionModuleRestaurantTables extends Controller {
 		'area'        => $result['area'],
 		'sort_order'  => $result['sort_order'],
 		'status'      => $result['status'],
+		'waiter_count' => (int)$result['waiter_count'],
+		'waiter_names' => $result['waiter_names'],
 
 		'edit' => $this->url->link(
 			'extension/module/restaurant_tables/edit',
@@ -115,6 +118,10 @@ class ControllerExtensionModuleRestaurantTables extends Controller {
 
 		'qr_view' => $qr_view
 	);
+
+	if ((int)$result['status'] === 1 && (int)$result['waiter_count'] === 0) {
+		$data['unassigned_table_count']++;
+	}
 }
 
 		if (isset($this->error['warning'])) {

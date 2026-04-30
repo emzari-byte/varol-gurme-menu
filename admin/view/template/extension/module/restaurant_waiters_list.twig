@@ -28,9 +28,36 @@
 				<h3 class="panel-title"><i class="fa fa-users"></i> Garson Listesi</h3>
 			</div>
 			<div class="panel-body">
+				<style>
+					.waiter-admin-table > tbody > tr > td { vertical-align: middle; }
+					.waiter-table-chips { display:flex; flex-wrap:wrap; gap:6px; max-width:520px; }
+					.waiter-table-chip {
+						display:inline-flex;
+						align-items:center;
+						border:1px solid #cfe0d5;
+						background:#f4faf6;
+						color:#2f5f49;
+						border-radius:999px;
+						padding:4px 9px;
+						font-size:12px;
+						font-weight:700;
+						line-height:1.2;
+					}
+					.waiter-table-empty {
+						display:inline-flex;
+						align-items:center;
+						gap:6px;
+						color:#a94442;
+						background:#fff1f0;
+						border:1px solid #f0c4bf;
+						border-radius:999px;
+						padding:5px 10px;
+						font-weight:700;
+					}
+				</style>
 				<form action="{{ delete }}" method="post" enctype="multipart/form-data" id="form-waiter">
 					<div class="table-responsive">
-						<table class="table table-bordered table-hover">
+						<table class="table table-bordered table-hover waiter-admin-table">
 							<thead>
 								<tr>
 									<td style="width:1px;" class="text-center">
@@ -58,7 +85,17 @@
 											</td>
 											<td class="text-left">{{ waiter.username }}</td>
 											<td class="text-left">{{ waiter.name }}</td>
-											<td class="text-left">{{ waiter.table_count }}</td>
+											<td class="text-left">
+												{% if waiter.assigned_tables %}
+													<div class="waiter-table-chips">
+														{% for table_name in waiter.assigned_tables %}
+															<span class="waiter-table-chip">{{ table_name }}</span>
+														{% endfor %}
+													</div>
+												{% else %}
+													<span class="waiter-table-empty"><i class="fa fa-exclamation-triangle"></i> Masa atanmamış</span>
+												{% endif %}
+											</td>
 											<td class="text-left">{{ waiter.work_minutes }} dk</td>
 											<td class="text-left">
 												<strong>{{ waiter.today_break_minutes }} / {{ waiter.break_limit_minutes }} dk</strong>

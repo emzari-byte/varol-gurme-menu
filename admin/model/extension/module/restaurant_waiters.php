@@ -63,6 +63,12 @@ class ModelExtensionModuleRestaurantWaiters extends Model {
 						WHERE rwt.waiter_id = rw.waiter_id
 					) AS table_count,
 					(
+						SELECT GROUP_CONCAT(CONCAT('Masa ', rt.table_no, ' - ', rt.name) ORDER BY rt.sort_order ASC, rt.table_no ASC SEPARATOR '||')
+						FROM `" . DB_PREFIX . "restaurant_waiter_table` rwt
+						INNER JOIN `" . DB_PREFIX . "restaurant_table` rt ON (rt.table_id = rwt.table_id)
+						WHERE rwt.waiter_id = rw.waiter_id
+					) AS assigned_table_names,
+					(
 						SELECT IFNULL(SUM(
 							CASE
 								WHEN rwbl.end_at IS NULL THEN TIMESTAMPDIFF(MINUTE, rwbl.start_at, NOW())

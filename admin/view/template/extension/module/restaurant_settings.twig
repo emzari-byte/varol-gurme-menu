@@ -28,20 +28,179 @@
       </div>
       <div class="panel-body">
         <style>
+          .restaurant-settings-shell{
+            background:#f6f8f7;
+            border-radius:16px;
+            padding:18px;
+            border:1px solid #e4ebe7;
+          }
+          .restaurant-hero{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:18px;
+            padding:20px 22px;
+            margin-bottom:16px;
+            background:linear-gradient(135deg,#173126 0%,#2f5f49 58%,#c49a61 100%);
+            color:#fff;
+            border-radius:14px;
+            box-shadow:0 18px 36px rgba(23,49,38,.16);
+          }
+          .restaurant-hero h2{margin:0 0 6px;font-size:22px;font-weight:800;color:#fff;}
+          .restaurant-hero p{margin:0;color:rgba(255,255,255,.78);font-size:13px;line-height:1.55;}
+          .restaurant-hero-badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}
+          .restaurant-hero-badge{
+            display:inline-flex;
+            align-items:center;
+            gap:7px;
+            padding:8px 11px;
+            border-radius:999px;
+            background:rgba(255,255,255,.14);
+            color:#fff;
+            font-size:12px;
+            font-weight:800;
+            border:1px solid rgba(255,255,255,.18);
+            white-space:nowrap;
+          }
+          .restaurant-settings-shell .nav-tabs{
+            border:0;
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+            margin-bottom:16px;
+          }
+          .restaurant-settings-shell .nav-tabs > li{float:none;margin:0;}
+          .restaurant-settings-shell .nav-tabs > li > a{
+            border:1px solid #dfe7e2;
+            border-radius:999px;
+            margin:0;
+            padding:9px 14px;
+            color:#5f6f67;
+            background:#fff;
+            font-weight:700;
+          }
+          .restaurant-settings-shell .nav-tabs > li.active > a,
+          .restaurant-settings-shell .nav-tabs > li.active > a:hover,
+          .restaurant-settings-shell .nav-tabs > li.active > a:focus{
+            border-color:#2f5f49;
+            background:#173126;
+            color:#fff;
+            box-shadow:0 10px 22px rgba(23,49,38,.14);
+          }
+          .settings-section-title{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            margin:18px 0 10px;
+          }
+          .settings-section-title h3{
+            margin:0;
+            font-size:16px;
+            font-weight:800;
+            color:#173126;
+          }
+          .settings-section-title span{
+            color:#7b8981;
+            font-size:12px;
+            font-weight:700;
+          }
+          .settings-card-grid{
+            display:grid;
+            grid-template-columns:repeat(4,minmax(0,1fr));
+            gap:12px;
+            margin-bottom:16px;
+          }
+          .settings-mini-card{
+            padding:14px;
+            background:#fff;
+            border:1px solid #e1e9e4;
+            border-radius:12px;
+            box-shadow:0 10px 24px rgba(23,49,38,.05);
+          }
+          .settings-mini-card strong{display:block;color:#173126;font-size:13px;margin-bottom:5px;}
+          .settings-mini-card span{display:block;color:#74837b;font-size:12px;line-height:1.45;}
+          .restaurant-settings-shell .tab-pane > .form-group{
+            margin:0 0 10px;
+            padding:16px;
+            background:#fff;
+            border:1px solid #e3ebe6;
+            border-radius:12px;
+            box-shadow:0 8px 20px rgba(23,49,38,.035);
+          }
+          .restaurant-settings-shell .control-label{
+            color:#213c31;
+            font-weight:800;
+            padding-top:8px;
+          }
+          .restaurant-settings-shell .help-block{
+            color:#718178;
+            font-size:12px;
+            margin-bottom:0;
+            line-height:1.5;
+          }
+          .restaurant-settings-shell .form-control{
+            border-color:#dce5df;
+            border-radius:8px;
+            box-shadow:none;
+          }
+          .restaurant-settings-shell .form-control:focus{
+            border-color:#3f725d;
+            box-shadow:0 0 0 3px rgba(63,114,93,.12);
+          }
+          .restaurant-settings-shell .img-thumbnail{
+            border-radius:12px;
+            border-color:#dce5df;
+            padding:10px;
+            background:#fbfcfb;
+          }
+          .restaurant-settings-shell .radio-inline{
+            padding:8px 13px 8px 28px;
+            margin:0 6px 8px 0;
+            border:1px solid #dce5df;
+            border-radius:999px;
+            background:#fbfcfb;
+            font-weight:700;
+          }
           .restaurant-module-frame{
             width:100%;
             min-height:680px;
-            border:1px solid #e5e5e5;
-            border-radius:4px;
+            border:1px solid #e3ebe6;
+            border-radius:12px;
             background:#fff;
           }
           .restaurant-embed-note{
             margin:0 0 12px;
-            color:#777;
+            padding:12px 14px;
+            color:#4f6358;
+            background:#f4faf6;
+            border:1px solid #dce9e2;
+            border-radius:10px;
             font-size:13px;
+            font-weight:700;
+          }
+          @media (max-width: 991px){
+            .restaurant-hero{display:block;}
+            .restaurant-hero-badges{justify-content:flex-start;margin-top:12px;}
+            .settings-card-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+          }
+          @media (max-width: 600px){
+            .settings-card-grid{grid-template-columns:1fr;}
           }
         </style>
         <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-restaurant-settings" class="form-horizontal">
+          <div class="restaurant-settings-shell">
+          <div class="restaurant-hero">
+            <div>
+              <h2>Restoran Operasyon Merkezi</h2>
+              <p>QR menü, sipariş akışı, garson/mutfak paneli, iletişim ve ERP ayarları tek yerden yönetilir.</p>
+            </div>
+            <div class="restaurant-hero-badges">
+              <span class="restaurant-hero-badge"><i class="fa fa-qrcode"></i> QR Menü</span>
+              <span class="restaurant-hero-badge"><i class="fa fa-bell"></i> Garson Çağrı</span>
+              <span class="restaurant-hero-badge"><i class="fa fa-plug"></i> Akınsoft Bridge</span>
+            </div>
+          </div>
           <ul class="nav nav-tabs">
             <li class="active"><a href="#tab-menu-settings" data-toggle="tab">Menü Ayarları</a></li>
             <li><a href="#tab-tables" data-toggle="tab">Masa Yönetimi</a></li>
@@ -56,6 +215,30 @@
 
           <div class="tab-content">
             <div class="tab-pane active" id="tab-menu-settings">
+              <div class="settings-card-grid">
+                <div class="settings-mini-card">
+                  <strong>QR Menü</strong>
+                  <span>{% if restaurant_plain_qr_menu %}Aktif{% else %}Kapalı{% endif %}</span>
+                </div>
+                <div class="settings-mini-card">
+                  <strong>QR Sipariş</strong>
+                  <span>{% if restaurant_qr_order_menu %}Müşteri sipariş gönderebilir{% else %}Sipariş kapalı{% endif %}</span>
+                </div>
+                <div class="settings-mini-card">
+                  <strong>Servis Akışı</strong>
+                  <span>{% if restaurant_waiter_panel %}Garson onayı aktif{% else %}Garson paneli kapalı{% endif %}</span>
+                </div>
+                <div class="settings-mini-card">
+                  <strong>Mutfak</strong>
+                  <span>{% if restaurant_kitchen_panel %}Mutfak ekranı aktif{% else %}Mutfak ekranı kapalı{% endif %}</span>
+                </div>
+              </div>
+
+              <div class="settings-section-title">
+                <h3>Marka ve Müşteri Görünümü</h3>
+                <span>Logo, tema ve müşteri ekranı</span>
+              </div>
+
               <div class="form-group">
                 <label class="col-sm-3 control-label">Menü Logo</label>
                 <div class="col-sm-3">
@@ -75,6 +258,11 @@
                 </div>
               </div>
 
+              <div class="settings-section-title">
+                <h3>Operasyon Anahtarları</h3>
+                <span>Sipariş ve panel akışı</span>
+              </div>
+
               <div class="form-group">
                 <label class="col-sm-3 control-label">Müşteri Menü Teması</label>
                 <div class="col-sm-9">
@@ -88,6 +276,11 @@
                   </select>
                   <p class="help-block">Default, tema eklenmeden önceki orijinal müşteri ekranıdır. V1-V5 farklı restoranlara göre alternatif görünümler sağlar.</p>
                 </div>
+              </div>
+
+              <div class="settings-section-title">
+                <h3>Tekrar Süreleri</h3>
+                <span>Müşteri butonlarının yeniden aktif olma süresi</span>
               </div>
 
               <div class="form-group">
@@ -409,6 +602,7 @@
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </form>
       </div>
