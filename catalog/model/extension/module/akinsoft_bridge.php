@@ -330,7 +330,7 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 
 		return array(
 			'success' => true,
-			'message' => 'Fiyat senkronu Bridge ile tamamlandi. Eslesen urun: ' . $matched . ', OpenCartta bulunmayan stok kodu: ' . $missing,
+			'message' => 'Fiyat senkronu Bridge ile tamamlandi. Eslesen urun: ' . $matched . ', menude bulunmayan stok kodu: ' . $missing,
 			'matched' => $matched,
 			'missing' => $missing,
 			'total_prices' => count($prices)
