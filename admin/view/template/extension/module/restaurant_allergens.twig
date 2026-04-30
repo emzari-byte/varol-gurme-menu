@@ -53,7 +53,9 @@
                       </select>
                     </td>
                     <td><span class="label label-info">{{ allergen.product_count }} &#252;r&#252;nde</span></td>
-                    <td class="text-center"><label class="btn btn-default btn-sm"><input type="checkbox" name="allergen[{{ row }}][delete]" value="1"> Sil</label></td>
+                    <td class="text-center">
+                      <a href="{{ allergen.delete }}" class="btn btn-danger btn-sm" data-toggle="tooltip" title="Sil" onclick="return confirm('Bu alerjen silinsin mi? Urun baglantilari da kaldirilir.');"><i class="fa fa-trash-o"></i></a>
+                    </td>
                   </tr>
                   {% set row = row + 1 %}
                 {% endfor %}

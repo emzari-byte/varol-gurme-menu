@@ -1,12 +1,13 @@
 {{ header }}{{ column_left }}
-<div id="content">
-  <div class="page-header">
+<div id="content" class="restaurant-home-admin">
+  <div class="page-header restaurant-page-header">
     <div class="container-fluid">
       <div class="pull-right">
         <button type="submit" form="form-restaurant-home-products" data-toggle="tooltip" title="Kaydet" class="btn btn-primary"><i class="fa fa-save"></i></button>
-        <a href="{{ cancel }}" data-toggle="tooltip" title="Vazgeç" class="btn btn-default"><i class="fa fa-reply"></i></a>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="Vazge&#231;" class="btn btn-default"><i class="fa fa-reply"></i></a>
       </div>
-      <h1>Ana Sayfa Ürünler</h1>
+      <h1>Ana Sayfa Vitrini</h1>
+      <p>QR men&#252; ana ekran&#305;nda g&#246;r&#252;necek &#252;r&#252;n gruplar&#305;n&#305; buradan y&#246;netin.</p>
       <ul class="breadcrumb">
         {% for breadcrumb in breadcrumbs %}
           <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
@@ -22,79 +23,101 @@
       <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}</div>
     {% endif %}
 
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title"><i class="fa fa-home"></i> Menü Ana Sayfa Ürünleri</h3>
-      </div>
-      <div class="panel-body">
-        <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-restaurant-home-products" class="form-horizontal">
-          <ul class="nav nav-tabs">
-            <li class="active"><a href="#tab-regional" data-toggle="tab">Yöresel Ürünler</a></li>
-            <li><a href="#tab-popular" data-toggle="tab">En Çok Tercih Edilenler</a></li>
-          </ul>
+    <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-restaurant-home-products">
+      <div class="home-section-grid">
+        {% for code, section in sections %}
+          <section class="home-section-card" id="section-card-{{ code }}">
+            <header class="home-section-head">
+              <div>
+                <span class="home-section-kicker">{% if code == 'regional' %}Yerel vitrin{% else %}Pop&#252;ler vitrin{% endif %}</span>
+                <h2>{{ section.name }}</h2>
+                <p>{% if code == 'regional' %}Markaya &#246;zel, imza veya y&#246;resel &#252;r&#252;nleri &#246;ne &#231;&#305;kar&#305;r.{% else %}En &#231;ok sat&#305;lan veya h&#305;zl&#305; karar verdirecek &#252;r&#252;nleri listeler.{% endif %}</p>
+              </div>
+              <label class="home-toggle">
+                <input type="checkbox" name="sections[{{ code }}][status]" value="1" {% if section.status %}checked{% endif %}>
+                <span>Aktif</span>
+              </label>
+            </header>
 
-          <div class="tab-content">
-            {% for code, section in sections %}
-              <div class="tab-pane {% if loop.first %}active{% endif %}" id="tab-{{ code }}">
-                <div class="form-group">
-                  <label class="col-sm-2 control-label" for="input-name-{{ code }}">Başlık</label>
-                  <div class="col-sm-10">
-                    {% for language in languages %}
-                      <div class="input-group restaurant-title-input">
-                        <span class="input-group-addon">
-                          <img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}">
-                        </span>
-                        <input type="text" name="sections[{{ code }}][titles][{{ language.language_id }}]" value="{{ section.titles[language.language_id] is defined ? section.titles[language.language_id] : section.name }}" placeholder="{{ language.name }}" id="input-name-{{ code }}-{{ language.language_id }}" class="form-control">
-                      </div>
-                    {% endfor %}
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label class="col-sm-2 control-label" for="input-product-{{ code }}">Ürünler</label>
-                  <div class="col-sm-10">
-                    <input type="text" name="product_search_{{ code }}" value="" placeholder="Ürün ara..." id="input-product-{{ code }}" class="form-control restaurant-product-search" data-section="{{ code }}">
-                    <div id="section-products-{{ code }}" class="well well-sm restaurant-selected-products">
-                      {% for product in section.products %}
-                        <div id="section-product-{{ code }}-{{ product.product_id }}" class="restaurant-selected-product">
-                          <i class="fa fa-minus-circle"></i>
-                          <span>{{ product.name }}</span>
-                          <input type="hidden" name="sections[{{ code }}][products][]" value="{{ product.product_id }}">
-                        </div>
-                      {% endfor %}
+            <div class="home-section-body">
+              <div class="home-field">
+                <label>B&#246;l&#252;m ba&#351;l&#305;&#287;&#305;</label>
+                <div class="home-language-stack">
+                  {% for language in languages %}
+                    <div class="input-group restaurant-title-input">
+                      <span class="input-group-addon">
+                        <img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}">
+                      </span>
+                      <input type="text" name="sections[{{ code }}][titles][{{ language.language_id }}]" value="{{ section.titles[language.language_id] is defined ? section.titles[language.language_id] : section.name }}" placeholder="{{ language.name }}" id="input-name-{{ code }}-{{ language.language_id }}" class="form-control">
                     </div>
-                    <p class="help-block">Ürünleri eklediğiniz sıra ile ana sayfada görünür. Eski vitrin modülleri artık bu alanı beslemez.</p>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label class="col-sm-2 control-label" for="input-status-{{ code }}">Durum</label>
-                  <div class="col-sm-10">
-                    <select name="sections[{{ code }}][status]" id="input-status-{{ code }}" class="form-control">
-                      {% if section.status %}
-                        <option value="1" selected="selected">Açık</option>
-                        <option value="0">Kapalı</option>
-                      {% else %}
-                        <option value="1">Açık</option>
-                        <option value="0" selected="selected">Kapalı</option>
-                      {% endif %}
-                    </select>
-                  </div>
+                  {% endfor %}
                 </div>
               </div>
-            {% endfor %}
-          </div>
-        </form>
+
+              <div class="home-field">
+                <label>&#220;r&#252;n ekle</label>
+                <div class="home-search-row">
+                  <i class="fa fa-search"></i>
+                  <input type="text" name="product_search_{{ code }}" value="" placeholder="&#220;r&#252;n ad&#305; yaz&#305;n..." id="input-product-{{ code }}" class="form-control restaurant-product-search" data-section="{{ code }}">
+                </div>
+              </div>
+
+              <div class="home-product-board">
+                <div class="home-board-title">
+                  <strong>Se&#231;ili &#252;r&#252;nler</strong>
+                  <span>S&#305;ralama, ekleme s&#305;ras&#305;na g&#246;re uygulan&#305;r.</span>
+                </div>
+                <div id="section-products-{{ code }}" class="restaurant-selected-products">
+                  {% for product in section.products %}
+                    <div id="section-product-{{ code }}-{{ product.product_id }}" class="restaurant-selected-product">
+                      <button type="button" class="remove-product" title="Kald&#305;r"><i class="fa fa-times"></i></button>
+                      <span>{{ product.name }}</span>
+                      <input type="hidden" name="sections[{{ code }}][products][]" value="{{ product.product_id }}">
+                    </div>
+                  {% endfor %}
+                  {% if not section.products %}
+                    <div class="home-empty-state">Hen&#252;z &#252;r&#252;n se&#231;ilmedi.</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </section>
+        {% endfor %}
       </div>
-    </div>
+    </form>
   </div>
   <style>
-    .restaurant-selected-products{height:180px;overflow:auto;margin-top:10px;background:#f7f9f8;}
-    .restaurant-selected-product{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid #e5e5e5;}
-    .restaurant-selected-product:last-child{border-bottom:0;}
-    .restaurant-selected-product .fa-minus-circle{color:#b94a48;cursor:pointer;font-size:15px;}
-    .restaurant-title-input{margin-bottom:8px;}
-    .restaurant-title-input:last-child{margin-bottom:0;}
+    .restaurant-home-admin{background:#f5f7f6;}
+    .restaurant-page-header{background:#fff;border-bottom:1px solid #e5ebe7;margin-bottom:18px;}
+    .restaurant-page-header h1{font-weight:700;color:#1d3329;margin-bottom:4px;}
+    .restaurant-page-header p{margin:0 0 8px;color:#6b7b73;}
+    .home-section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
+    .home-section-card{background:#fff;border:1px solid #dfe8e2;border-radius:10px;box-shadow:0 12px 28px rgba(28,55,42,.06);overflow:hidden;}
+    .home-section-head{display:flex;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #edf2ef;background:#fbfdfb;}
+    .home-section-kicker{display:block;margin-bottom:6px;color:#2f6b4e;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;}
+    .home-section-head h2{margin:0 0 6px;color:#172b23;font-size:20px;font-weight:800;}
+    .home-section-head p{margin:0;color:#6f7f77;line-height:1.45;}
+    .home-toggle{display:inline-flex;align-items:center;gap:8px;height:34px;margin:0;padding:7px 12px;border:1px solid #bfd9c9;border-radius:999px;background:#f2faf5;color:#24543d;font-weight:800;white-space:nowrap;}
+    .home-toggle input{margin:0;}
+    .home-section-body{padding:20px 22px;}
+    .home-field{margin-bottom:18px;}
+    .home-field>label{display:block;margin-bottom:8px;color:#263c32;font-weight:800;}
+    .home-language-stack{display:grid;gap:8px;}
+    .restaurant-title-input .input-group-addon{background:#f8fbf9;border-color:#dfe8e2;}
+    .restaurant-title-input .form-control,.home-search-row .form-control{border-color:#d8e3dd;box-shadow:none;}
+    .home-search-row{position:relative;}
+    .home-search-row .fa{position:absolute;left:12px;top:10px;color:#809087;z-index:2;}
+    .home-search-row .form-control{height:38px;padding-left:34px;}
+    .home-product-board{border:1px solid #dfe8e2;border-radius:10px;overflow:hidden;}
+    .home-board-title{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:#f8fbf9;border-bottom:1px solid #e7eee9;color:#243b31;}
+    .home-board-title span{color:#7a8982;font-size:12px;}
+    .restaurant-selected-products{min-height:184px;max-height:260px;overflow:auto;padding:10px;background:#fff;}
+    .restaurant-selected-product{display:flex;align-items:center;gap:10px;padding:9px 10px;margin-bottom:8px;border:1px solid #edf1ee;border-radius:8px;background:#fbfcfb;}
+    .restaurant-selected-product:last-child{margin-bottom:0;}
+    .restaurant-selected-product span{font-weight:700;color:#304239;}
+    .remove-product{width:26px;height:26px;border:0;border-radius:50%;background:#f4dedb;color:#b94235;line-height:26px;text-align:center;}
+    .home-empty-state{padding:22px 12px;text-align:center;color:#8b9892;border:1px dashed #d4dfd8;border-radius:8px;background:#fbfdfb;}
+    @media (max-width:1199px){.home-section-grid{grid-template-columns:1fr;}}
   </style>
   <script type="text/javascript"><!--
 function restaurantEscapeHtml(text) {
@@ -129,9 +152,10 @@ $('.restaurant-product-search').each(function() {
 			input.val('');
 
 			$('#section-product-' + section + '-' + item['value']).remove();
+			$('#section-products-' + section + ' .home-empty-state').remove();
 			$('#section-products-' + section).append(
 				'<div id="section-product-' + section + '-' + item['value'] + '" class="restaurant-selected-product">' +
-				'<i class="fa fa-minus-circle"></i>' +
+				'<button type="button" class="remove-product" title="Kaldir"><i class="fa fa-times"></i></button>' +
 				'<span>' + restaurantEscapeHtml(item['label']) + '</span>' +
 				'<input type="hidden" name="sections[' + section + '][products][]" value="' + item['value'] + '">' +
 				'</div>'
@@ -140,8 +164,13 @@ $('.restaurant-product-search').each(function() {
 	});
 });
 
-$('.restaurant-selected-products').delegate('.fa-minus-circle', 'click', function() {
+$('.restaurant-selected-products').delegate('.remove-product', 'click', function() {
+	var board = $(this).closest('.restaurant-selected-products');
 	$(this).parent().remove();
+
+	if (!board.find('.restaurant-selected-product').length) {
+		board.html('<div class="home-empty-state">Henuz urun secilmedi.</div>');
+	}
 });
 //--></script>
 </div>

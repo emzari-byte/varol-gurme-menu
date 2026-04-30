@@ -90,16 +90,9 @@ class ModelExtensionModuleRestaurantAllergens extends Model {
 
 	public function saveAllergens($rows) {
 		$this->install();
-		$seen = array();
 
 		foreach ((array)$rows as $row) {
 			$allergen_id = (int)($row['allergen_id'] ?? 0);
-
-			if ($allergen_id && !empty($row['delete'])) {
-				$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_product_allergen` WHERE allergen_id = '" . $allergen_id . "'");
-				$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_allergen` WHERE allergen_id = '" . $allergen_id . "'");
-				continue;
-			}
 
 			$name = trim((string)($row['name'] ?? ''));
 
@@ -119,7 +112,6 @@ class ModelExtensionModuleRestaurantAllergens extends Model {
 						status = '" . $status . "',
 						date_modified = NOW()
 					WHERE allergen_id = '" . $allergen_id . "'");
-				$seen[] = $allergen_id;
 			} else {
 				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_allergen`
 					SET name = '" . $this->db->escape($name) . "',
@@ -128,8 +120,14 @@ class ModelExtensionModuleRestaurantAllergens extends Model {
 						status = '" . $status . "',
 						date_added = NOW(),
 						date_modified = NOW()");
-				$seen[] = (int)$this->db->getLastId();
 			}
 		}
+	}
+
+	public function deleteAllergen($allergen_id) {
+		$this->install();
+
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_product_allergen` WHERE allergen_id = '" . (int)$allergen_id . "'");
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_allergen` WHERE allergen_id = '" . (int)$allergen_id . "'");
 	}
 }

@@ -1,13 +1,19 @@
 <?php
 class ControllerExtensionModuleRestaurantAllergens extends Controller {
 	public function index() {
-		$this->document->setTitle('Alerjen Tanımları');
+		$this->document->setTitle('Alerjen Tanimlari');
 		$this->load->model('extension/module/restaurant_allergens');
 		$this->load->model('tool/image');
 
+		if (isset($this->request->get['delete']) && $this->user->hasPermission('modify', 'extension/module/restaurant_settings')) {
+			$this->model_extension_module_restaurant_allergens->deleteAllergen($this->request->get['delete']);
+			$this->session->data['success'] = 'Alerjen tanimi silindi.';
+			$this->response->redirect($this->url->link('extension/module/restaurant_allergens', 'user_token=' . $this->session->data['user_token'], true));
+		}
+
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->user->hasPermission('modify', 'extension/module/restaurant_settings')) {
 			$this->model_extension_module_restaurant_allergens->saveAllergens($this->request->post['allergen'] ?? array());
-			$this->session->data['success'] = 'Alerjen tanımları kaydedildi.';
+			$this->session->data['success'] = 'Alerjen tanimlari kaydedildi.';
 			$this->response->redirect($this->url->link('extension/module/restaurant_allergens', 'user_token=' . $this->session->data['user_token'], true));
 		}
 
@@ -20,6 +26,7 @@ class ControllerExtensionModuleRestaurantAllergens extends Controller {
 		foreach ($this->model_extension_module_restaurant_allergens->getAllergens() as $allergen) {
 			$image = !empty($allergen['image']) && is_file(DIR_IMAGE . $allergen['image']) ? $allergen['image'] : 'no_image.png';
 			$allergen['thumb'] = $this->model_tool_image->resize($image, 48, 48);
+			$allergen['delete'] = $this->url->link('extension/module/restaurant_allergens', 'user_token=' . $this->session->data['user_token'] . '&delete=' . (int)$allergen['allergen_id'], true);
 			$data['allergens'][] = $allergen;
 		}
 
