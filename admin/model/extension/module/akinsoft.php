@@ -636,7 +636,7 @@ class ModelExtensionModuleAkinsoft extends Model {
 	private function bridgeOnlyAction($name) {
 		return array(
 			'success' => false,
-			'message' => $name . ' canli sunucuda degil, Akinsoft/Firebird kurulu PC uzerindeki Bridge Agent ile calistirilmalidir. Canli sunucuda pdo_firebird gerekmez ve Firebird portu acilmaz.'
+			'message' => $name . ' canli sunucuda degil, Akinsoft/Firebird kurulu PC uzerindeki Bridge Agent ile calistirilmalidir. C:\\VarolBridge icinde sync_bridge_tables.bat veya sync_bridge_prices.bat kullanin. Canli sunucuda pdo_firebird gerekmez ve Firebird portu acilmaz.'
 		);
 	}
 }

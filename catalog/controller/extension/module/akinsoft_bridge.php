@@ -115,6 +115,58 @@ class ControllerExtensionModuleAkinsoftBridge extends Controller {
 		}
 	}
 
+	public function syncTables() {
+		try {
+			$this->load->model('extension/module/akinsoft_bridge');
+
+			if (!$this->isAuthorized()) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Unauthorized'
+				), 401);
+			}
+
+			$tables = $this->decodePostJson('tables_json');
+
+			if (!is_array($tables)) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Invalid tables payload'
+				), 400);
+			}
+
+			return $this->json($this->model_extension_module_akinsoft_bridge->syncTablesFromBridge($tables));
+		} catch (Exception $e) {
+			return $this->error($e);
+		}
+	}
+
+	public function syncPrices() {
+		try {
+			$this->load->model('extension/module/akinsoft_bridge');
+
+			if (!$this->isAuthorized()) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Unauthorized'
+				), 401);
+			}
+
+			$prices = $this->decodePostJson('prices_json');
+
+			if (!is_array($prices)) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Invalid prices payload'
+				), 400);
+			}
+
+			return $this->json($this->model_extension_module_akinsoft_bridge->syncPricesFromBridge($prices));
+		} catch (Exception $e) {
+			return $this->error($e);
+		}
+	}
+
 	private function isAuthorized() {
 		$expected = (string)$this->model_extension_module_akinsoft_bridge->getSetting('restaurant_akinsoft_bridge_token', '');
 		$token = '';
@@ -128,6 +180,18 @@ class ControllerExtensionModuleAkinsoftBridge extends Controller {
 		}
 
 		return $expected !== '' && $token !== '' && hash_equals($expected, $token);
+	}
+
+	private function decodePostJson($key) {
+		$json = isset($this->request->post[$key]) ? (string)$this->request->post[$key] : '';
+
+		if ($json === '') {
+			return null;
+		}
+
+		$data = json_decode($json, true);
+
+		return is_array($data) ? $data : null;
 	}
 
 	private function json($data, $status = 200) {

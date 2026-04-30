@@ -48,6 +48,22 @@ pdo_firebird
 
 5. `install_bridge_task.bat` dosyasini sag tiklayip **Yonetici olarak calistir** secin.
 
+## Masa ve Fiyat Senkronu
+
+Canli sunucuda Firebird eklentisi gerekmedigi icin masa/fiyat senkronu da Bridge PC'den calistirilir:
+
+```text
+sync_bridge_tables.bat
+sync_bridge_prices.bat
+sync_bridge_all.bat
+```
+
+- `sync_bridge_tables.bat`: Akinsoft `MASA` kayitlarini canli QR menudeki masalara aktarir.
+- `sync_bridge_prices.bat`: Akinsoft satis fiyatlarini OpenCart urun fiyatlarina aktarir.
+- `sync_bridge_all.bat`: Ikisini arka arkaya calistirir.
+
+Bu dosyalar sadece gerektiginde calistirilir. Siparis aktarimi icin kurulan Windows gorevi ayridir ve arka planda calismaya devam eder.
+
 ## Calisma Mantigi
 
 - Modem portu acilmaz.

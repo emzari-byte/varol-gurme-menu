@@ -30,6 +30,22 @@ if (in_array('--once', $argv, true)) {
 	exit;
 }
 
+if (in_array('--sync-tables', $argv, true)) {
+	$agent->syncTables();
+	exit;
+}
+
+if (in_array('--sync-prices', $argv, true)) {
+	$agent->syncPrices();
+	exit;
+}
+
+if (in_array('--sync-all', $argv, true)) {
+	$agent->syncTables();
+	$agent->syncPrices();
+	exit;
+}
+
 $agent->run();
 
 class AkinsoftBridgeAgent {
@@ -86,6 +102,51 @@ class AkinsoftBridgeAgent {
 		}
 
 		$this->log('Bridge kontrol bitti.');
+	}
+
+	public function syncTables() {
+		try {
+			$rows = $this->firebird()->query("SELECT BLKODU, MASAADI, MASAGRUBU, KACKISILIK, GIZLI FROM MASA ORDER BY BLKODU ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+			$response = $this->request('extension/module/akinsoft_bridge/syncTables', array(), array(
+				'tables_json' => json_encode($rows)
+			));
+
+			if (empty($response['success'])) {
+				$this->log('Masa senkronu basarisiz: ' . $this->message($response));
+				return;
+			}
+
+			$this->log($this->message($response));
+		} catch (Exception $e) {
+			$this->log('Masa senkronu hatasi: ' . $e->getMessage());
+		}
+	}
+
+	public function syncPrices() {
+		try {
+			$rows = $this->firebird()->query("SELECT s.STOKKODU, f.FIYATI
+				FROM STOK s
+				INNER JOIN STOK_FIYAT f ON (f.BLSTKODU = s.BLKODU)
+				WHERE s.STOKKODU IS NOT NULL
+					AND s.STOKKODU <> ''
+					AND f.ALIS_SATIS = 2
+					AND f.FIYAT_NO = 1
+					AND f.FIYATI IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
+
+			$response = $this->request('extension/module/akinsoft_bridge/syncPrices', array(), array(
+				'prices_json' => json_encode($rows)
+			));
+
+			if (empty($response['success'])) {
+				$this->log('Fiyat senkronu basarisiz: ' . $this->message($response));
+				return;
+			}
+
+			$this->log($this->message($response));
+		} catch (Exception $e) {
+			$this->log('Fiyat senkronu hatasi: ' . $e->getMessage());
+		}
 	}
 
 	private function syncPendingOrders() {

@@ -186,6 +186,8 @@ index.php?route=extension/module/akinsoft_bridge/pending
 index.php?route=extension/module/akinsoft_bridge/mark
 index.php?route=extension/module/akinsoft_bridge/sent
 index.php?route=extension/module/akinsoft_bridge/paid
+index.php?route=extension/module/akinsoft_bridge/syncTables
+index.php?route=extension/module/akinsoft_bridge/syncPrices
 ```
 
 Important:
@@ -195,6 +197,7 @@ Important:
 - `restaurant_akinsoft_bridge_url` should be `https://varolveranda.com/menu/`.
 - `restaurant_akinsoft_bridge_token` must match `bridge/akinsoft_bridge_config.php`.
 - Waiter-created manual orders are queued with `integration_status = 'pending_export'` when they go to kitchen and Akinsoft integration is enabled.
+- Table and price sync in bridge mode is triggered from the Akinsoft PC with `sync_bridge_tables.bat`, `sync_bridge_prices.bat`, or `sync_bridge_all.bat`.
 
 ## Removed WebEnt Flow
 

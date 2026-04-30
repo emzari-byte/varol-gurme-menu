@@ -139,6 +139,164 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 		return true;
 	}
 
+	public function syncTablesFromBridge(array $rows) {
+		$source_table_numbers = array();
+		$inserted = 0;
+		$updated = 0;
+
+		foreach ($rows as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+
+			$masaadi = isset($row['MASAADI']) ? $row['MASAADI'] : (isset($row['masaadi']) ? $row['masaadi'] : '');
+			$blkodu = isset($row['BLKODU']) ? $row['BLKODU'] : (isset($row['blkodu']) ? $row['blkodu'] : 0);
+			$table_no = $this->parseTableNo($masaadi, $blkodu);
+			$name = trim((string)$masaadi);
+			$area = isset($row['MASAGRUBU']) ? trim((string)$row['MASAGRUBU']) : '';
+			$capacity = !empty($row['KACKISILIK']) ? (int)$row['KACKISILIK'] : 4;
+			$status = !empty($row['GIZLI']) ? 0 : 1;
+
+			if ($name === '') {
+				$name = 'Masa ' . $table_no;
+			}
+
+			if ($area === '') {
+				$area = 'Salon';
+			}
+
+			$source_table_numbers[] = $table_no;
+
+			$existing = $this->db->query("SELECT table_id, qr_token FROM `" . DB_PREFIX . "restaurant_table`
+				WHERE table_no = '" . (int)$table_no . "'
+				LIMIT 1");
+
+			if ($existing->num_rows) {
+				$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table`
+					SET name = '" . $this->db->escape($name) . "',
+						area = '" . $this->db->escape($area) . "',
+						capacity = '" . (int)$capacity . "',
+						sort_order = '" . (int)$table_no . "',
+						status = '" . (int)$status . "',
+						date_modified = NOW()
+					WHERE table_id = '" . (int)$existing->row['table_id'] . "'");
+				$updated++;
+			} else {
+				$qr_token = function_exists('random_bytes') ? bin2hex(random_bytes(8)) : md5(uniqid('', true));
+
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_table`
+					SET table_no = '" . (int)$table_no . "',
+						name = '" . $this->db->escape($name) . "',
+						capacity = '" . (int)$capacity . "',
+						area = '" . $this->db->escape($area) . "',
+						sort_order = '" . (int)$table_no . "',
+						status = '" . (int)$status . "',
+						qr_token = '" . $this->db->escape($qr_token) . "',
+						date_added = NOW(),
+						date_modified = NOW()");
+
+				$table_id = (int)$this->db->getLastId();
+
+				$this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "restaurant_table_status`
+					SET table_id = '" . $table_id . "',
+						service_status = 'empty',
+						active_order_count = '0',
+						total_amount = '0.0000',
+						date_modified = NOW()");
+
+				$inserted++;
+			}
+		}
+
+		$source_table_numbers = array_values(array_unique(array_map('intval', $source_table_numbers)));
+
+		if ($source_table_numbers) {
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table`
+				SET status = '0',
+					date_modified = NOW()
+				WHERE table_no NOT IN (" . implode(',', $source_table_numbers) . ")");
+		}
+
+		return array(
+			'success' => true,
+			'message' => 'Masa senkronu Bridge ile tamamlandi. Akinsoft masa: ' . count($rows) . ', eklenen: ' . $inserted . ', guncellenen: ' . $updated,
+			'inserted' => $inserted,
+			'updated' => $updated,
+			'total' => count($rows)
+		);
+	}
+
+	public function syncPricesFromBridge(array $rows) {
+		$this->installProductSyncTable();
+
+		$prices = array();
+
+		foreach ($rows as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+
+			$stock_code = isset($row['STOKKODU']) ? trim((string)$row['STOKKODU']) : '';
+
+			if ($stock_code !== '' && isset($row['FIYATI'])) {
+				$prices[$stock_code] = (float)$row['FIYATI'];
+			}
+		}
+
+		$matched = 0;
+		$missing = 0;
+		$products = $this->db->query("SELECT product_id, model, price FROM `" . DB_PREFIX . "product`
+			WHERE model IS NOT NULL AND model <> ''
+			ORDER BY product_id ASC")->rows;
+
+		$this->db->query("TRUNCATE TABLE `" . DB_PREFIX . "restaurant_akinsoft_product_sync`");
+
+		foreach ($products as $product) {
+			$stock_code = trim((string)$product['model']);
+
+			if ($stock_code === '') {
+				continue;
+			}
+
+			if (isset($prices[$stock_code])) {
+				$price = (float)$prices[$stock_code];
+
+				$this->db->query("UPDATE `" . DB_PREFIX . "product`
+					SET price = '" . (float)$price . "',
+						date_modified = NOW()
+					WHERE model = '" . $this->db->escape($stock_code) . "'");
+
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_akinsoft_product_sync`
+					SET product_id = '" . (int)$product['product_id'] . "',
+						model = '" . $this->db->escape($stock_code) . "',
+						status = 'matched',
+						akinsoft_price = '" . (float)$price . "',
+						old_price = '" . (float)$product['price'] . "',
+						date_synced = NOW()");
+
+				$matched++;
+			} else {
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_akinsoft_product_sync`
+					SET product_id = '" . (int)$product['product_id'] . "',
+						model = '" . $this->db->escape($stock_code) . "',
+						status = 'missing',
+						akinsoft_price = NULL,
+						old_price = '" . (float)$product['price'] . "',
+						date_synced = NOW()");
+
+				$missing++;
+			}
+		}
+
+		return array(
+			'success' => true,
+			'message' => 'Fiyat senkronu Bridge ile tamamlandi. Eslesen urun: ' . $matched . ', OpenCartta bulunmayan stok kodu: ' . $missing,
+			'matched' => $matched,
+			'missing' => $missing,
+			'total_prices' => count($prices)
+		);
+	}
+
 	private function getOrderProducts($restaurant_order_id, $language_id) {
 		return $this->db->query("SELECT rop.restaurant_order_product_id, rop.product_id,
 				COALESCE(NULLIF(pd.name, ''), rop.name) AS name,
@@ -186,5 +344,29 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 			LIMIT 1");
 
 		return $query->num_rows ? (int)$query->row['language_id'] : (int)$this->config->get('config_language_id');
+	}
+
+	private function installProductSyncTable() {
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_akinsoft_product_sync` (
+			`sync_id` int(11) NOT NULL AUTO_INCREMENT,
+			`product_id` int(11) NOT NULL,
+			`model` varchar(64) NOT NULL,
+			`status` varchar(16) NOT NULL,
+			`akinsoft_price` decimal(15,4) NULL,
+			`old_price` decimal(15,4) NULL,
+			`date_synced` datetime NOT NULL,
+			PRIMARY KEY (`sync_id`),
+			KEY `product_id` (`product_id`),
+			KEY `model` (`model`),
+			KEY `status` (`status`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+	}
+
+	private function parseTableNo($masaadi, $fallback) {
+		if (preg_match('/\d+/', (string)$masaadi, $match)) {
+			return max(1, (int)$match[0]);
+		}
+
+		return max(1, (int)$fallback);
 	}
 }
