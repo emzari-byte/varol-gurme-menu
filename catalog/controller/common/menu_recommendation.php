@@ -11,12 +11,20 @@ class ControllerCommonMenuRecommendation extends Controller {
 		$data['keywords'] = $this->config->get('config_meta_keyword');
 		$data['logo'] = HTTPS_SERVER . 'image/' . $this->config->get('config_logo');
 		$data['serv'] = HTTPS_SERVER;
-		$data['qr'] = !empty($this->session->data['menu_qr_token']) ? $this->session->data['menu_qr_token'] : '';
+
+		$this->load->model('common/menu_order');
+
+		$qr = isset($this->request->get['qr']) ? trim((string)$this->request->get['qr']) : '';
+
+		if ($qr !== '') {
+			$this->model_common_menu_order->ensureTableSessionFromQr($qr);
+		}
+
+		$data['qr'] = !empty($this->session->data['menu_qr_token']) ? $this->session->data['menu_qr_token'] : $qr;
 		$data['table_id'] = !empty($this->session->data['menu_table_id']) ? (int)$this->session->data['menu_table_id'] : 0;
 		$data['table_no'] = !empty($this->session->data['menu_table_no']) ? (int)$this->session->data['menu_table_no'] : 0;
 		$data['table_name'] = !empty($this->session->data['menu_table_name']) ? $this->session->data['menu_table_name'] : '';
 
-		$this->load->model('common/menu_order');
 		$data['can_order'] = $this->model_common_menu_order->canOrder();
 
 		$qr_param = $data['qr'] ? 'qr=' . urlencode($data['qr']) : '';

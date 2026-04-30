@@ -1,5 +1,39 @@
 <?php
 class ModelCommonMenuOrder extends Model {
+	public function ensureTableSessionFromQr($qr_token) {
+		$qr_token = trim((string)$qr_token);
+
+		if ($qr_token === '') {
+			return false;
+		}
+
+		$table_query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "restaurant_table`
+			WHERE qr_token = '" . $this->db->escape($qr_token) . "'
+			AND status = '1'
+			LIMIT 1");
+
+		if (!$table_query->num_rows) {
+			unset($this->session->data['menu_qr_token']);
+			unset($this->session->data['menu_table_id']);
+			unset($this->session->data['menu_table_no']);
+			unset($this->session->data['menu_table_name']);
+			unset($this->session->data['table_session_token']);
+			return false;
+		}
+
+		$table_id = (int)$table_query->row['table_id'];
+		$session_token = $this->getTableSessionToken($table_id);
+
+		$this->session->data['menu_qr_token'] = $qr_token;
+		$this->session->data['menu_table_id'] = $table_id;
+		$this->session->data['menu_table_no'] = (int)$table_query->row['table_no'];
+		$this->session->data['menu_table_name'] = $table_query->row['name'];
+		$this->session->data['table_session_token'] = $session_token;
+
+		return true;
+	}
+
 	public function canOrder() {
 		if (!$this->isQrOrderMenuEnabled()) {
 			return false;
@@ -34,6 +68,48 @@ class ModelCommonMenuOrder extends Model {
 			(string)$query->row['active_session_token'],
 			(string)$this->session->data['table_session_token']
 		);
+	}
+
+	private function getTableSessionToken($table_id) {
+		$table_id = (int)$table_id;
+
+		if (!$table_id) {
+			return '';
+		}
+
+		$query = $this->db->query("
+			SELECT active_session_token
+			FROM `" . DB_PREFIX . "restaurant_table_status`
+			WHERE table_id = '" . $table_id . "'
+			LIMIT 1
+		");
+
+		if ($query->num_rows && !empty($query->row['active_session_token'])) {
+			return $query->row['active_session_token'];
+		}
+
+		$session_token = bin2hex(random_bytes(16));
+
+		if ($query->num_rows) {
+			$this->db->query("
+				UPDATE `" . DB_PREFIX . "restaurant_table_status`
+				SET active_session_token = '" . $this->db->escape($session_token) . "',
+					date_modified = NOW()
+				WHERE table_id = '" . $table_id . "'
+			");
+		} else {
+			$this->db->query("
+				INSERT INTO `" . DB_PREFIX . "restaurant_table_status`
+				SET table_id = '" . $table_id . "',
+					service_status = 'empty',
+					active_order_count = '0',
+					total_amount = '0.0000',
+					active_session_token = '" . $this->db->escape($session_token) . "',
+					date_modified = NOW()
+			");
+		}
+
+		return $session_token;
 	}
 
 	public function getCart() {

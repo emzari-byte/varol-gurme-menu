@@ -28,14 +28,23 @@ class ControllerProductCategory extends Controller {
 		$data['restaurant_menu_theme'] = in_array($menu_theme, array('default', 'v1', 'v2', 'v3', 'v4', 'v5'), true) ? $menu_theme : 'default';
 		$data['restaurant_analytics_code'] = (string)$this->model_common_restaurant_settings->get('restaurant_analytics_code', '');
 
-        $qr = !empty($this->session->data['menu_qr_token']) ? $this->session->data['menu_qr_token'] : '';
+        $this->load->model('common/menu_order');
+
+        $qr = isset($this->request->get['qr']) ? trim((string)$this->request->get['qr']) : '';
+
+        if ($qr !== '') {
+            $this->model_common_menu_order->ensureTableSessionFromQr($qr);
+        } elseif (!empty($this->session->data['menu_qr_token'])) {
+            $qr = $this->session->data['menu_qr_token'];
+        }
+
+        $qr = !empty($this->session->data['menu_qr_token']) ? $this->session->data['menu_qr_token'] : $qr;
         $table_id = !empty($this->session->data['menu_table_id']) ? (int)$this->session->data['menu_table_id'] : 0;
 
         $data['qr'] = $qr;
         $data['table_id'] = $table_id;
         $data['table_no'] = !empty($this->session->data['menu_table_no']) ? (int)$this->session->data['menu_table_no'] : 0;
         $data['table_name'] = !empty($this->session->data['menu_table_name']) ? $this->session->data['menu_table_name'] : '';
-        $this->load->model('common/menu_order');
         $data['can_order'] = $this->model_common_menu_order->canOrder();
         $show_prices = $this->model_common_menu_order->getRestaurantSettingValue('restaurant_qr_order_menu', 1) === 1;
         $data['menu_order_endpoint'] = $this->url->link('common/menu_order/add', '', true);
