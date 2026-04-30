@@ -640,11 +640,27 @@
     prepareRestaurantFrame(this);
   });
 
+  function refreshRestaurantFrame(frame) {
+    var $frame = $(frame);
+    var currentSrc = $frame.attr('src') || '';
+
+    if (!currentSrc) {
+      return;
+    }
+
+    var cleanSrc = currentSrc.replace(/([?&])_rs=\d+(&?)/, function(match, prefix, suffix) {
+      return suffix ? prefix : '';
+    }).replace(/[?&]$/, '');
+
+    var separator = cleanSrc.indexOf('?') === -1 ? '?' : '&';
+    $frame.attr('src', cleanSrc + separator + '_rs=' + Date.now());
+  }
+
   $('a[data-toggle="tab"]').on('shown.bs.tab', function() {
     toggleRestaurantSettingsSave();
 
     $('.tab-pane.active .restaurant-module-frame').each(function() {
-      prepareRestaurantFrame(this);
+      refreshRestaurantFrame(this);
     });
   });
 
