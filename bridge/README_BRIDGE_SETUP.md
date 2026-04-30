@@ -33,7 +33,13 @@ C:\VarolBridge
 )
 ```
 
-4. PHP CLI yoksa portable PHP veya XAMPP PHP kurulmalidir. Gerekli eklentiler:
+4. PHP CLI yoksa demo PC'deki calisan `C:\xampp\php` klasorunu gercek PC'de `C:\VarolBridge\php` olarak kopyalayabilirsiniz. Kopyadan sonra `C:\VarolBridge\php\php.ini` icinde su satiri duzeltin:
+
+```ini
+extension_dir="ext"
+```
+
+Gerekli eklentiler:
 
 ```text
 curl

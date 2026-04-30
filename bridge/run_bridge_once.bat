@@ -4,6 +4,7 @@ cd /d "%~dp0"
 
 set "PHP_EXE="
 
+if exist "%~dp0php\php.exe" set "PHP_EXE=%~dp0php\php.exe"
 if exist "C:\xampp\php\php.exe" set "PHP_EXE=C:\xampp\php\php.exe"
 if "%PHP_EXE%"=="" for %%P in (php.exe) do set "PHP_EXE=%%~$PATH:P"
 

@@ -5,6 +5,7 @@ set "TASK_NAME=VarolGurmeAkinsoftBridge"
 set "BRIDGE_DIR=%~dp0"
 set "PHP_EXE="
 
+if exist "%BRIDGE_DIR%php\php.exe" set "PHP_EXE=%BRIDGE_DIR%php\php.exe"
 if exist "C:\xampp\php\php.exe" set "PHP_EXE=C:\xampp\php\php.exe"
 if "%PHP_EXE%"=="" for %%P in (php.exe) do set "PHP_EXE=%%~$PATH:P"
 
