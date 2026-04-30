@@ -175,6 +175,12 @@ class AkinsoftBridgeAgent {
 
 			$pdo->commit();
 			$this->log('Demo adisyon kapatildi: #' . $adisyon_no . ' MASA=' . $masaadi);
+
+			try {
+				$this->syncClosedOrders();
+			} catch (Exception $sync_exception) {
+				$this->log('Demo kapanis site senkronu basarisiz: ' . $sync_exception->getMessage());
+			}
 		} catch (Exception $e) {
 			if (isset($pdo) && $pdo->inTransaction()) {
 				$pdo->rollBack();
@@ -333,12 +339,17 @@ class AkinsoftBridgeAgent {
 				continue;
 			}
 
-			$this->request('extension/module/akinsoft_bridge/paid', array(), array(
+			$result = $this->request('extension/module/akinsoft_bridge/paid', array(), array(
 				'restaurant_order_id' => (int)$order['restaurant_order_id'],
 				'external_fis_id' => (int)$fis['BLKODU'],
 				'closed_at' => (string)$fis['KAPANISTARIHI'],
 				'message' => 'Akinsoft adisyon kapandi. Fis #' . (int)$fis['BLKODU'] . ' - ' . (string)$fis['KAPANISTARIHI']
 			));
+
+			if (empty($result['success'])) {
+				$this->log('Siparis #' . (int)$order['restaurant_order_id'] . ' Akinsoft kapanisi siteye islenemedi: ' . $this->message($result));
+				continue;
+			}
 
 			$this->log('Siparis #' . (int)$order['restaurant_order_id'] . ' Akinsoft kapanisiyla paid yapildi.');
 		}
