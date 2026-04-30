@@ -171,7 +171,8 @@ class AkinsoftBridgeAgent {
 
 		try {
 			$table_no = !empty($order['table_no']) ? (int)$order['table_no'] : (int)$order['table_id'];
-			$masaadi = $this->formatTableName($table_no);
+			$table = $this->resolveTable($table_no, !empty($order['table_name']) ? (string)$order['table_name'] : '');
+			$masaadi = $table['name'];
 			$total = 0.0;
 			$prepared_products = array();
 
@@ -283,8 +284,13 @@ class AkinsoftBridgeAgent {
 			$pdo->prepare("UPDATE ADISYONFIS SET ARATUTAR = ?, TOPLAMTUTAR = ? WHERE BLKODU = ?")
 				->execute(array($total, $total, $fis_id));
 
-			$pdo->prepare("UPDATE MASA SET DURUMU = 2, MASAACILIS = CURRENT_TIMESTAMP WHERE MASAADI = ?")
-				->execute(array($masaadi));
+			if (!empty($table['id'])) {
+				$pdo->prepare("UPDATE MASA SET DURUMU = 2, MASAACILIS = CURRENT_TIMESTAMP WHERE BLKODU = ?")
+					->execute(array((int)$table['id']));
+			} else {
+				$pdo->prepare("UPDATE MASA SET DURUMU = 2, MASAACILIS = CURRENT_TIMESTAMP WHERE MASAADI = ?")
+					->execute(array($masaadi));
+			}
 
 			$pdo->commit();
 
@@ -379,6 +385,46 @@ class AkinsoftBridgeAgent {
 
 	private function get($key, $default = null) {
 		return array_key_exists($key, $this->config) ? $this->config[$key] : $default;
+	}
+
+	private function resolveTable($table_no, $site_table_name = '') {
+		$table_no = (int)$table_no;
+		$candidates = array();
+		$site_table_name = trim((string)$site_table_name);
+
+		if ($site_table_name !== '') {
+			$candidates[] = $site_table_name;
+		}
+
+		if ($table_no > 0) {
+			$candidates[] = $this->formatTableName($table_no);
+			$candidates[] = (string)$table_no;
+			$candidates[] = 'Masa ' . $table_no;
+			$candidates[] = 'MASA ' . $table_no;
+		}
+
+		$candidates = array_values(array_unique(array_filter($candidates, 'strlen')));
+
+		foreach ($candidates as $candidate) {
+			$stmt = $this->firebird()->prepare("SELECT FIRST 1 BLKODU, MASAADI FROM MASA WHERE MASAADI = ?");
+			$stmt->execute(array($candidate));
+			$row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+			if ($row && !empty($row['MASAADI'])) {
+				return array(
+					'id' => (int)$row['BLKODU'],
+					'name' => (string)$row['MASAADI']
+				);
+			}
+		}
+
+		$fallback = $this->formatTableName($table_no);
+		$this->log('UYARI: Akinsoft MASA eslesmesi bulunamadi. Adaylar: ' . implode(', ', $candidates) . '. Fallback: ' . $fallback);
+
+		return array(
+			'id' => 0,
+			'name' => $fallback
+		);
 	}
 
 	private function formatTableName($table_no) {
