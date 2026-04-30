@@ -11,6 +11,10 @@ class ModelExtensionModuleAkinsoft extends Model {
 	}
 
 	public function syncTables($settings) {
+		if (!empty($settings['restaurant_akinsoft_mode']) && $settings['restaurant_akinsoft_mode'] === 'bridge_agent') {
+			return $this->bridgeOnlyAction('Masa senkronu');
+		}
+
 		try {
 			$pdo = $this->connectLocalFirebird($settings);
 			$rows = $pdo->query("SELECT BLKODU, MASAADI, MASAGRUBU, KACKISILIK, GIZLI FROM MASA ORDER BY BLKODU ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -96,6 +100,10 @@ class ModelExtensionModuleAkinsoft extends Model {
 	}
 
 	public function syncProductPrices($settings) {
+		if (!empty($settings['restaurant_akinsoft_mode']) && $settings['restaurant_akinsoft_mode'] === 'bridge_agent') {
+			return $this->bridgeOnlyAction('Fiyat senkronu');
+		}
+
 		try {
 			$this->installProductSyncTable();
 
@@ -622,6 +630,13 @@ class ModelExtensionModuleAkinsoft extends Model {
 		return array(
 			'success' => true,
 			'message' => 'Bridge API hazir. Agent bekleyen siparisleri ' . rtrim($url, '/') . '/index.php?route=extension/module/akinsoft_bridge/pending adresinden cekecek.'
+		);
+	}
+
+	private function bridgeOnlyAction($name) {
+		return array(
+			'success' => false,
+			'message' => $name . ' canli sunucuda degil, Akinsoft/Firebird kurulu PC uzerindeki Bridge Agent ile calistirilmalidir. Canli sunucuda pdo_firebird gerekmez ve Firebird portu acilmaz.'
 		);
 	}
 }
