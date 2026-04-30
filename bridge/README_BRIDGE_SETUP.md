@@ -64,6 +64,8 @@ sync_bridge_all.bat
 
 Bu dosyalar sadece gerektiginde calistirilir. Siparis aktarimi icin kurulan Windows gorevi ayridir ve arka planda calismaya devam eder.
 
+Admin paneldeki masa/fiyat senkron butonlari Bridge modunda dogrudan Firebird'e baglanmaz. Canli site bir komut kuyrugu olusturur; arka plandaki Bridge Agent bu komutu gorup senkronu calistirir. Bu yuzden agent Windows gorevi olarak calisiyor olmalidir.
+
 ## Calisma Mantigi
 
 - Modem portu acilmaz.

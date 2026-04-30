@@ -12,7 +12,7 @@ class ModelExtensionModuleAkinsoft extends Model {
 
 	public function syncTables($settings) {
 		if (!empty($settings['restaurant_akinsoft_mode']) && $settings['restaurant_akinsoft_mode'] === 'bridge_agent') {
-			return $this->bridgeOnlyAction('Masa senkronu');
+			return $this->enqueueBridgeCommand('sync_tables', 'Masa senkronu');
 		}
 
 		try {
@@ -101,7 +101,7 @@ class ModelExtensionModuleAkinsoft extends Model {
 
 	public function syncProductPrices($settings) {
 		if (!empty($settings['restaurant_akinsoft_mode']) && $settings['restaurant_akinsoft_mode'] === 'bridge_agent') {
-			return $this->bridgeOnlyAction('Fiyat senkronu');
+			return $this->enqueueBridgeCommand('sync_prices', 'Fiyat senkronu');
 		}
 
 		try {
@@ -631,6 +631,37 @@ class ModelExtensionModuleAkinsoft extends Model {
 			'success' => true,
 			'message' => 'Bridge API hazir. Agent bekleyen siparisleri ' . rtrim($url, '/') . '/index.php?route=extension/module/akinsoft_bridge/pending adresinden cekecek.'
 		);
+	}
+
+	private function enqueueBridgeCommand($command, $label) {
+		$this->installBridgeCommandTable();
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_akinsoft_bridge_command`
+			SET command = '" . $this->db->escape($command) . "',
+				status = 'pending',
+				message = '" . $this->db->escape($label . ' Bridge Agent kuyruguna alindi.') . "',
+				date_added = NOW()");
+
+		return array(
+			'success' => true,
+			'message' => $label . ' Bridge Agent kuyruguna alindi. Agent calisiyorsa birkac saniye icinde tamamlanir.',
+			'command_id' => (int)$this->db->getLastId()
+		);
+	}
+
+	private function installBridgeCommandTable() {
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_akinsoft_bridge_command` (
+			`command_id` int(11) NOT NULL AUTO_INCREMENT,
+			`command` varchar(32) NOT NULL,
+			`status` varchar(16) NOT NULL DEFAULT 'pending',
+			`message` text NULL,
+			`date_added` datetime NOT NULL,
+			`date_started` datetime NULL,
+			`date_finished` datetime NULL,
+			PRIMARY KEY (`command_id`),
+			KEY `status` (`status`),
+			KEY `command` (`command`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 	}
 
 	private function bridgeOnlyAction($name) {

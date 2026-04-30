@@ -198,6 +198,7 @@ Important:
 - `restaurant_akinsoft_bridge_token` must match `bridge/akinsoft_bridge_config.php`.
 - Waiter-created manual orders are queued with `integration_status = 'pending_export'` when they go to kitchen and Akinsoft integration is enabled.
 - Table and price sync in bridge mode is triggered from the Akinsoft PC with `sync_bridge_tables.bat`, `sync_bridge_prices.bat`, or `sync_bridge_all.bat`.
+- Admin table/price sync buttons enqueue Bridge commands in `restaurant_akinsoft_bridge_command`; the agent polls and executes them without opening any inbound port.
 
 ## Removed WebEnt Flow
 

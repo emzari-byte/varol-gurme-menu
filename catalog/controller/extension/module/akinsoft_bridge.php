@@ -115,6 +115,59 @@ class ControllerExtensionModuleAkinsoftBridge extends Controller {
 		}
 	}
 
+	public function commands() {
+		try {
+			$this->load->model('extension/module/akinsoft_bridge');
+
+			if (!$this->isAuthorized()) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Unauthorized'
+				), 401);
+			}
+
+			$limit = isset($this->request->get['limit']) ? (int)$this->request->get['limit'] : 10;
+
+			return $this->json(array(
+				'success' => true,
+				'commands' => $this->model_extension_module_akinsoft_bridge->getPendingCommands($limit)
+			));
+		} catch (Exception $e) {
+			return $this->error($e);
+		}
+	}
+
+	public function commandMark() {
+		try {
+			$this->load->model('extension/module/akinsoft_bridge');
+
+			if (!$this->isAuthorized()) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Unauthorized'
+				), 401);
+			}
+
+			$command_id = isset($this->request->post['command_id']) ? (int)$this->request->post['command_id'] : 0;
+			$status = isset($this->request->post['status']) ? (string)$this->request->post['status'] : '';
+			$message = isset($this->request->post['message']) ? (string)$this->request->post['message'] : '';
+
+			if (!$this->model_extension_module_akinsoft_bridge->markCommand($command_id, $status, $message)) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Invalid command mark request'
+				), 400);
+			}
+
+			return $this->json(array(
+				'success' => true,
+				'message' => 'Command updated'
+			));
+		} catch (Exception $e) {
+			return $this->error($e);
+		}
+	}
+
 	public function syncTables() {
 		try {
 			$this->load->model('extension/module/akinsoft_bridge');

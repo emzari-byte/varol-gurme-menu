@@ -68,6 +68,7 @@ class AkinsoftBridgeAgent {
 
 	public function runOnce() {
 		try {
+			$this->syncCommands();
 			$this->syncPendingOrders();
 			$this->syncClosedOrders();
 		} catch (Exception $e) {
@@ -106,17 +107,7 @@ class AkinsoftBridgeAgent {
 
 	public function syncTables() {
 		try {
-			$rows = $this->firebird()->query("SELECT BLKODU, MASAADI, MASAGRUBU, KACKISILIK, GIZLI FROM MASA ORDER BY BLKODU ASC")->fetchAll(PDO::FETCH_ASSOC);
-
-			$response = $this->request('extension/module/akinsoft_bridge/syncTables', array(), array(
-				'tables_payload' => base64_encode($this->jsonEncodeFirebirdRows($rows))
-			));
-
-			if (empty($response['success'])) {
-				$this->log('Masa senkronu basarisiz: ' . $this->message($response));
-				return;
-			}
-
+			$response = $this->performTableSync();
 			$this->log($this->message($response));
 		} catch (Exception $e) {
 			$this->log('Masa senkronu hatasi: ' . $e->getMessage());
@@ -125,28 +116,98 @@ class AkinsoftBridgeAgent {
 
 	public function syncPrices() {
 		try {
-			$rows = $this->firebird()->query("SELECT s.STOKKODU, f.FIYATI
-				FROM STOK s
-				INNER JOIN STOK_FIYAT f ON (f.BLSTKODU = s.BLKODU)
-				WHERE s.STOKKODU IS NOT NULL
-					AND s.STOKKODU <> ''
-					AND f.ALIS_SATIS = 2
-					AND f.FIYAT_NO = 1
-					AND f.FIYATI IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
-
-			$response = $this->request('extension/module/akinsoft_bridge/syncPrices', array(), array(
-				'prices_payload' => base64_encode($this->jsonEncodeFirebirdRows($rows))
-			));
-
-			if (empty($response['success'])) {
-				$this->log('Fiyat senkronu basarisiz: ' . $this->message($response));
-				return;
-			}
-
+			$response = $this->performPriceSync();
 			$this->log($this->message($response));
 		} catch (Exception $e) {
 			$this->log('Fiyat senkronu hatasi: ' . $e->getMessage());
 		}
+	}
+
+	private function syncCommands() {
+		try {
+			$response = $this->request('extension/module/akinsoft_bridge/commands', array(
+				'limit' => 10
+			));
+		} catch (Exception $e) {
+			$this->log('Bridge komut kontrolu atlandi: ' . $e->getMessage());
+			return;
+		}
+
+		if (empty($response['success']) || empty($response['commands'])) {
+			return;
+		}
+
+		foreach ($response['commands'] as $command) {
+			$command_id = (int)$command['command_id'];
+			$name = (string)$command['command'];
+
+			try {
+				if ($name === 'sync_tables') {
+					$result = $this->performTableSync();
+				} elseif ($name === 'sync_prices') {
+					$result = $this->performPriceSync();
+				} elseif ($name === 'sync_all') {
+					$tables = $this->performTableSync();
+					$prices = $this->performPriceSync();
+					$result = array(
+						'success' => true,
+						'message' => $this->message($tables) . ' ' . $this->message($prices)
+					);
+				} else {
+					throw new Exception('Bilinmeyen bridge komutu: ' . $name);
+				}
+
+				$message = $this->message($result);
+				$this->request('extension/module/akinsoft_bridge/commandMark', array(), array(
+					'command_id' => $command_id,
+					'status' => 'done',
+					'message' => $message
+				));
+				$this->log('Bridge komutu tamamlandi #' . $command_id . ': ' . $message);
+			} catch (Exception $e) {
+				$this->request('extension/module/akinsoft_bridge/commandMark', array(), array(
+					'command_id' => $command_id,
+					'status' => 'failed',
+					'message' => $e->getMessage()
+				));
+				$this->log('Bridge komutu basarisiz #' . $command_id . ': ' . $e->getMessage());
+			}
+		}
+	}
+
+	private function performTableSync() {
+		$rows = $this->firebird()->query("SELECT BLKODU, MASAADI, MASAGRUBU, KACKISILIK, GIZLI FROM MASA ORDER BY BLKODU ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+		$response = $this->request('extension/module/akinsoft_bridge/syncTables', array(), array(
+			'tables_payload' => base64_encode($this->jsonEncodeFirebirdRows($rows))
+		));
+
+		if (empty($response['success'])) {
+			throw new Exception('Masa senkronu basarisiz: ' . $this->message($response));
+		}
+
+		return $response;
+	}
+
+	private function performPriceSync() {
+		$rows = $this->firebird()->query("SELECT s.STOKKODU, f.FIYATI
+			FROM STOK s
+			INNER JOIN STOK_FIYAT f ON (f.BLSTKODU = s.BLKODU)
+			WHERE s.STOKKODU IS NOT NULL
+				AND s.STOKKODU <> ''
+				AND f.ALIS_SATIS = 2
+				AND f.FIYAT_NO = 1
+				AND f.FIYATI IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
+
+		$response = $this->request('extension/module/akinsoft_bridge/syncPrices', array(), array(
+			'prices_payload' => base64_encode($this->jsonEncodeFirebirdRows($rows))
+		));
+
+		if (empty($response['success'])) {
+			throw new Exception('Fiyat senkronu basarisiz: ' . $this->message($response));
+		}
+
+		return $response;
 	}
 
 	private function syncPendingOrders() {

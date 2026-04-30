@@ -139,6 +139,46 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 		return true;
 	}
 
+	public function getPendingCommands($limit = 10) {
+		$this->installBridgeCommandTable();
+
+		$limit = max(1, min(50, (int)$limit));
+		$commands = $this->db->query("SELECT command_id, command, status, message, date_added
+			FROM `" . DB_PREFIX . "restaurant_akinsoft_bridge_command`
+			WHERE status = 'pending'
+			ORDER BY command_id ASC
+			LIMIT " . $limit)->rows;
+
+		foreach ($commands as $command) {
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_akinsoft_bridge_command`
+				SET status = 'running',
+					date_started = NOW()
+				WHERE command_id = '" . (int)$command['command_id'] . "'
+					AND status = 'pending'");
+		}
+
+		return $commands;
+	}
+
+	public function markCommand($command_id, $status, $message = '') {
+		$this->installBridgeCommandTable();
+
+		$command_id = (int)$command_id;
+		$allowed = array('done', 'failed');
+
+		if (!$command_id || !in_array($status, $allowed, true)) {
+			return false;
+		}
+
+		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_akinsoft_bridge_command`
+			SET status = '" . $this->db->escape($status) . "',
+				message = '" . $this->db->escape($message) . "',
+				date_finished = NOW()
+			WHERE command_id = '" . $command_id . "'");
+
+		return true;
+	}
+
 	public function syncTablesFromBridge(array $rows) {
 		$source_table_numbers = array();
 		$inserted = 0;
@@ -359,6 +399,21 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 			KEY `product_id` (`product_id`),
 			KEY `model` (`model`),
 			KEY `status` (`status`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+	}
+
+	private function installBridgeCommandTable() {
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_akinsoft_bridge_command` (
+			`command_id` int(11) NOT NULL AUTO_INCREMENT,
+			`command` varchar(32) NOT NULL,
+			`status` varchar(16) NOT NULL DEFAULT 'pending',
+			`message` text NULL,
+			`date_added` datetime NOT NULL,
+			`date_started` datetime NULL,
+			`date_finished` datetime NULL,
+			PRIMARY KEY (`command_id`),
+			KEY `status` (`status`),
+			KEY `command` (`command`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 	}
 
