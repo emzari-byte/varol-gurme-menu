@@ -1169,7 +1169,8 @@ function checkNewBillRequests(tables) {
 			data: { table_id: tableId },
 			success: function(json) {
 				if (json.success) {
-					updateWaiterCallPanel(1, 'seen');
+					updateWaiterCallPanel(0, '');
+					closeFullAlarm();
 					refreshPanel();
 					showToast(json.message || 'Çağrı görüldü.');
 				} else {

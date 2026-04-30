@@ -4,48 +4,58 @@
  */
 
 .menu-theme-v1 {
-  --vg-page: #f4faf6;
+  --vg-page: #f5f8f5;
   --vg-card: #ffffff;
   --vg-text: #22372c;
   --vg-muted: #6d7d74;
-  --vg-accent: #5f9078;
-  --vg-accent-2: #d6a846;
+  --vg-accent: #3f725d;
+  --vg-accent-2: #b48a45;
+  --vg-border: rgba(63, 114, 93, 0.18);
+  --vg-soft: rgba(63, 114, 93, 0.08);
 }
 
 .menu-theme-v2 {
-  --vg-page: #151817;
-  --vg-card: #222725;
-  --vg-text: #f6f1e8;
-  --vg-muted: #c8bfae;
-  --vg-accent: #d16742;
-  --vg-accent-2: #6fb1a7;
+  --vg-page: #151816;
+  --vg-card: #202622;
+  --vg-text: #f4efe7;
+  --vg-muted: #bfc8bd;
+  --vg-accent: #d09a58;
+  --vg-accent-2: #6fa394;
+  --vg-border: rgba(255, 255, 255, 0.11);
+  --vg-soft: rgba(208, 154, 88, 0.14);
 }
 
 .menu-theme-v3 {
-  --vg-page: #f7f7f4;
+  --vg-page: #f7f7f2;
   --vg-card: #ffffff;
   --vg-text: #1d2428;
   --vg-muted: #71797f;
-  --vg-accent: #2f6f8f;
-  --vg-accent-2: #cf6f4f;
+  --vg-accent: #2f6f7d;
+  --vg-accent-2: #9d6a4f;
+  --vg-border: rgba(47, 111, 125, 0.16);
+  --vg-soft: rgba(47, 111, 125, 0.07);
 }
 
 .menu-theme-v4 {
-  --vg-page: #10131c;
-  --vg-card: #1b2130;
+  --vg-page: #10141b;
+  --vg-card: #1a2230;
   --vg-text: #f4efe5;
   --vg-muted: #b8c0cc;
-  --vg-accent: #b8894f;
-  --vg-accent-2: #7f9cc6;
+  --vg-accent: #c49a61;
+  --vg-accent-2: #7b9ab9;
+  --vg-border: rgba(255, 255, 255, 0.12);
+  --vg-soft: rgba(196, 154, 97, 0.13);
 }
 
 .menu-theme-v5 {
-  --vg-page: #fff7ec;
+  --vg-page: #f7f3ed;
   --vg-card: #ffffff;
-  --vg-text: #2d2520;
-  --vg-muted: #7a6f67;
-  --vg-accent: #e4572e;
-  --vg-accent-2: #2f9c95;
+  --vg-text: #2d302b;
+  --vg-muted: #74786f;
+  --vg-accent: #436f62;
+  --vg-accent-2: #bb7654;
+  --vg-border: rgba(67, 111, 98, 0.18);
+  --vg-soft: rgba(67, 111, 98, 0.08);
 }
 
 body[class*="menu-theme-"] {
@@ -68,7 +78,7 @@ body[class*="menu-theme-"] .feedback-card,
 body[class*="menu-theme-"] .menu-page-footer-inner {
   background: var(--vg-card) !important;
   color: var(--vg-text) !important;
-  border-color: rgba(120, 140, 130, 0.22) !important;
+  border-color: var(--vg-border) !important;
 }
 
 body[class*="menu-theme-"] h1,
@@ -95,7 +105,6 @@ body[class*="menu-theme-"] .footer-note {
 
 body[class*="menu-theme-"] .order-add-btn,
 body[class*="menu-theme-"] .menu-order-submit,
-body[class*="menu-theme-"] .lang-card.primary,
 body[class*="menu-theme-"] .contact-btn,
 body[class*="menu-theme-"] .feedback-submit,
 body[class*="menu-theme-"] .floating-waiter-btn {
@@ -110,7 +119,50 @@ body[class*="menu-theme-"] .lang-card,
 body[class*="menu-theme-"] .feedback-btn {
   background: var(--vg-card) !important;
   color: var(--vg-text) !important;
-  border-color: rgba(120, 140, 130, 0.22) !important;
+  border-color: var(--vg-border) !important;
+}
+
+body[class*="menu-theme-"] .entry-card {
+  box-shadow: 0 18px 50px rgba(35, 45, 40, 0.08) !important;
+}
+
+body[class*="menu-theme-"] .lang-card {
+  box-shadow: 0 10px 24px rgba(35, 45, 40, 0.06) !important;
+}
+
+body[class*="menu-theme-"] .lang-card.primary {
+  background: linear-gradient(135deg, var(--vg-soft), var(--vg-card) 48%) !important;
+  color: var(--vg-text) !important;
+  border-color: var(--vg-border) !important;
+  box-shadow: 0 12px 28px rgba(35, 45, 40, 0.08) !important;
+}
+
+body[class*="menu-theme-"] .lang-card.primary .lang-title,
+body[class*="menu-theme-"] .lang-card.primary .lang-subtitle {
+  color: var(--vg-text) !important;
+}
+
+body[class*="menu-theme-"] .lang-card.primary .lang-subtitle,
+body[class*="menu-theme-"] .lang-card .lang-subtitle {
+  color: var(--vg-muted) !important;
+}
+
+body[class*="menu-theme-"] .lang-card.primary .lang-arrow,
+body[class*="menu-theme-"] .lang-arrow {
+  background: var(--vg-accent) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgba(35, 45, 40, 0.12) !important;
+}
+
+body[class*="menu-theme-"] .brand-pill,
+body[class*="menu-theme-"] .follow-link,
+body[class*="menu-theme-"] .social-link {
+  border-color: var(--vg-border) !important;
+  color: var(--vg-text) !important;
+}
+
+body[class*="menu-theme-"] .brand-divider {
+  background: linear-gradient(90deg, transparent, var(--vg-accent), transparent) !important;
 }
 
 .menu-theme-v2 .cat-slider,

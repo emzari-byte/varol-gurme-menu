@@ -297,20 +297,20 @@ class ModelExtensionModuleWaiterPanel extends Model {
 				) AS bill_request_pending,
 				(
 					SELECT COUNT(*) FROM `" . DB_PREFIX . "restaurant_call` rc
-					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status IN ('new','seen')
+					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status = 'new'
 				) AS waiter_call_pending,
 				(
 					SELECT IFNULL(MAX(rc.call_id),0) FROM `" . DB_PREFIX . "restaurant_call` rc
-					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status IN ('new','seen')
+					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status = 'new'
 				) AS latest_waiter_call_id,
 				(
 					SELECT IFNULL(rc.status,'') FROM `" . DB_PREFIX . "restaurant_call` rc
-					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status IN ('new','seen')
+					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status = 'new'
 					ORDER BY rc.call_id DESC LIMIT 1
 				) AS latest_waiter_call_status,
 				(
 					SELECT IFNULL(rc.date_modified,'') FROM `" . DB_PREFIX . "restaurant_call` rc
-					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status IN ('new','seen')
+					WHERE rc.table_id = rt.table_id AND rc.call_type='waiter_call' AND rc.status = 'new'
 					ORDER BY rc.call_id DESC LIMIT 1
 				) AS latest_waiter_call_date,
 				(

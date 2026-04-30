@@ -57,6 +57,17 @@
           <div class="tab-content">
             <div class="tab-pane active" id="tab-menu-settings">
               <div class="form-group">
+                <label class="col-sm-3 control-label">Restoran Logosu</label>
+                <div class="col-sm-9">
+                  <a href="" id="thumb-restaurant-logo" data-toggle="image" class="img-thumbnail">
+                    <img src="{{ restaurant_brand_logo_thumb }}" alt="" title="" data-placeholder="{{ placeholder }}" />
+                  </a>
+                  <input type="hidden" name="restaurant_brand_logo" value="{{ restaurant_brand_logo }}" id="input-restaurant-logo" />
+                  <p class="help-block">Home sayfası, QR menü faviconu ve admin panel logosu için kullanılır.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
                 <label class="col-sm-3 control-label">Sadece QR Menü Kullan</label>
                 <div class="col-sm-9">
                   <label class="radio-inline"><input type="radio" name="restaurant_plain_qr_menu" value="1" {% if restaurant_plain_qr_menu %}checked{% endif %}> Açık</label>
@@ -71,31 +82,6 @@
                   <label class="radio-inline"><input type="radio" name="restaurant_qr_order_menu" value="1" {% if restaurant_qr_order_menu %}checked{% endif %}> Açık</label>
                   <label class="radio-inline"><input type="radio" name="restaurant_qr_order_menu" value="0" {% if not restaurant_qr_order_menu %}checked{% endif %}> Kapalı</label>
                   <p class="help-block">Kapalıysa müşteri QR üzerinden sipariş gönderemez.</p>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="col-sm-3 control-label">Müşteri Menü Teması</label>
-                <div class="col-sm-9">
-                  <select name="restaurant_menu_theme" class="form-control" style="max-width:320px;">
-                    <option value="v1" {% if restaurant_menu_theme == 'v1' %}selected{% endif %}>V1 - Ferah Klasik</option>
-                    <option value="v2" {% if restaurant_menu_theme == 'v2' %}selected{% endif %}>V2 - Koyu Bistro</option>
-                    <option value="v3" {% if restaurant_menu_theme == 'v3' %}selected{% endif %}>V3 - Minimal Beyaz</option>
-                    <option value="v4" {% if restaurant_menu_theme == 'v4' %}selected{% endif %}>V4 - Premium Gece</option>
-                    <option value="v5" {% if restaurant_menu_theme == 'v5' %}selected{% endif %}>V5 - Renkli Casual</option>
-                  </select>
-                  <p class="help-block">Müşteri home/menü/category ekranlarında kullanılacak genel görünüm.</p>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="col-sm-3 control-label">Restoran Logosu</label>
-                <div class="col-sm-9">
-                  <a href="" id="thumb-restaurant-logo" data-toggle="image" class="img-thumbnail">
-                    <img src="{{ restaurant_brand_logo_thumb }}" alt="" title="" data-placeholder="{{ placeholder }}" />
-                  </a>
-                  <input type="hidden" name="restaurant_brand_logo" value="{{ restaurant_brand_logo }}" id="input-restaurant-logo" />
-                  <p class="help-block">Home sayfası, QR menü faviconu ve admin panel logosu için kullanılır.</p>
                 </div>
               </div>
 
@@ -136,6 +122,20 @@
                     <span class="input-group-addon">dk</span>
                   </div>
                   <p class="help-block">Garson hesap talebini gördükten sonra müşterinin tekrar hesap isteyebileceği süre. Önerilen değer 5 dakikadır.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Müşteri Menü Teması</label>
+                <div class="col-sm-9">
+                  <select name="restaurant_menu_theme" class="form-control" style="max-width:320px;">
+                    <option value="v1" {% if restaurant_menu_theme == 'v1' %}selected{% endif %}>V1 - Ferah Klasik</option>
+                    <option value="v2" {% if restaurant_menu_theme == 'v2' %}selected{% endif %}>V2 - Koyu Bistro</option>
+                    <option value="v3" {% if restaurant_menu_theme == 'v3' %}selected{% endif %}>V3 - Minimal Beyaz</option>
+                    <option value="v4" {% if restaurant_menu_theme == 'v4' %}selected{% endif %}>V4 - Premium Gece</option>
+                    <option value="v5" {% if restaurant_menu_theme == 'v5' %}selected{% endif %}>V5 - Renkli Casual</option>
+                  </select>
+                  <p class="help-block">Müşteri home/menü/category ekranlarında kullanılacak genel görünüm.</p>
                 </div>
               </div>
             </div>

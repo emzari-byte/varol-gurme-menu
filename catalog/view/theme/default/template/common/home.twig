@@ -8,7 +8,7 @@
    <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=5" rel="stylesheet">
    <link href="{{ serv }}vendor/icons/feather.css?v=5" rel="stylesheet">
 <link href="{{ serv }}css/style.css?v=30" rel="stylesheet">
-<link href="{{ serv }}css/menu-themes.css?v=1" rel="stylesheet">
+<link href="{{ serv }}css/menu-themes.css?v=2" rel="stylesheet">
 </head>
 <body class="menu-theme-{{ restaurant_menu_theme }}">
 
@@ -35,7 +35,7 @@
       <div class="language-grid">
          {% if language_code == 'en-gb' %}
 
-         <a href="{{ menu }}" class="lang-card primary">
+         <a href="{{ menu }}" class="lang-card">
             <div class="lang-left">
                <div class="flag-shell">
                   <img src="catalog/language/en-gb/en-gb.png" class="btn-flag" alt="English">
@@ -63,7 +63,7 @@
 
          {% else %}
 
-         <a href="{{ menu }}" class="lang-card primary">
+         <a href="{{ menu }}" class="lang-card">
             <div class="lang-left">
                <div class="flag-shell">
                   <img src="catalog/language/tr-tr/tr-tr.png" class="btn-flag" alt="Türkçe">
