@@ -289,6 +289,7 @@ class AkinsoftBridgeAgent {
 		}
 
 		$pdo = $this->firebird();
+		$this->closeOpenFirebirdTransaction($pdo);
 		$pdo->beginTransaction();
 
 		try {
@@ -462,6 +463,22 @@ class AkinsoftBridgeAgent {
 		$this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		return $this->pdo;
+	}
+
+	private function closeOpenFirebirdTransaction(PDO $pdo) {
+		if (!$pdo->inTransaction()) {
+			return;
+		}
+
+		try {
+			$pdo->commit();
+		} catch (Exception $e) {
+			try {
+				$pdo->rollBack();
+			} catch (Exception $rollback_exception) {
+				throw $e;
+			}
+		}
 	}
 
 	private function request($route, array $query = array(), array $post = array()) {
