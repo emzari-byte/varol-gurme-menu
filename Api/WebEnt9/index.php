@@ -212,7 +212,7 @@ function webent_pending_order_count($menu_root) {
 	$sql = "SELECT COUNT(*) AS total
 		FROM `" . $mysqli->real_escape_string($prefix) . "restaurant_order`
 		WHERE service_status = 'in_kitchen'
-		AND integration_status IN ('pending_export', 'failed')";
+		AND (integration_status IN ('pending_export', 'failed') OR integration_status IS NULL OR integration_status = '')";
 
 	$result = $mysqli->query($sql);
 	$count = 0;
@@ -237,7 +237,7 @@ function webent_pending_orders($menu_root, $restaurant_order_id = 0) {
 
 	$prefix = webent_prefix();
 	$language_id = webent_turkish_language_id($mysqli, $prefix);
-	$where = "ro.service_status = 'in_kitchen' AND ro.integration_status IN ('pending_export', 'failed')";
+	$where = "ro.service_status = 'in_kitchen' AND (ro.integration_status IN ('pending_export', 'failed') OR ro.integration_status IS NULL OR ro.integration_status = '')";
 
 	if ($restaurant_order_id) {
 		$where .= " AND ro.restaurant_order_id = '" . (int)$restaurant_order_id . "'";

@@ -1077,6 +1077,14 @@ class ModelExtensionModuleWaiterPanel extends Model {
 
 		$order_id = (int)$this->db->getLastId();
 
+		if ($service_status === 'in_kitchen' && $this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)) {
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+				SET integration_status = 'pending_export',
+					integration_message = 'AKINSOFT bekliyor',
+					integration_date = NOW()
+				WHERE restaurant_order_id = '" . $order_id . "'");
+		}
+
 		foreach ($product_rows as $row) {
 			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_product`
 				SET restaurant_order_id = '" . $order_id . "',

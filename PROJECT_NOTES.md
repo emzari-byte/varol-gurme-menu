@@ -232,6 +232,8 @@ Current status:
   - `SiparisListesiGetir`
   - `SiparisListesiGetirV2`
 - Handler returns table number/name, customer note, total, Turkish product names, product quantities, prices and row totals.
+- Waiter-created manual orders now set `integration_status = 'pending_export'` when they go directly to kitchen and Akinsoft integration is enabled.
+- WebEnt count/detail queries also include `in_kitchen` orders where `integration_status` is empty, to recover orders created before that fix.
 - Export marking is separated into likely confirmation endpoints:
   - `SiparisAktarildi`
   - `SiparisAktarildiV2`
