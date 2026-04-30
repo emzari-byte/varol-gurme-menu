@@ -27,6 +27,10 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 		$data['payments_json'] = json_encode($data['payments']);
 		$data['refresh_url'] = $this->url->link('extension/module/cashier_panel/refresh', 'user_token=' . $this->session->data['user_token'], true);
 		$data['pay_url'] = $this->url->link('extension/module/cashier_panel/pay', 'user_token=' . $this->session->data['user_token'], true);
+		$data['logout_url'] = $this->url->link('common/logout', 'user_token=' . $this->session->data['user_token'], true);
+		$data['cashier_fullscreen'] = $this->isCashierOnlyUser() ? 1 : 0;
+		$data['cashier_username'] = $this->user->getUserName();
+		$data['base'] = HTTP_SERVER;
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');
 		$data['footer'] = $this->load->controller('common/footer');
@@ -90,5 +94,36 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 			LIMIT 1");
 
 		return $query->num_rows ? (int)$query->row['ayar_value'] : (int)$default;
+	}
+
+	private function isCashierOnlyUser() {
+		if (
+			!$this->isCashierPanelEnabled() ||
+			!$this->user->hasPermission('access', 'extension/module/cashier_panel')
+		) {
+			return false;
+		}
+
+		$broader_routes = array(
+			'extension/module/waiter_panel',
+			'extension/module/kitchen_display',
+			'extension/module/restaurant_settings',
+			'extension/module/restaurant_tables',
+			'extension/module/restaurant_waiters',
+			'extension/module/restaurant_home_products',
+			'catalog/product',
+			'catalog/category',
+			'user/user',
+			'user/user_permission',
+			'setting/setting'
+		);
+
+		foreach ($broader_routes as $route) {
+			if ($this->user->hasPermission('access', $route)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

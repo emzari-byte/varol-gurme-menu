@@ -1,8 +1,30 @@
+{% if cashier_fullscreen %}
+<!DOCTYPE html>
+<html dir="ltr" lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>Kasa Paneli</title>
+<base href="{{ base|default('') }}" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<script type="text/javascript" src="view/javascript/jquery/jquery-2.1.1.min.js"></script>
+<script type="text/javascript" src="view/javascript/bootstrap/js/bootstrap.min.js"></script>
+<link href="view/stylesheet/bootstrap.css" type="text/css" rel="stylesheet" />
+<link href="view/javascript/font-awesome/css/font-awesome.min.css" type="text/css" rel="stylesheet" />
+</head>
+<body class="cashier-fullscreen-body">
+{% else %}
 {{ header }}{{ column_left }}
+{% endif %}
 <div id="content">
-  <div class="page-header">
+  <div class="page-header cashier-admin-header">
     <div class="container-fluid">
       <h1>Kasa Paneli</h1>
+      {% if cashier_fullscreen %}
+      <div class="pull-right cashier-exit">
+        <span>{{ cashier_username }}</span>
+        <a href="{{ logout_url }}" class="btn btn-default"><i class="fa fa-sign-out"></i> Çıkış</a>
+      </div>
+      {% endif %}
       <ul class="breadcrumb">
         {% for breadcrumb in breadcrumbs %}
         <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
@@ -12,6 +34,15 @@
   </div>
   <div class="container-fluid cashier-page">
     <style>
+      .cashier-fullscreen-body{margin:0;background:#f4f7f5;color:#173126;}
+      .cashier-fullscreen-body #content{margin:0;padding:0;}
+      .cashier-fullscreen-body .cashier-admin-header{margin:0;border:0;background:#fff;box-shadow:0 8px 24px rgba(23,49,38,.08);}
+      .cashier-fullscreen-body .cashier-admin-header .container-fluid{padding:14px 22px;}
+      .cashier-fullscreen-body .cashier-admin-header h1{margin:0;font-size:22px;font-weight:900;line-height:34px;color:#173126;}
+      .cashier-fullscreen-body .cashier-admin-header .breadcrumb{display:none;}
+      .cashier-fullscreen-body .cashier-exit{display:flex;align-items:center;gap:10px;}
+      .cashier-fullscreen-body .cashier-exit span{font-weight:800;color:#607168;}
+      .cashier-fullscreen-body .cashier-page{padding:18px 22px 28px;min-height:calc(100vh - 62px);}
       .cashier-page{background:#f4f7f5;min-height:calc(100vh - 80px);padding-bottom:28px;}
       .cashier-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px;}
       .cashier-card{background:#fff;border:1px solid #e0e8e3;border-radius:14px;padding:16px;box-shadow:0 10px 28px rgba(23,49,38,.06);}
@@ -163,4 +194,8 @@
   setInterval(refresh, 10000);
 })(jQuery);
 </script>
+{% if cashier_fullscreen %}
+</body></html>
+{% else %}
 {{ footer }}
+{% endif %}
