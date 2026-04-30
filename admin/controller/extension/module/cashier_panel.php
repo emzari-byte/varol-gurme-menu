@@ -159,9 +159,10 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 
 			$table_id = isset($this->request->post['table_id']) ? (int)$this->request->post['table_id'] : 0;
 			$payment_method = isset($this->request->post['payment_method']) ? trim((string)$this->request->post['payment_method']) : '';
+			$amount = isset($this->request->post['amount']) ? (float)str_replace(',', '.', (string)$this->request->post['amount']) : 0;
 			$note = isset($this->request->post['note']) ? trim((string)$this->request->post['note']) : '';
 
-			$json = $this->model_extension_module_cashier_panel->payTable($table_id, $payment_method, (int)$this->user->getId(), $note);
+			$json = $this->model_extension_module_cashier_panel->payTablePartial($table_id, $payment_method, (int)$this->user->getId(), $note, $amount);
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

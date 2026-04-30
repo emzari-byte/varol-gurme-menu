@@ -110,6 +110,14 @@
       .pay-box{background:#fff;border:1px solid #e2e9e5;border-radius:14px;min-height:360px;padding:14px;box-shadow:0 10px 24px rgba(23,49,38,.06);}
       .pay-box h4{margin:0 0 12px;font-size:15px;font-weight:900;color:#173126;}
       .pay-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf2ee;padding:10px 0;font-weight:800;color:#173126;}
+      .pay-summary{margin-top:14px;border-top:1px solid #edf2ee;padding-top:12px;display:grid;gap:8px;}
+      .pay-summary-row{display:flex;align-items:center;justify-content:space-between;font-weight:900;color:#5f7067;}
+      .pay-summary-row strong{color:#173126;font-size:18px;}
+      .pay-summary-row.remaining strong{color:#c83e38;font-size:22px;}
+      .pay-entry{display:grid;gap:10px;margin-bottom:12px;}
+      .pay-entry label{margin:0;color:#5f7067;font-weight:900;}
+      .pay-entry input{height:54px;border:1px solid #dce7e1;border-radius:12px;padding:0 14px;text-align:right;font-size:24px;font-weight:900;color:#173126;outline:none;}
+      .pay-entry input:focus{border-color:#2f6f49;box-shadow:0 0 0 3px rgba(47,111,73,.1);}
       .pay-total{font-size:22px;font-weight:900;text-align:right;margin:10px 0 14px;color:#173126;}
       .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
       .keypad button{height:54px;border:1px solid #e1e7e3;border-radius:10px;background:#fff;font-weight:900;font-size:16px;color:#173126;}
@@ -180,10 +188,18 @@
     <div class="pay-box">
       <h4><i class="fa fa-list-ul"></i> Adisyon Kalemleri</h4>
       <div id="payItemList"></div>
+      <div class="pay-summary">
+        <div class="pay-summary-row"><span>Toplam</span><strong id="paySubtotal">0,00 TL</strong></div>
+        <div class="pay-summary-row"><span>Alınan</span><strong id="payPaid">0,00 TL</strong></div>
+        <div class="pay-summary-row remaining"><span>Kalan</span><strong id="payRemaining">0,00 TL</strong></div>
+      </div>
     </div>
     <div class="pay-box">
-      <h4><i class="fa fa-calculator"></i> Tutar</h4>
-      <div class="pay-total" id="payTotal">0,00 TL</div>
+      <h4><i class="fa fa-calculator"></i> Alınan Ödeme</h4>
+      <div class="pay-entry">
+        <label for="payAmountInput">Kasaya girilen tutar</label>
+        <input type="text" id="payAmountInput" inputmode="decimal" value="">
+      </div>
       <div class="keypad">
         <button>7</button><button>8</button><button>9</button><button class="action">Tüm</button>
         <button>4</button><button>5</button><button>6</button><button class="action">1/n</button>
@@ -196,8 +212,6 @@
       <div class="pay-method-grid">
         <button type="button" class="pay-method" data-method="cash"><i class="fa fa-money"></i>Nakit</button>
         <button type="button" class="pay-method" data-method="card"><i class="fa fa-credit-card"></i>Kredi Kartı</button>
-        <button type="button" class="pay-method" data-method="meal_card"><i class="fa fa-ticket"></i>Yemek Kartı</button>
-        <button type="button" class="pay-method" data-method="transfer"><i class="fa fa-handshake-o"></i>Açık Hesap</button>
       </div>
     </div>
   </div>
@@ -212,8 +226,6 @@
   <div class="pay-method-grid">
     <button type="button" class="pay-method quick-method" data-method="cash"><i class="fa fa-money"></i>Nakit</button>
     <button type="button" class="pay-method quick-method" data-method="card"><i class="fa fa-credit-card"></i>Kredi Kartı</button>
-    <button type="button" class="pay-method quick-method" data-method="meal_card"><i class="fa fa-ticket"></i>Yemek Kartı</button>
-    <button type="button" class="pay-method quick-method" data-method="transfer"><i class="fa fa-handshake-o"></i>Açık Hesap</button>
   </div>
 </div>
 
@@ -235,10 +247,16 @@
   var selectedCategory = categories.length ? parseInt(categories[0].category_id, 10) : 0;
   var currentDetail = null;
   var searchTimer = null;
+  var payAmount = '';
 
   function money(value) {
     value = parseFloat(value || 0);
     return value.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' TL';
+  }
+
+  function parseAmount(value) {
+    value = String(value || '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.]/g, '');
+    return parseFloat(value || 0) || 0;
   }
 
   function escapeHtml(value) {
@@ -341,7 +359,7 @@
       detail.items.forEach(function(item) {
         html += '<div class="receipt-row" data-row-id="' + item.restaurant_order_product_id + '" data-qty="' + item.quantity + '">';
         html += '<div class="qty-stepper"><button type="button" class="qty-plus"><i class="fa fa-plus"></i></button><span>' + item.quantity + '</span><button type="button" class="qty-minus"><i class="fa fa-minus"></i></button></div>';
-        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet</div><div class="row-actions"><button type="button" class="qty-edit"><i class="fa fa-pencil"></i></button><button type="button" class="qty-remove"><i class="fa fa-trash"></i></button></div></div>';
+        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet</div><div class="row-actions"><button type="button" class="qty-remove"><i class="fa fa-trash"></i></button></div></div>';
         html += '<div class="receipt-total">' + money(item.total) + '</div>';
         html += '</div>';
       });
@@ -378,7 +396,7 @@
   }
 
   function loadProducts() {
-    var search = $('#productSearch').val();
+    var search = $.trim($('#productSearch').val());
     var categoryId = search ? 0 : selectedCategory;
     $.getJSON(productsUrl + '&category_id=' + categoryId + '&search=' + encodeURIComponent(search), function(json) {
       if (!json || !json.success) return;
@@ -411,11 +429,17 @@
   }
 
   function fillPayModal() {
+    var subtotal = currentDetail ? currentDetail.subtotal_amount || currentDetail.total_amount : 0;
+    var paid = currentDetail ? currentDetail.paid_amount || 0 : 0;
     var total = currentDetail ? currentDetail.total_amount : 0;
     var tableNo = currentDetail && currentDetail.table ? currentDetail.table.table_no : '';
     $('#payTitle').text('Masa ' + tableNo + ' Ödeme');
     $('#payTableName').text('Ödenecek Tutar: ' + money(total));
-    $('#payTotal').text(money(total));
+    $('#paySubtotal').text(money(subtotal));
+    $('#payPaid').text(money(paid));
+    $('#payRemaining').text(money(total));
+    payAmount = '';
+    $('#payAmountInput').val('');
     $('#quickPayTitle').text('Hızlı Öde');
     $('#quickPayTotal').text('Masa ' + tableNo + ' - ' + money(total));
     var html = '';
@@ -451,15 +475,43 @@
     $('#payBackdrop,#payModal,#quickPayModal').hide();
   }
 
+  function setPayAmount(value) {
+    payAmount = String(value || '');
+    $('#payAmountInput').val(payAmount);
+  }
+
+  function appendPayKey(key) {
+    if (key === 'clear') {
+      setPayAmount('');
+    } else if (key === 'back') {
+      setPayAmount(payAmount.slice(0, -1));
+    } else if (key === 'all') {
+      setPayAmount((currentDetail ? currentDetail.total_amount : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    } else if (key === 'half') {
+      setPayAmount(((currentDetail ? currentDetail.total_amount : 0) / 2).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    } else {
+      setPayAmount(payAmount + key);
+    }
+  }
+
   function pay(method) {
     if (!selectedTableId || !method) return;
-    $.post(payUrl, {table_id:selectedTableId, payment_method:method, note:''}, function(json) {
+    var amount = parseAmount($('#payAmountInput').val());
+    $.post(payUrl, {table_id:selectedTableId, payment_method:method, amount:amount, note:''}, function(json) {
       if (!json || !json.success) {
         alert(json && json.message ? json.message : 'Ödeme alınamadı.');
         return;
       }
-      closePayModal();
-      showTables();
+      if (json.closed) {
+        closePayModal();
+        showTables();
+        return;
+      }
+      if (json.detail) {
+        renderDetail(json.detail);
+        fillPayModal();
+      }
+      refreshTables(false);
     }, 'json');
   }
 
@@ -480,13 +532,17 @@
   $(document).on('click', '.qty-plus', function(){ var row = $(this).closest('.receipt-row'); updateRow(row.data('row-id'), parseInt(row.data('qty'), 10) + 1); });
   $(document).on('click', '.qty-minus', function(){ var row = $(this).closest('.receipt-row'); updateRow(row.data('row-id'), parseInt(row.data('qty'), 10) - 1); });
   $(document).on('click', '.qty-remove', function(){ var row = $(this).closest('.receipt-row'); if (confirm('Bu ürünü adisyondan silmek istiyor musunuz?')) removeRow(row.data('row-id')); });
-  $(document).on('click', '.qty-edit', function(){
-    var row = $(this).closest('.receipt-row');
-    var quantity = parseInt(prompt('Yeni adet', row.data('qty')), 10);
-    if (quantity > 0) updateRow(row.data('row-id'), quantity);
-  });
   $('#productSearch').on('input', function(){ clearTimeout(searchTimer); searchTimer = setTimeout(loadProducts, 220); });
   $('#clearProductSearch').on('click', function(){ $('#productSearch').val(''); loadProducts(); });
+  $('#payAmountInput').on('input', function(){ payAmount = $(this).val(); });
+  $(document).on('click', '.keypad button', function(){
+    var text = $.trim($(this).text());
+    if (text === 'Tüm') return appendPayKey('all');
+    if (text === '1/n') return appendPayKey('half');
+    if (text === 'Sil') return appendPayKey('clear');
+    if (!text) return appendPayKey('back');
+    appendPayKey(text === ',' ? ',' : text);
+  });
   $('#refreshTables').on('click', function(){ refreshTables(false); });
   $('#backToTables').on('click', showTables);
   $(document).on('click', '#saveTableBtn', showTables);

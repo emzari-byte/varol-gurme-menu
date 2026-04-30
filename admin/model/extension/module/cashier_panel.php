@@ -32,12 +32,17 @@ class ModelExtensionModuleCashierPanel extends Model {
 			LEFT JOIN (
 				SELECT table_id,
 					COUNT(*) AS order_count,
-					SUM(total_amount) AS total_amount,
-					MAX(date_modified) AS last_activity,
-					GROUP_CONCAT(restaurant_order_id ORDER BY restaurant_order_id ASC SEPARATOR ',') AS order_ids
-				FROM `" . DB_PREFIX . "restaurant_order`
-				WHERE service_status = 'served'
-				GROUP BY table_id
+					SUM(GREATEST(ro.total_amount - COALESCE(pay.paid_amount, 0), 0)) AS total_amount,
+					MAX(ro.date_modified) AS last_activity,
+					GROUP_CONCAT(ro.restaurant_order_id ORDER BY ro.restaurant_order_id ASC SEPARATOR ',') AS order_ids
+				FROM `" . DB_PREFIX . "restaurant_order` ro
+				LEFT JOIN (
+					SELECT restaurant_order_id, SUM(amount) AS paid_amount
+					FROM `" . DB_PREFIX . "restaurant_payment`
+					GROUP BY restaurant_order_id
+				) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+				WHERE ro.service_status = 'served'
+				GROUP BY ro.table_id
 			) active ON (active.table_id = rt.table_id)
 			LEFT JOIN `" . DB_PREFIX . "restaurant_table_status` rts ON (rts.table_id = rt.table_id)
 			LEFT JOIN `" . DB_PREFIX . "restaurant_call` rc ON (rc.table_id = rt.table_id AND rc.call_type = 'bill_request' AND rc.status IN ('new','seen'))
@@ -62,10 +67,16 @@ class ModelExtensionModuleCashierPanel extends Model {
 			ORDER BY restaurant_order_id ASC")->rows;
 
 		$items = array();
-		$total = 0.0;
+		$subtotal = 0.0;
+		$paid_total = 0.0;
 
 		foreach ($orders as $order) {
-			$total += (float)$order['total_amount'];
+			$subtotal += (float)$order['total_amount'];
+			$paid = $this->db->query("SELECT COALESCE(SUM(amount), 0) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				WHERE restaurant_order_id = '" . (int)$order['restaurant_order_id'] . "'")->row;
+			$paid_total += (float)$paid['paid_amount'];
+
 			$products = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_order_product`
 				WHERE restaurant_order_id = '" . (int)$order['restaurant_order_id'] . "'
 				ORDER BY restaurant_order_product_id ASC")->rows;
@@ -92,8 +103,10 @@ class ModelExtensionModuleCashierPanel extends Model {
 			),
 			'orders' => $orders,
 			'items' => $items,
-			'total_amount' => $total,
-			'is_occupied' => $total > 0
+			'subtotal_amount' => $subtotal,
+			'paid_amount' => $paid_total,
+			'total_amount' => max(0, $subtotal - $paid_total),
+			'is_occupied' => ($subtotal - $paid_total) > 0
 		);
 	}
 
@@ -319,13 +332,128 @@ class ModelExtensionModuleCashierPanel extends Model {
 			LIMIT " . $limit)->rows;
 	}
 
-	public function payTable($table_id, $payment_method, $user_id = 0, $note = '') {
+	public function payTablePartial($table_id, $payment_method, $user_id = 0, $note = '', $amount = 0) {
 		$this->install();
 
 		$table_id = (int)$table_id;
 		$user_id = (int)$user_id;
 		$payment_method = (string)$payment_method;
-		$allowed = array('cash', 'card', 'meal_card', 'transfer', 'complimentary', 'mixed');
+		$amount = (float)$amount;
+		$allowed = array('cash', 'card');
+
+		if (!$table_id || !in_array($payment_method, $allowed, true)) {
+			return array('success' => false, 'message' => 'Geçersiz ödeme bilgisi.');
+		}
+
+		$orders = $this->db->query("SELECT restaurant_order_id, table_id, service_status, total_amount
+			FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . $table_id . "'
+			AND service_status = 'served'
+			ORDER BY restaurant_order_id ASC")->rows;
+
+		if (!$orders) {
+			return array('success' => false, 'message' => 'Bu masa için ödemeye uygun açık hesap yok.');
+		}
+
+		$remaining_total = 0.0;
+		$order_remaining = array();
+
+		foreach ($orders as $order) {
+			$order_id = (int)$order['restaurant_order_id'];
+			$paid = $this->db->query("SELECT COALESCE(SUM(amount), 0) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				WHERE restaurant_order_id = '" . $order_id . "'")->row;
+			$remaining = max(0, (float)$order['total_amount'] - (float)$paid['paid_amount']);
+			$order_remaining[$order_id] = $remaining;
+			$remaining_total += $remaining;
+		}
+
+		if ($remaining_total <= 0.009) {
+			return array('success' => false, 'message' => 'Bu masa için ödenecek kalan tutar yok.');
+		}
+
+		if ($amount <= 0 || $amount > $remaining_total) {
+			$amount = $remaining_total;
+		}
+
+		$payment_left = $amount;
+
+		foreach ($orders as $order) {
+			$order_id = (int)$order['restaurant_order_id'];
+			$order_pay_amount = min($payment_left, $order_remaining[$order_id]);
+
+			if ($order_pay_amount <= 0) {
+				continue;
+			}
+
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_payment`
+				SET restaurant_order_id = '" . $order_id . "',
+					table_id = '" . $table_id . "',
+					amount = '" . (float)$order_pay_amount . "',
+					payment_method = '" . $this->db->escape($payment_method) . "',
+					source = 'cashier_panel',
+					user_id = '" . $user_id . "',
+					note = '" . $this->db->escape($note) . "',
+					date_added = NOW()");
+
+			$payment_left -= $order_pay_amount;
+
+			if ($payment_left <= 0.009) {
+				break;
+			}
+		}
+
+		$detail = $this->getTableDetail($table_id);
+
+		if ((float)$detail['total_amount'] <= 0.009) {
+			foreach ($orders as $order) {
+				$order_id = (int)$order['restaurant_order_id'];
+				$old_status = (string)$order['service_status'];
+
+				$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+					SET service_status = 'paid',
+						is_paid = '1',
+						date_modified = NOW()
+					WHERE restaurant_order_id = '" . $order_id . "'");
+
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
+					SET restaurant_order_id = '" . $order_id . "',
+						old_status = '" . $this->db->escape($old_status) . "',
+						new_status = 'paid',
+						user_id = '" . $user_id . "',
+						comment = '" . $this->db->escape('Kasa panelinden ödeme alındı: ' . $payment_method) . "',
+						date_added = NOW()");
+			}
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_call`
+				SET status = 'closed', date_modified = NOW()
+				WHERE table_id = '" . $table_id . "'
+				AND call_type IN ('bill_request','waiter_call')
+				AND status IN ('new','seen')");
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
+				SET service_status = 'empty',
+					active_order_count = '0',
+					total_amount = '0.0000',
+					active_session_token = NULL,
+					date_modified = NOW()
+				WHERE table_id = '" . $table_id . "'");
+
+			return array('success' => true, 'closed' => true, 'message' => 'Ödeme alındı ve masa kapatıldı.');
+		}
+
+		$this->syncTableStatus($table_id);
+		return array('success' => true, 'closed' => false, 'message' => 'Tahsilat alındı.', 'detail' => $detail);
+	}
+
+	public function payTable($table_id, $payment_method, $user_id = 0, $note = '', $amount = 0) {
+		$this->install();
+
+		$table_id = (int)$table_id;
+		$user_id = (int)$user_id;
+		$payment_method = (string)$payment_method;
+		$amount = (float)$amount;
+		$allowed = array('cash', 'card');
 
 		if (!$table_id || !in_array($payment_method, $allowed, true)) {
 			return array('success' => false, 'message' => 'Geçersiz ödeme bilgisi.');
@@ -435,14 +563,20 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 	private function syncTableStatus($table_id) {
 		$table_id = (int)$table_id;
-		$active = $this->db->query("SELECT COUNT(*) AS active_order_count, COALESCE(SUM(total_amount), 0) AS total_amount
-			FROM `" . DB_PREFIX . "restaurant_order`
-			WHERE table_id = '" . $table_id . "'
-			AND service_status = 'served'")->row;
+		$active = $this->db->query("SELECT COUNT(*) AS active_order_count,
+				COALESCE(SUM(GREATEST(ro.total_amount - COALESCE(pay.paid_amount, 0), 0)), 0) AS total_amount
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+			WHERE ro.table_id = '" . $table_id . "'
+			AND ro.service_status = 'served'")->row;
 
 		$count = (int)$active['active_order_count'];
 		$total = (float)$active['total_amount'];
-		$status = $count > 0 ? 'served' : 'empty';
+		$status = ($count > 0 && $total > 0.009) ? 'served' : 'empty';
 		$check = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table_status` WHERE table_id = '" . $table_id . "' LIMIT 1");
 
 		if ($check->num_rows) {
