@@ -126,7 +126,7 @@ class ControllerExtensionModuleAkinsoftBridge extends Controller {
 				), 401);
 			}
 
-			$tables = $this->decodePostJson('tables_json');
+			$tables = $this->decodePostJson('tables');
 
 			if (!is_array($tables)) {
 				return $this->json(array(
@@ -152,7 +152,7 @@ class ControllerExtensionModuleAkinsoftBridge extends Controller {
 				), 401);
 			}
 
-			$prices = $this->decodePostJson('prices_json');
+			$prices = $this->decodePostJson('prices');
 
 			if (!is_array($prices)) {
 				return $this->json(array(
@@ -183,7 +183,17 @@ class ControllerExtensionModuleAkinsoftBridge extends Controller {
 	}
 
 	private function decodePostJson($key) {
-		$json = isset($this->request->post[$key]) ? (string)$this->request->post[$key] : '';
+		$json_key = $key . '_json';
+		$payload_key = $key . '_payload';
+		$json = isset($this->request->post[$json_key]) ? (string)$this->request->post[$json_key] : '';
+
+		if ($json === '' && isset($this->request->post[$payload_key])) {
+			$decoded = base64_decode((string)$this->request->post[$payload_key], true);
+
+			if ($decoded !== false) {
+				$json = $decoded;
+			}
+		}
 
 		if ($json === '') {
 			return null;

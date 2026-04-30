@@ -109,7 +109,7 @@ class AkinsoftBridgeAgent {
 			$rows = $this->firebird()->query("SELECT BLKODU, MASAADI, MASAGRUBU, KACKISILIK, GIZLI FROM MASA ORDER BY BLKODU ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 			$response = $this->request('extension/module/akinsoft_bridge/syncTables', array(), array(
-				'tables_json' => $this->jsonEncodeFirebirdRows($rows)
+				'tables_payload' => base64_encode($this->jsonEncodeFirebirdRows($rows))
 			));
 
 			if (empty($response['success'])) {
@@ -135,7 +135,7 @@ class AkinsoftBridgeAgent {
 					AND f.FIYATI IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
 
 			$response = $this->request('extension/module/akinsoft_bridge/syncPrices', array(), array(
-				'prices_json' => $this->jsonEncodeFirebirdRows($rows)
+				'prices_payload' => base64_encode($this->jsonEncodeFirebirdRows($rows))
 			));
 
 			if (empty($response['success'])) {
