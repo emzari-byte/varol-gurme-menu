@@ -232,6 +232,10 @@
                   <strong>Mutfak</strong>
                   <span>{% if restaurant_kitchen_panel %}Mutfak ekranı aktif{% else %}Mutfak ekranı kapalı{% endif %}</span>
                 </div>
+                <div class="settings-mini-card">
+                  <strong>Kasa</strong>
+                  <span>{% if restaurant_cashier_panel %}Kasa paneli aktif{% else %}Kasa paneli kapalı{% endif %}</span>
+                </div>
               </div>
 
               <div class="settings-section-title">
@@ -315,7 +319,16 @@
                 <div class="col-sm-9">
                   <label class="radio-inline"><input type="radio" name="restaurant_kitchen_panel" value="1" {% if restaurant_kitchen_panel %}checked{% endif %}> Açık</label>
                   <label class="radio-inline"><input type="radio" name="restaurant_kitchen_panel" value="0" {% if not restaurant_kitchen_panel %}checked{% endif %}> Kapalı</label>
-                  <p class="help-block">Kapalıysa sipariş akışı mutfak ekranına gönderilmez.</p>
+                  <p class="help-block">Kapalıysa sipariş akışı mutfak ekranına gönderilmez. Akınsoft entegrasyonu açıkken mutfak Akınsoft üzerinden yönetilir.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Kasa Paneli Kullan</label>
+                <div class="col-sm-9">
+                  <label class="radio-inline"><input type="radio" name="restaurant_cashier_panel" value="1" {% if restaurant_cashier_panel %}checked{% endif %}> Açık</label>
+                  <label class="radio-inline"><input type="radio" name="restaurant_cashier_panel" value="0" {% if not restaurant_cashier_panel %}checked{% endif %}> Kapalı</label>
+                  <p class="help-block">Açıksa ödeme alma ve günlük tahsilat takibi Kasa Paneli üzerinden yapılır. Akınsoft entegrasyonu açıkken kasa Akınsoft tarafında yönetilir.</p>
                 </div>
               </div>
 
@@ -673,12 +686,20 @@
 
   function toggleAkinsoftMode() {
     var mode = $('input[name="restaurant_akinsoft_mode"]:checked').val();
+    var akinsoftEnabled = $('input[name="restaurant_akinsoft_enabled"]:checked').val() == '1';
 
     $('.akinsoft-local-fields').toggle(mode == 'local_firebird');
     $('.akinsoft-bridge-fields').toggle(mode == 'bridge_agent');
+
+    $('input[name="restaurant_kitchen_panel"], input[name="restaurant_cashier_panel"]').prop('disabled', akinsoftEnabled);
+
+    if (akinsoftEnabled) {
+      $('input[name="restaurant_kitchen_panel"][value="0"], input[name="restaurant_cashier_panel"][value="0"]').prop('checked', true);
+    }
   }
 
   $('input[name="restaurant_akinsoft_mode"]').on('change', toggleAkinsoftMode);
+  $('input[name="restaurant_akinsoft_enabled"]').on('change', toggleAkinsoftMode);
   toggleAkinsoftMode();
 
   function runAkinsoftAction(button, url, loadingText) {

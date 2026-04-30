@@ -59,6 +59,7 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			'restaurant_brand_logo' => 'catalog/veranda-logo2.png',
 			'restaurant_waiter_panel' => '1',
 			'restaurant_kitchen_panel' => '1',
+			'restaurant_cashier_panel' => '1',
 			'restaurant_waiter_call_reset_minutes' => '5',
 			'restaurant_bill_request_reset_minutes' => '5',
 			'restaurant_openai_api_key' => defined('OPENAI_API_KEY') ? (string)OPENAI_API_KEY : '',

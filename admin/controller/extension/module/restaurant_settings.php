@@ -42,6 +42,11 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 				$this->request->post['restaurant_akinsoft_mode'] = 'bridge_agent';
 			}
 
+			if (!empty($this->request->post['restaurant_akinsoft_enabled'])) {
+				$this->request->post['restaurant_kitchen_panel'] = '0';
+				$this->request->post['restaurant_cashier_panel'] = '0';
+			}
+
 			$this->model_extension_module_restaurant_settings->editSettings($this->request->post);
 
 			$this->session->data['success'] = 'Restoran ayarlari kaydedildi.';

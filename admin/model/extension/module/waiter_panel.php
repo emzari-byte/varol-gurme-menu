@@ -1063,7 +1063,10 @@ class ModelExtensionModuleWaiterPanel extends Model {
 			return 0;
 		}
 
-		$service_status = $this->isRestaurantSettingEnabled('restaurant_kitchen_panel', 1) ? 'in_kitchen' : 'served';
+		$service_status = (
+			$this->isRestaurantSettingEnabled('restaurant_kitchen_panel', 1)
+			|| $this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)
+		) ? 'in_kitchen' : 'served';
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order`
 			SET table_id = '" . $table_id . "',

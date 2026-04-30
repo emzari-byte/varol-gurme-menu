@@ -50,6 +50,7 @@ class ControllerExtensionModuleWaiterPanel extends Controller {
 		$data['user_token']       = $this->session->data['user_token'];
 		$data['kitchen_panel_enabled'] = $this->isRestaurantSettingEnabled('restaurant_kitchen_panel', 1) ? 1 : 0;
 		$data['akinsoft_enabled'] = $this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0) ? 1 : 0;
+		$data['cashier_panel_enabled'] = ($this->isRestaurantSettingEnabled('restaurant_cashier_panel', 1) && !$this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)) ? 1 : 0;
 		$data['refresh_url']      = $this->url->link('extension/module/waiter_panel/refresh', 'user_token=' . $this->session->data['user_token'], true);
 		$data['orders_url']       = $this->url->link('extension/module/waiter_panel/getTableOrders', 'user_token=' . $this->session->data['user_token'], true);
 		$data['order_status_url'] = $this->url->link('extension/module/waiter_panel/updateOrderStatus', 'user_token=' . $this->session->data['user_token'], true);
@@ -245,6 +246,13 @@ true
 			) {
 				$json['success'] = false;
 				$json['message'] = 'Mutfak paneli kapalı.';
+			} elseif (
+				$service_status === 'paid'
+				&& $this->isRestaurantSettingEnabled('restaurant_cashier_panel', 1)
+				&& !$this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)
+			) {
+				$json['success'] = false;
+				$json['message'] = 'Kasa paneli aktif. Odeme islemi kasa panelinden yapilmali.';
 			} elseif ($restaurant_order_id && in_array($service_status, $allowed)) {
 				$this->load->model('extension/module/waiter_panel');
 

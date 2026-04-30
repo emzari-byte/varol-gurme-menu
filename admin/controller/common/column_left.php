@@ -31,10 +31,18 @@ class ControllerCommonColumnLeft extends Controller {
 			);
 		}
 
-		if ($this->getRestaurantAyar('restaurant_kitchen_panel', 1) && $this->user->hasPermission('access', 'extension/module/kitchen_display')) {
+		if ($this->getRestaurantAyar('restaurant_kitchen_panel', 1) && !$this->getRestaurantAyar('restaurant_akinsoft_enabled', 0) && $this->user->hasPermission('access', 'extension/module/kitchen_display')) {
 			$operations[] = array(
 				'name'     => 'Mutfak Ekranı',
 				'href'     => $this->url->link('extension/module/kitchen_display', 'user_token=' . $this->session->data['user_token'], true),
+				'children' => array()
+			);
+		}
+
+		if ($this->getRestaurantAyar('restaurant_cashier_panel', 1) && !$this->getRestaurantAyar('restaurant_akinsoft_enabled', 0) && $this->user->hasPermission('access', 'extension/module/cashier_panel')) {
+			$operations[] = array(
+				'name'     => 'Kasa Paneli',
+				'href'     => $this->url->link('extension/module/cashier_panel', 'user_token=' . $this->session->data['user_token'], true),
 				'children' => array()
 			);
 		}

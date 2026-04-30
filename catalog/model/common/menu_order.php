@@ -39,7 +39,12 @@ class ModelCommonMenuOrder extends Model {
 			return false;
 		}
 
-		if (!$this->isWaiterPanelEnabled() && !$this->isKitchenPanelEnabled()) {
+		if (
+			!$this->isWaiterPanelEnabled()
+			&& !$this->isKitchenPanelEnabled()
+			&& !$this->isAkinsoftEnabled()
+			&& !$this->isCashierPanelEnabled()
+		) {
 			return false;
 		}
 
@@ -689,10 +694,16 @@ $this->db->query("UPDATE `" . DB_PREFIX . "restaurant_call`
 		$table_id = (int)$this->session->data['menu_table_id'];
 		$waiter_user_id = 0;
 		$total_amount = (float)$summary['total_raw'];
-		$service_status = $this->isWaiterPanelEnabled() ? 'waiting_order' : 'in_kitchen';
-		$success_message = $service_status === 'waiting_order'
-			? 'Siparişiniz garsona ulaştı. En kısa sürede yanınıza gelecektir.'
-			: 'Siparişiniz mutfağa iletildi.';
+		if ($this->isWaiterPanelEnabled()) {
+			$service_status = 'waiting_order';
+			$success_message = 'Siparisiniz garsona ulasti. En kisa surede yaniniza gelecektir.';
+		} elseif ($this->isAkinsoftEnabled() || $this->isKitchenPanelEnabled()) {
+			$service_status = 'in_kitchen';
+			$success_message = $this->isAkinsoftEnabled() ? 'Siparisiniz ekibe iletildi.' : 'Siparisiniz mutfaga iletildi.';
+		} else {
+			$service_status = 'served';
+			$success_message = 'Siparisiniz alindi. Odeme/kasa sureci icin ekibimiz ilgilenecek.';
+		}
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order`
 			SET table_id = '" . $table_id . "',
@@ -949,5 +960,9 @@ private function sendBillRequestNotification($table_id, $call_id) {
 
 	private function isAkinsoftEnabled() {
 		return $this->getRestaurantSettingValue('restaurant_akinsoft_enabled', 0) === 1;
+	}
+
+	private function isCashierPanelEnabled() {
+		return $this->getRestaurantSettingValue('restaurant_cashier_panel', 1) === 1;
 	}
 }

@@ -216,6 +216,7 @@ Mutfağa Gönder
 	var manualOrderUrl='{{ manual_order_url|replace({'&amp;':'&'}) }}';
     var kitchenPanelEnabled = {{ kitchen_panel_enabled ? 1 : 0 }};
     var akinsoftEnabled = {{ akinsoft_enabled ? 1 : 0 }};
+    var cashierPanelEnabled = {{ cashier_panel_enabled ? 1 : 0 }};
 	var adminNotificationControls = {{ admin_notification_controls ? 1 : 0 }};
 	var notificationsMuted = adminNotificationControls ? getLocalFlag('waiter_admin_notifications_muted') : false;
 	var soundMuted = adminNotificationControls ? getLocalFlag('waiter_admin_sound_muted') : false;
@@ -798,11 +799,11 @@ function getMainAction() {
 		return {type:'ack_bill', label:'Hesapla İlgileniyorum', className:'btn-warning'};
 	}
 
-	if (currentBillRequestPending && currentBillRequestStatus === 'seen' && getOrdersByStatus(['served']).length) {
+	if (!cashierPanelEnabled && currentBillRequestPending && currentBillRequestStatus === 'seen' && getOrdersByStatus(['served']).length) {
 		return {type:'pay_orders', label:'Ödeme Alındı', className:'btn-warning'};
 	}
 
-	if (getOrdersByStatus(['served']).length) {
+	if (!cashierPanelEnabled && getOrdersByStatus(['served']).length) {
 		return {type:'pay_orders', label:'Ödeme Alındı', className:'btn-warning'};
 	}
 

@@ -1,0 +1,166 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <h1>Kasa Paneli</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid cashier-page">
+    <style>
+      .cashier-page{background:#f4f7f5;min-height:calc(100vh - 80px);padding-bottom:28px;}
+      .cashier-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px;}
+      .cashier-card{background:#fff;border:1px solid #e0e8e3;border-radius:14px;padding:16px;box-shadow:0 10px 28px rgba(23,49,38,.06);}
+      .cashier-card span{display:block;color:#718178;font-size:12px;font-weight:800;}
+      .cashier-card strong{display:block;margin-top:8px;color:#173126;font-size:25px;font-weight:900;line-height:1;}
+      .cashier-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;}
+      .cashier-panel{background:#fff;border:1px solid #e0e8e3;border-radius:16px;box-shadow:0 12px 34px rgba(23,49,38,.07);overflow:hidden;}
+      .cashier-panel h3{margin:0;padding:16px 18px;border-bottom:1px solid #e8eee9;color:#173126;font-size:16px;font-weight:900;}
+      .cashier-table-list{padding:14px;display:grid;gap:10px;}
+      .cashier-table{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid #e2eae5;border-radius:14px;padding:14px;background:#fbfdfb;}
+      .cashier-table.bill{border-color:#e6c38a;background:#fffaf1;}
+      .cashier-table-title{font-weight:900;color:#173126;font-size:15px;}
+      .cashier-table-meta{margin-top:4px;color:#728278;font-size:12px;font-weight:700;}
+      .cashier-table-total{text-align:right;font-size:20px;font-weight:900;color:#173126;white-space:nowrap;}
+      .cashier-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;}
+      .cashier-actions select,.cashier-actions input{height:34px;border:1px solid #dce5df;border-radius:8px;padding:0 9px;}
+      .payment-table{width:100%;border-collapse:collapse;}
+      .payment-table th,.payment-table td{padding:11px 12px;border-bottom:1px solid #edf2ee;font-size:12px;}
+      .payment-table th{color:#607168;text-align:left;font-weight:900;background:#fbfdfb;}
+      .empty-state{padding:34px;text-align:center;color:#718178;font-weight:800;}
+      @media(max-width:1100px){.cashier-summary{grid-template-columns:repeat(2,minmax(0,1fr));}.cashier-layout{grid-template-columns:1fr;}}
+    </style>
+
+    <div class="cashier-summary" id="cashier-summary">
+      <div class="cashier-card"><span>Bugün Toplam</span><strong data-summary="today_total">{{ summary.today_total|number_format(2, ',', '.') }} TL</strong></div>
+      <div class="cashier-card"><span>Nakit</span><strong data-summary="cash_total">{{ summary.cash_total|number_format(2, ',', '.') }} TL</strong></div>
+      <div class="cashier-card"><span>Kart</span><strong data-summary="card_total">{{ summary.card_total|number_format(2, ',', '.') }} TL</strong></div>
+      <div class="cashier-card"><span>Yemek Kartı</span><strong data-summary="meal_card_total">{{ summary.meal_card_total|number_format(2, ',', '.') }} TL</strong></div>
+      <div class="cashier-card"><span>Açık Hesap</span><strong data-summary="open_total">{{ summary.open_total|number_format(2, ',', '.') }} TL</strong></div>
+      <div class="cashier-card"><span>İşlem</span><strong data-summary="payment_count">{{ summary.payment_count }}</strong></div>
+    </div>
+
+    <div class="cashier-layout">
+      <section class="cashier-panel">
+        <h3><i class="fa fa-credit-card"></i> Ödeme Bekleyen Masalar</h3>
+        <div class="cashier-table-list" id="open-table-list"></div>
+      </section>
+      <section class="cashier-panel">
+        <h3><i class="fa fa-list"></i> Bugünkü Tahsilatlar</h3>
+        <div id="payment-list"></div>
+      </section>
+    </div>
+  </div>
+</div>
+<script>
+(function($){
+  var refreshUrl = '{{ refresh_url|replace({"&amp;":"&"}) }}';
+  var payUrl = '{{ pay_url|replace({"&amp;":"&"}) }}';
+
+  function money(value) {
+    value = parseFloat(value || 0);
+    return value.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' TL';
+  }
+
+  function methodText(method) {
+    var map = {cash:'Nakit', card:'Kredi Kartı', meal_card:'Yemek Kartı', transfer:'Havale/EFT', complimentary:'İkram', mixed:'Parçalı'};
+    return map[method] || method;
+  }
+
+  function escapeHtml(value) {
+    return String(value === null || value === undefined ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderSummary(summary) {
+    $('[data-summary="today_total"]').text(money(summary.today_total));
+    $('[data-summary="cash_total"]').text(money(summary.cash_total));
+    $('[data-summary="card_total"]').text(money(summary.card_total));
+    $('[data-summary="meal_card_total"]').text(money(summary.meal_card_total));
+    $('[data-summary="open_total"]').text(money(summary.open_total));
+    $('[data-summary="payment_count"]').text(summary.payment_count || 0);
+  }
+
+  function renderTables(tables) {
+    var html = '';
+    if (!tables || !tables.length) {
+      $('#open-table-list').html('<div class="empty-state">Ödeme bekleyen masa yok.</div>');
+      return;
+    }
+
+    tables.forEach(function(table) {
+      html += '<div class="cashier-table ' + (parseInt(table.bill_request_pending || 0, 10) ? 'bill' : '') + '" data-table-id="' + table.table_id + '">';
+      html += '<div><div class="cashier-table-title">Masa ' + escapeHtml(table.table_no) + ' - ' + escapeHtml(table.name || '') + '</div>';
+      html += '<div class="cashier-table-meta">' + (table.area || 'Salon') + ' · ' + table.order_count + ' adisyon · ' + (table.bill_request_pending > 0 ? 'Hesap talebi var' : 'Servis tamamlandı') + '</div>';
+      html += '<div class="cashier-actions"><select class="payment-method"><option value="cash">Nakit</option><option value="card">Kredi Kartı</option><option value="meal_card">Yemek Kartı</option><option value="transfer">Havale/EFT</option><option value="mixed">Parçalı</option><option value="complimentary">İkram</option></select><input type="text" class="payment-note" placeholder="Not"><button type="button" class="btn btn-success btn-pay"><i class="fa fa-check"></i> Ödeme Al</button></div></div>';
+      html += '<div class="cashier-table-total">' + money(table.total_amount) + '</div></div>';
+    });
+
+    $('#open-table-list').html(html);
+  }
+
+  function renderPayments(payments) {
+    if (!payments || !payments.length) {
+      $('#payment-list').html('<div class="empty-state">Bugün tahsilat yok.</div>');
+      return;
+    }
+
+    var html = '<table class="payment-table"><thead><tr><th>Saat</th><th>Masa</th><th>Yöntem</th><th>Tutar</th><th>Kullanıcı</th></tr></thead><tbody>';
+    payments.forEach(function(payment) {
+      html += '<tr><td>' + escapeHtml((payment.date_added || '').substr(11,5)) + '</td><td>Masa ' + escapeHtml(payment.table_no || '-') + '</td><td>' + escapeHtml(methodText(payment.payment_method)) + '</td><td>' + money(payment.amount) + '</td><td>' + escapeHtml(payment.username || '-') + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    $('#payment-list').html(html);
+  }
+
+  function refresh() {
+    $.getJSON(refreshUrl, function(json) {
+      if (!json || !json.success) return;
+      renderSummary(json.summary || {});
+      renderTables(json.open_tables || []);
+      renderPayments(json.payments || []);
+    });
+  }
+
+  $(document).on('click', '.btn-pay', function() {
+    var $table = $(this).closest('.cashier-table');
+    var tableId = $table.data('table-id');
+    var method = $table.find('.payment-method').val();
+    var note = $table.find('.payment-note').val();
+
+    if (!confirm('Bu masanın ödemesi alındı olarak kapatılsın mı?')) {
+      return;
+    }
+
+    $.ajax({
+      url: payUrl,
+      type: 'post',
+      dataType: 'json',
+      data: {table_id: tableId, payment_method: method, note: note},
+      success: function(json) {
+        if (!json || !json.success) {
+          alert(json && json.message ? json.message : 'Ödeme alınamadı.');
+          return;
+        }
+        refresh();
+      },
+      error: function() {
+        alert('Ödeme işlemi sırasında hata oluştu.');
+      }
+    });
+  });
+
+  renderTables({{ open_tables_json|raw }});
+  renderPayments({{ payments_json|raw }});
+  setInterval(refresh, 10000);
+})(jQuery);
+</script>
+{{ footer }}
