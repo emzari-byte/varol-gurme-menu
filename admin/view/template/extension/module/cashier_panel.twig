@@ -15,16 +15,11 @@
 {% else %}
 {{ header }}{{ column_left }}
 {% endif %}
-<div id="content">
-  <div class="page-header cashier-admin-header">
+<div id="content" class="cashier-content">
+  {% if not cashier_fullscreen %}
+  <div class="page-header">
     <div class="container-fluid">
       <h1>Kasa Paneli</h1>
-      {% if cashier_fullscreen %}
-      <div class="pull-right cashier-exit">
-        <span>{{ cashier_username }}</span>
-        <a href="{{ logout_url }}" class="btn btn-default"><i class="fa fa-sign-out"></i> Çıkış</a>
-      </div>
-      {% endif %}
       <ul class="breadcrumb">
         {% for breadcrumb in breadcrumbs %}
         <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
@@ -32,166 +27,319 @@
       </ul>
     </div>
   </div>
-  <div class="container-fluid cashier-page">
+  {% endif %}
+
+  <div class="cashier-pos">
     <style>
-      .cashier-fullscreen-body{margin:0;background:#f4f7f5;color:#173126;}
+      .cashier-fullscreen-body{margin:0;background:#f4f7f5;color:#173126;font-family:Arial,Helvetica,sans-serif;}
       .cashier-fullscreen-body #content{margin:0;padding:0;}
-      .cashier-fullscreen-body .cashier-admin-header{margin:0;border:0;background:#fff;box-shadow:0 8px 24px rgba(23,49,38,.08);}
-      .cashier-fullscreen-body .cashier-admin-header .container-fluid{padding:14px 22px;}
-      .cashier-fullscreen-body .cashier-admin-header h1{margin:0;font-size:22px;font-weight:900;line-height:34px;color:#173126;}
-      .cashier-fullscreen-body .cashier-admin-header .breadcrumb{display:none;}
-      .cashier-fullscreen-body .cashier-exit{display:flex;align-items:center;gap:10px;}
-      .cashier-fullscreen-body .cashier-exit span{font-weight:800;color:#607168;}
-      .cashier-fullscreen-body .cashier-page{padding:18px 22px 28px;min-height:calc(100vh - 62px);}
-      .cashier-page{background:#f4f7f5;min-height:calc(100vh - 80px);padding-bottom:28px;}
-      .cashier-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px;}
-      .cashier-card{background:#fff;border:1px solid #e0e8e3;border-radius:14px;padding:16px;box-shadow:0 10px 28px rgba(23,49,38,.06);}
-      .cashier-card span{display:block;color:#718178;font-size:12px;font-weight:800;}
-      .cashier-card strong{display:block;margin-top:8px;color:#173126;font-size:25px;font-weight:900;line-height:1;}
-      .cashier-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;}
-      .cashier-panel{background:#fff;border:1px solid #e0e8e3;border-radius:16px;box-shadow:0 12px 34px rgba(23,49,38,.07);overflow:hidden;}
-      .cashier-panel h3{margin:0;padding:16px 18px;border-bottom:1px solid #e8eee9;color:#173126;font-size:16px;font-weight:900;}
-      .cashier-table-list{padding:14px;display:grid;gap:10px;}
-      .cashier-table{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid #e2eae5;border-radius:14px;padding:14px;background:#fbfdfb;}
-      .cashier-table.bill{border-color:#e6c38a;background:#fffaf1;}
-      .cashier-table-title{font-weight:900;color:#173126;font-size:15px;}
-      .cashier-table-meta{margin-top:4px;color:#728278;font-size:12px;font-weight:700;}
-      .cashier-table-total{text-align:right;font-size:20px;font-weight:900;color:#173126;white-space:nowrap;}
-      .cashier-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;}
-      .cashier-actions select,.cashier-actions input{height:34px;border:1px solid #dce5df;border-radius:8px;padding:0 9px;}
-      .payment-table{width:100%;border-collapse:collapse;}
-      .payment-table th,.payment-table td{padding:11px 12px;border-bottom:1px solid #edf2ee;font-size:12px;}
-      .payment-table th{color:#607168;text-align:left;font-weight:900;background:#fbfdfb;}
-      .empty-state{padding:34px;text-align:center;color:#718178;font-weight:800;}
-      @media(max-width:1100px){.cashier-summary{grid-template-columns:repeat(2,minmax(0,1fr));}.cashier-layout{grid-template-columns:1fr;}}
+      .cashier-pos{min-height:calc(100vh - 40px);background:#f4f7f5;padding:18px;}
+      .cashier-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;}
+      .cashier-title{display:flex;align-items:center;gap:12px;color:#173126;}
+      .cashier-title strong{font-size:22px;font-weight:900;}
+      .cashier-title span{color:#708179;font-weight:800;font-size:13px;}
+      .cashier-user{display:flex;align-items:center;gap:10px;font-weight:800;color:#607168;}
+      .cashier-shell{display:grid;grid-template-columns:360px 1fr 430px;gap:14px;min-height:calc(100vh - 96px);}
+      .cashier-panel{background:#fff;border:1px solid #e1e9e4;border-radius:16px;box-shadow:0 14px 34px rgba(23,49,38,.07);overflow:hidden;}
+      .cashier-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 16px;border-bottom:1px solid #edf2ee;}
+      .cashier-panel-head h3{margin:0;font-size:15px;font-weight:900;color:#173126;}
+      .receipt-body{display:flex;flex-direction:column;height:100%;}
+      .receipt-items{padding:12px;overflow:auto;max-height:calc(100vh - 250px);}
+      .receipt-row{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;border-bottom:1px solid #edf2ee;padding:12px 4px;}
+      .receipt-qty{height:34px;border-radius:10px;background:#eef6f0;display:flex;align-items:center;justify-content:center;font-weight:900;color:#2f6f49;}
+      .receipt-name{font-weight:900;color:#173126;}
+      .receipt-sub{color:#7a887f;font-size:12px;margin-top:3px;}
+      .receipt-total{font-weight:900;color:#173126;white-space:nowrap;}
+      .receipt-empty{padding:38px 18px;text-align:center;color:#728278;font-weight:800;}
+      .receipt-footer{margin-top:auto;border-top:1px solid #edf2ee;padding:14px;background:#fbfdfb;}
+      .receipt-grand{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-weight:900;color:#173126;}
+      .receipt-grand strong{font-size:24px;}
+      .receipt-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+      .receipt-actions .btn{height:48px;border-radius:10px;font-weight:900;}
+      .table-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid #edf2ee;}
+      .area-tabs{display:flex;gap:8px;flex-wrap:wrap;}
+      .area-tab{border:1px solid #dce7e1;background:#fff;color:#54675d;border-radius:999px;padding:8px 13px;font-weight:900;}
+      .area-tab.active{background:#173126;color:#fff;border-color:#173126;}
+      .table-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;padding:16px;}
+      .pos-table{min-height:118px;border:2px solid #cfe8d8;background:#f2fbf5;border-radius:16px;padding:14px;text-align:left;box-shadow:0 10px 22px rgba(23,49,38,.05);transition:.15s ease;cursor:pointer;}
+      .pos-table:hover{transform:translateY(-2px);box-shadow:0 14px 28px rgba(23,49,38,.09);}
+      .pos-table.active{outline:3px solid rgba(47,111,73,.22);}
+      .pos-table.occupied{border-color:#e8c0bf;background:#fff3f2;}
+      .pos-table .table-no{font-size:18px;font-weight:900;color:#173126;}
+      .pos-table .table-area{margin-top:4px;color:#7a887f;font-size:12px;font-weight:800;}
+      .pos-table .table-status{margin-top:18px;display:flex;justify-content:space-between;align-items:end;gap:8px;}
+      .pos-table .state{font-size:12px;font-weight:900;border-radius:999px;padding:5px 9px;background:#dff4e7;color:#2f6f49;}
+      .pos-table.occupied .state{background:#f2d0cf;color:#9b3f3c;}
+      .pos-table .amount{font-size:17px;font-weight:900;color:#173126;}
+      .product-search{padding:14px 16px;border-bottom:1px solid #edf2ee;}
+      .product-search input{height:44px;border-radius:12px;border:1px solid #dce7e1;box-shadow:none;font-weight:800;}
+      .category-strip{display:flex;gap:8px;overflow:auto;padding:12px 16px;border-bottom:1px solid #edf2ee;}
+      .category-btn{white-space:nowrap;border:1px solid #dce7e1;background:#fff;border-radius:12px;padding:9px 13px;font-weight:900;color:#56685f;}
+      .category-btn.active{background:#2f6f49;color:#fff;border-color:#2f6f49;}
+      .product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;overflow:auto;max-height:calc(100vh - 255px);}
+      .product-card{border:1px solid #e1e9e4;background:#fff;border-radius:14px;min-height:92px;padding:12px;text-align:left;box-shadow:0 8px 18px rgba(23,49,38,.04);cursor:pointer;}
+      .product-card strong{display:block;color:#173126;font-weight:900;line-height:1.25;}
+      .product-card span{display:block;margin-top:14px;color:#2f6f49;font-weight:900;}
+      .product-card:hover{border-color:#2f6f49;}
+      .cashier-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(23,49,38,.42);z-index:40;}
+      .cashier-pay-modal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(430px,calc(100vw - 32px));background:#fff;border-radius:18px;box-shadow:0 24px 80px rgba(23,49,38,.26);z-index:41;overflow:hidden;}
+      .cashier-pay-modal h3{margin:0;padding:18px 20px;border-bottom:1px solid #edf2ee;font-size:17px;font-weight:900;color:#173126;}
+      .pay-method-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:16px;}
+      .pay-method{height:58px;border:1px solid #dce7e1;background:#fbfdfb;border-radius:12px;font-weight:900;color:#173126;}
+      .pay-method:hover{border-color:#2f6f49;background:#f0faf3;}
+      .pay-modal-footer{padding:0 16px 16px;text-align:right;}
+      @media(max-width:1300px){.cashier-shell{grid-template-columns:320px 1fr;}.product-panel{grid-column:1 / -1;}.product-grid{grid-template-columns:repeat(4,minmax(0,1fr));max-height:none;}}
+      @media(max-width:800px){.cashier-shell{grid-template-columns:1fr;}.receipt-items{max-height:320px;}.product-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
     </style>
 
-    <div class="cashier-summary" id="cashier-summary">
-      <div class="cashier-card"><span>Bugün Toplam</span><strong data-summary="today_total">{{ summary.today_total|number_format(2, ',', '.') }} TL</strong></div>
-      <div class="cashier-card"><span>Nakit</span><strong data-summary="cash_total">{{ summary.cash_total|number_format(2, ',', '.') }} TL</strong></div>
-      <div class="cashier-card"><span>Kart</span><strong data-summary="card_total">{{ summary.card_total|number_format(2, ',', '.') }} TL</strong></div>
-      <div class="cashier-card"><span>Yemek Kartı</span><strong data-summary="meal_card_total">{{ summary.meal_card_total|number_format(2, ',', '.') }} TL</strong></div>
-      <div class="cashier-card"><span>Açık Hesap</span><strong data-summary="open_total">{{ summary.open_total|number_format(2, ',', '.') }} TL</strong></div>
-      <div class="cashier-card"><span>İşlem</span><strong data-summary="payment_count">{{ summary.payment_count }}</strong></div>
+    <div class="cashier-topbar">
+      <div class="cashier-title">
+        <strong>Kasa Paneli</strong>
+        <span id="selectedTableLabel">Masa seçin</span>
+      </div>
+      {% if cashier_fullscreen %}
+      <div class="cashier-user">
+        <span>{{ cashier_username }}</span>
+        <a href="{{ logout_url }}" class="btn btn-default"><i class="fa fa-sign-out"></i> Çıkış</a>
+      </div>
+      {% endif %}
     </div>
 
-    <div class="cashier-layout">
-      <section class="cashier-panel">
-        <h3><i class="fa fa-credit-card"></i> Ödeme Bekleyen Masalar</h3>
-        <div class="cashier-table-list" id="open-table-list"></div>
+    <div class="cashier-shell">
+      <section class="cashier-panel receipt-body">
+        <div class="cashier-panel-head">
+          <h3 id="receiptTitle">Adisyon</h3>
+          <button type="button" class="btn btn-default btn-sm" id="refreshTables"><i class="fa fa-refresh"></i></button>
+        </div>
+        <div class="receipt-items" id="receiptItems"></div>
+        <div class="receipt-footer">
+          <div class="receipt-grand"><span>Toplam Tutar</span><strong id="receiptTotal">0,00 TL</strong></div>
+          <div class="receipt-actions">
+            <button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button>
+            <button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button>
+          </div>
+        </div>
       </section>
+
       <section class="cashier-panel">
-        <h3><i class="fa fa-list"></i> Bugünkü Tahsilatlar</h3>
-        <div id="payment-list"></div>
+        <div class="table-toolbar">
+          <div class="area-tabs" id="areaTabs"></div>
+          <button type="button" class="btn btn-default" id="showAllTables">Tüm Masalar</button>
+        </div>
+        <div class="table-grid" id="tableGrid"></div>
+      </section>
+
+      <section class="cashier-panel product-panel">
+        <div class="cashier-panel-head">
+          <h3>Ürün Ekle</h3>
+        </div>
+        <div class="product-search">
+          <input type="text" class="form-control" id="productSearch" placeholder="Ürün adı veya kod ile ara">
+        </div>
+        <div class="category-strip" id="categoryStrip"></div>
+        <div class="product-grid" id="productGrid"></div>
       </section>
     </div>
   </div>
 </div>
+
+<div class="cashier-modal-backdrop" id="payBackdrop"></div>
+<div class="cashier-pay-modal" id="payModal">
+  <h3>Ödeme Yöntemi Seçin</h3>
+  <div class="pay-method-grid">
+    <button type="button" class="pay-method" data-method="cash">Nakit</button>
+    <button type="button" class="pay-method" data-method="card">Kredi Kartı</button>
+    <button type="button" class="pay-method" data-method="meal_card">Yemek Kartı</button>
+    <button type="button" class="pay-method" data-method="transfer">Havale / EFT</button>
+    <button type="button" class="pay-method" data-method="mixed">Parçalı</button>
+    <button type="button" class="pay-method" data-method="complimentary">İkram</button>
+  </div>
+  <div class="pay-modal-footer">
+    <button type="button" class="btn btn-default" id="closePayModal">Vazgeç</button>
+  </div>
+</div>
+
 <script>
 (function($){
   var refreshUrl = '{{ refresh_url|replace({"&amp;":"&"}) }}';
   var payUrl = '{{ pay_url|replace({"&amp;":"&"}) }}';
+  var detailUrl = '{{ detail_url|replace({"&amp;":"&"}) }}';
+  var productsUrl = '{{ products_url|replace({"&amp;":"&"}) }}';
+  var addProductUrl = '{{ add_product_url|replace({"&amp;":"&"}) }}';
+  var tables = {{ tables_json|raw }};
+  var categories = {{ categories_json|raw }};
+  var products = {{ products_json|raw }};
+  var selectedTableId = 0;
+  var selectedArea = '';
+  var selectedCategory = 0;
+  var searchTimer = null;
 
   function money(value) {
     value = parseFloat(value || 0);
     return value.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' TL';
   }
 
-  function methodText(method) {
-    var map = {cash:'Nakit', card:'Kredi Kartı', meal_card:'Yemek Kartı', transfer:'Havale/EFT', complimentary:'İkram', mixed:'Parçalı'};
-    return map[method] || method;
-  }
-
   function escapeHtml(value) {
     return String(value === null || value === undefined ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
-  function renderSummary(summary) {
-    $('[data-summary="today_total"]').text(money(summary.today_total));
-    $('[data-summary="cash_total"]').text(money(summary.cash_total));
-    $('[data-summary="card_total"]').text(money(summary.card_total));
-    $('[data-summary="meal_card_total"]').text(money(summary.meal_card_total));
-    $('[data-summary="open_total"]').text(money(summary.open_total));
-    $('[data-summary="payment_count"]').text(summary.payment_count || 0);
+  function renderAreas() {
+    var areas = {};
+    tables.forEach(function(table){ areas[table.area || 'Salon'] = true; });
+    var html = '<button type="button" class="area-tab ' + (selectedArea === '' ? 'active' : '') + '" data-area="">Tümü</button>';
+    Object.keys(areas).forEach(function(area) {
+      html += '<button type="button" class="area-tab ' + (selectedArea === area ? 'active' : '') + '" data-area="' + escapeHtml(area) + '">' + escapeHtml(area) + '</button>';
+    });
+    $('#areaTabs').html(html);
   }
 
-  function renderTables(tables) {
+  function renderTables() {
+    renderAreas();
     var html = '';
-    if (!tables || !tables.length) {
-      $('#open-table-list').html('<div class="empty-state">Ödeme bekleyen masa yok.</div>');
+    tables.filter(function(table){ return !selectedArea || (table.area || 'Salon') === selectedArea; }).forEach(function(table) {
+      var occupied = parseFloat(table.total_amount || 0) > 0;
+      html += '<button type="button" class="pos-table ' + (occupied ? 'occupied' : '') + (parseInt(table.table_id, 10) === selectedTableId ? ' active' : '') + '" data-table-id="' + table.table_id + '">';
+      html += '<div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div>';
+      html += '<div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div>';
+      html += '<div class="table-status"><span class="state">' + (occupied ? 'Dolu' : 'Boş') + '</span><span class="amount">' + (occupied ? money(table.total_amount) : '') + '</span></div>';
+      html += '</button>';
+    });
+    $('#tableGrid').html(html || '<div class="receipt-empty">Masa bulunamadı.</div>');
+  }
+
+  function renderCategories() {
+    var html = '<button type="button" class="category-btn ' + (selectedCategory === 0 ? 'active' : '') + '" data-id="0">Tümü</button>';
+    categories.forEach(function(category) {
+      html += '<button type="button" class="category-btn ' + (parseInt(category.category_id, 10) === selectedCategory ? 'active' : '') + '" data-id="' + category.category_id + '">' + escapeHtml(category.name) + '</button>';
+    });
+    $('#categoryStrip').html(html);
+  }
+
+  function renderProducts() {
+    var html = '';
+    products.forEach(function(product) {
+      html += '<button type="button" class="product-card" data-product-id="' + product.product_id + '">';
+      html += '<strong>' + escapeHtml(product.name) + '</strong><span>' + money(product.price) + '</span>';
+      html += '</button>';
+    });
+    $('#productGrid').html(html || '<div class="receipt-empty">Ürün bulunamadı.</div>');
+  }
+
+  function renderDetail(detail) {
+    if (!detail || !detail.table) {
+      $('#receiptTitle').text('Adisyon');
+      $('#selectedTableLabel').text('Masa seçin');
+      $('#receiptItems').html('<div class="receipt-empty">İşlem yapmak için masa seçin.</div>');
+      $('#receiptTotal').text(money(0));
       return;
     }
 
-    tables.forEach(function(table) {
-      html += '<div class="cashier-table ' + (parseInt(table.bill_request_pending || 0, 10) ? 'bill' : '') + '" data-table-id="' + table.table_id + '">';
-      html += '<div><div class="cashier-table-title">Masa ' + escapeHtml(table.table_no) + ' - ' + escapeHtml(table.name || '') + '</div>';
-      html += '<div class="cashier-table-meta">' + (table.area || 'Salon') + ' · ' + table.order_count + ' adisyon · ' + (table.bill_request_pending > 0 ? 'Hesap talebi var' : 'Servis tamamlandı') + '</div>';
-      html += '<div class="cashier-actions"><select class="payment-method"><option value="cash">Nakit</option><option value="card">Kredi Kartı</option><option value="meal_card">Yemek Kartı</option><option value="transfer">Havale/EFT</option><option value="mixed">Parçalı</option><option value="complimentary">İkram</option></select><input type="text" class="payment-note" placeholder="Not"><button type="button" class="btn btn-success btn-pay"><i class="fa fa-check"></i> Ödeme Al</button></div></div>';
-      html += '<div class="cashier-table-total">' + money(table.total_amount) + '</div></div>';
-    });
+    $('#receiptTitle').text('Masa ' + detail.table.table_no);
+    $('#selectedTableLabel').text((detail.table.area || 'Salon') + ' / Masa ' + detail.table.table_no);
 
-    $('#open-table-list').html(html);
-  }
-
-  function renderPayments(payments) {
-    if (!payments || !payments.length) {
-      $('#payment-list').html('<div class="empty-state">Bugün tahsilat yok.</div>');
-      return;
+    if (!detail.items || !detail.items.length) {
+      $('#receiptItems').html('<div class="receipt-empty">Bu masada ürün yok. Sağdan ürün seçerek adisyon açabilirsiniz.</div>');
+    } else {
+      var html = '';
+      detail.items.forEach(function(item) {
+        html += '<div class="receipt-row"><div class="receipt-qty">' + item.quantity + '</div><div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + '</div></div><div class="receipt-total">' + money(item.total) + '</div></div>';
+      });
+      $('#receiptItems').html(html);
     }
 
-    var html = '<table class="payment-table"><thead><tr><th>Saat</th><th>Masa</th><th>Yöntem</th><th>Tutar</th><th>Kullanıcı</th></tr></thead><tbody>';
-    payments.forEach(function(payment) {
-      html += '<tr><td>' + escapeHtml((payment.date_added || '').substr(11,5)) + '</td><td>Masa ' + escapeHtml(payment.table_no || '-') + '</td><td>' + escapeHtml(methodText(payment.payment_method)) + '</td><td>' + money(payment.amount) + '</td><td>' + escapeHtml(payment.username || '-') + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    $('#payment-list').html(html);
+    $('#receiptTotal').text(money(detail.total_amount));
   }
 
-  function refresh() {
-    $.getJSON(refreshUrl, function(json) {
-      if (!json || !json.success) return;
-      renderSummary(json.summary || {});
-      renderTables(json.open_tables || []);
-      renderPayments(json.payments || []);
-    });
-  }
-
-  $(document).on('click', '.btn-pay', function() {
-    var $table = $(this).closest('.cashier-table');
-    var tableId = $table.data('table-id');
-    var method = $table.find('.payment-method').val();
-    var note = $table.find('.payment-note').val();
-
-    if (!confirm('Bu masanın ödemesi alındı olarak kapatılsın mı?')) {
-      return;
-    }
-
-    $.ajax({
-      url: payUrl,
-      type: 'post',
-      dataType: 'json',
-      data: {table_id: tableId, payment_method: method, note: note},
-      success: function(json) {
-        if (!json || !json.success) {
-          alert(json && json.message ? json.message : 'Ödeme alınamadı.');
-          return;
-        }
-        refresh();
-      },
-      error: function() {
-        alert('Ödeme işlemi sırasında hata oluştu.');
+  function loadDetail(tableId) {
+    selectedTableId = parseInt(tableId || 0, 10);
+    renderTables();
+    $.getJSON(detailUrl + '&table_id=' + selectedTableId, function(json) {
+      if (json && json.success) {
+        renderDetail(json.detail);
       }
     });
-  });
+  }
 
-  renderTables({{ open_tables_json|raw }});
-  renderPayments({{ payments_json|raw }});
-  setInterval(refresh, 10000);
+  function refreshTables(keepDetail) {
+    $.getJSON(refreshUrl, function(json) {
+      if (!json || !json.success) return;
+      tables = json.tables || [];
+      renderTables();
+      if (keepDetail && selectedTableId) {
+        loadDetail(selectedTableId);
+      }
+    });
+  }
+
+  function loadProducts() {
+    $.getJSON(productsUrl + '&category_id=' + selectedCategory + '&search=' + encodeURIComponent($('#productSearch').val()), function(json) {
+      if (!json || !json.success) return;
+      products = json.products || [];
+      renderProducts();
+    });
+  }
+
+  function openPayModal() {
+    if (!selectedTableId) {
+      alert('Ödeme için masa seçin.');
+      return;
+    }
+    $('#payBackdrop,#payModal').show();
+  }
+
+  function closePayModal() {
+    $('#payBackdrop,#payModal').hide();
+  }
+
+  function pay(method) {
+    if (!selectedTableId) {
+      alert('Ödeme için masa seçin.');
+      return;
+    }
+    if (!method) return;
+    $.post(payUrl, {table_id:selectedTableId, payment_method:method, note:''}, function(json) {
+      if (!json || !json.success) {
+        alert(json && json.message ? json.message : 'Ödeme alınamadı.');
+        return;
+      }
+      refreshTables(false);
+      loadDetail(selectedTableId);
+      closePayModal();
+    }, 'json');
+  }
+
+  $(document).on('click', '.pos-table', function(){ loadDetail($(this).data('table-id')); });
+  $(document).on('click', '.area-tab', function(){ selectedArea = $(this).data('area') || ''; renderTables(); });
+  $(document).on('click', '.category-btn', function(){ selectedCategory = parseInt($(this).data('id') || 0, 10); renderCategories(); loadProducts(); });
+  $(document).on('click', '.product-card', function(){
+    if (!selectedTableId) {
+      alert('Önce masa seçin.');
+      return;
+    }
+    $.post(addProductUrl, {table_id:selectedTableId, product_id:$(this).data('product-id'), quantity:1}, function(json) {
+      if (!json || !json.success) {
+        alert(json && json.message ? json.message : 'Ürün eklenemedi.');
+        return;
+      }
+      renderDetail(json.detail);
+      refreshTables(false);
+    }, 'json');
+  });
+  $('#productSearch').on('input', function(){ clearTimeout(searchTimer); searchTimer = setTimeout(loadProducts, 250); });
+  $('#refreshTables').on('click', function(){ refreshTables(true); });
+  $('#showAllTables').on('click', function(){ selectedArea = ''; renderTables(); });
+  $('#quickPayBtn').on('click', function(){ pay('cash'); });
+  $('#payBtn').on('click', openPayModal);
+  $('#closePayModal,#payBackdrop').on('click', closePayModal);
+  $(document).on('click', '.pay-method', function(){ pay($(this).data('method')); });
+
+  renderTables();
+  renderCategories();
+  renderProducts();
+  renderDetail(null);
+  setInterval(function(){ refreshTables(false); }, 10000);
 })(jQuery);
 </script>
 {% if cashier_fullscreen %}

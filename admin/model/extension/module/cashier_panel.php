@@ -21,18 +21,157 @@ class ModelExtensionModuleCashierPanel extends Model {
 	public function getOpenTables() {
 		$this->install();
 
-		return $this->db->query("SELECT rt.table_id, rt.table_no, rt.name, rt.area,
-				COUNT(ro.restaurant_order_id) AS order_count,
-				COALESCE(SUM(ro.total_amount), 0) AS total_amount,
-				MAX(ro.date_modified) AS last_activity,
-				GROUP_CONCAT(ro.restaurant_order_id ORDER BY ro.restaurant_order_id ASC SEPARATOR ',') AS order_ids,
+		return $this->db->query("SELECT rt.table_id, rt.table_no, rt.name, rt.area, rt.capacity,
+				COALESCE(active.order_count, 0) AS order_count,
+				COALESCE(active.total_amount, 0) AS total_amount,
+				COALESCE(active.last_activity, '') AS last_activity,
+				COALESCE(active.order_ids, '') AS order_ids,
+				COALESCE(rts.service_status, 'empty') AS service_status,
 				MAX(CASE WHEN rc.call_id IS NOT NULL THEN 1 ELSE 0 END) AS bill_request_pending
-			FROM `" . DB_PREFIX . "restaurant_order` ro
-			INNER JOIN `" . DB_PREFIX . "restaurant_table` rt ON (rt.table_id = ro.table_id)
-			LEFT JOIN `" . DB_PREFIX . "restaurant_call` rc ON (rc.table_id = ro.table_id AND rc.call_type = 'bill_request' AND rc.status IN ('new','seen'))
-			WHERE ro.service_status = 'served'
+			FROM `" . DB_PREFIX . "restaurant_table` rt
+			LEFT JOIN (
+				SELECT table_id,
+					COUNT(*) AS order_count,
+					SUM(total_amount) AS total_amount,
+					MAX(date_modified) AS last_activity,
+					GROUP_CONCAT(restaurant_order_id ORDER BY restaurant_order_id ASC SEPARATOR ',') AS order_ids
+				FROM `" . DB_PREFIX . "restaurant_order`
+				WHERE service_status = 'served'
+				GROUP BY table_id
+			) active ON (active.table_id = rt.table_id)
+			LEFT JOIN `" . DB_PREFIX . "restaurant_table_status` rts ON (rts.table_id = rt.table_id)
+			LEFT JOIN `" . DB_PREFIX . "restaurant_call` rc ON (rc.table_id = rt.table_id AND rc.call_type = 'bill_request' AND rc.status IN ('new','seen'))
+			WHERE rt.status = '1'
 			GROUP BY rt.table_id
-			ORDER BY bill_request_pending DESC, rt.sort_order ASC, rt.table_no ASC")->rows;
+			ORDER BY rt.sort_order ASC, rt.table_no ASC")->rows;
+	}
+
+	public function getTableDetail($table_id) {
+		$this->install();
+		$table_id = (int)$table_id;
+
+		$table = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_table` WHERE table_id = '" . $table_id . "' AND status = '1' LIMIT 1")->row;
+
+		if (!$table) {
+			return array();
+		}
+
+		$orders = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . $table_id . "'
+			AND service_status = 'served'
+			ORDER BY restaurant_order_id ASC")->rows;
+
+		$items = array();
+		$total = 0.0;
+
+		foreach ($orders as $order) {
+			$total += (float)$order['total_amount'];
+			$products = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_order_product`
+				WHERE restaurant_order_id = '" . (int)$order['restaurant_order_id'] . "'
+				ORDER BY restaurant_order_product_id ASC")->rows;
+
+			foreach ($products as $product) {
+				$items[] = array(
+					'restaurant_order_product_id' => (int)$product['restaurant_order_product_id'],
+					'restaurant_order_id' => (int)$product['restaurant_order_id'],
+					'product_id' => (int)$product['product_id'],
+					'name' => $product['name'],
+					'price' => (float)$product['price'],
+					'quantity' => (int)$product['quantity'],
+					'total' => (float)$product['total']
+				);
+			}
+		}
+
+		return array(
+			'table' => array(
+				'table_id' => (int)$table['table_id'],
+				'table_no' => (int)$table['table_no'],
+				'name' => $table['name'],
+				'area' => $table['area']
+			),
+			'orders' => $orders,
+			'items' => $items,
+			'total_amount' => $total,
+			'is_occupied' => $total > 0
+		);
+	}
+
+	public function getCategories() {
+		$language_id = $this->getTurkishLanguageId();
+
+		return $this->db->query("SELECT c.category_id, cd.name
+			FROM `" . DB_PREFIX . "category` c
+			INNER JOIN `" . DB_PREFIX . "category_description` cd ON (cd.category_id = c.category_id AND cd.language_id = '" . $language_id . "')
+			WHERE c.status = '1'
+			ORDER BY c.sort_order ASC, cd.name ASC
+			LIMIT 40")->rows;
+	}
+
+	public function getProducts($category_id = 0, $search = '') {
+		$language_id = $this->getTurkishLanguageId();
+		$category_id = (int)$category_id;
+		$search = trim((string)$search);
+
+		$sql = "SELECT DISTINCT p.product_id, p.price, p.model, p.sku, pd.name
+			FROM `" . DB_PREFIX . "product` p
+			INNER JOIN `" . DB_PREFIX . "product_description` pd ON (pd.product_id = p.product_id AND pd.language_id = '" . $language_id . "')";
+
+		if ($category_id) {
+			$sql .= " INNER JOIN `" . DB_PREFIX . "product_to_category` p2c ON (p2c.product_id = p.product_id AND p2c.category_id = '" . $category_id . "')";
+		}
+
+		$sql .= " WHERE p.status = '1'";
+
+		if ($search !== '') {
+			$sql .= " AND (pd.name LIKE '%" . $this->db->escape($search) . "%' OR p.model LIKE '%" . $this->db->escape($search) . "%' OR p.sku LIKE '%" . $this->db->escape($search) . "%')";
+		}
+
+		$sql .= " ORDER BY p.sort_order ASC, pd.name ASC LIMIT 80";
+
+		return $this->db->query($sql)->rows;
+	}
+
+	public function addProductToTable($table_id, $product_id, $quantity = 1, $user_id = 0) {
+		$this->install();
+		$table_id = (int)$table_id;
+		$product_id = (int)$product_id;
+		$quantity = max(1, min(99, (int)$quantity));
+		$user_id = (int)$user_id;
+
+		$table = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table` WHERE table_id = '" . $table_id . "' AND status = '1' LIMIT 1");
+
+		if (!$table->num_rows) {
+			return array('success' => false, 'message' => 'Masa bulunamadı.');
+		}
+
+		$product = $this->db->query("SELECT p.product_id, p.price, pd.name
+			FROM `" . DB_PREFIX . "product` p
+			INNER JOIN `" . DB_PREFIX . "product_description` pd ON (pd.product_id = p.product_id AND pd.language_id = '" . (int)$this->getTurkishLanguageId() . "')
+			WHERE p.product_id = '" . $product_id . "'
+			AND p.status = '1'
+			LIMIT 1");
+
+		if (!$product->num_rows) {
+			return array('success' => false, 'message' => 'Ürün bulunamadı.');
+		}
+
+		$order_id = $this->getOrCreateCashierOrder($table_id, $user_id);
+		$price = (float)$product->row['price'];
+		$total = $price * $quantity;
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_product`
+			SET restaurant_order_id = '" . $order_id . "',
+				product_id = '" . $product_id . "',
+				name = '" . $this->db->escape($product->row['name']) . "',
+				price = '" . (float)$price . "',
+				quantity = '" . (int)$quantity . "',
+				total = '" . (float)$total . "'");
+
+		$this->recalculateOrderTotal($order_id);
+		$this->syncTableStatus($table_id);
+
+		return array('success' => true, 'message' => 'Ürün adisyona eklendi.', 'detail' => $this->getTableDetail($table_id));
 	}
 
 	public function getSummary() {
@@ -160,5 +299,91 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE table_id = '" . $table_id . "'");
 
 		return array('success' => true, 'message' => 'Ödeme alındı ve masa kapatıldı.');
+	}
+
+	private function getOrCreateCashierOrder($table_id, $user_id = 0) {
+		$query = $this->db->query("SELECT restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . (int)$table_id . "'
+			AND service_status = 'served'
+			ORDER BY restaurant_order_id DESC
+			LIMIT 1");
+
+		if ($query->num_rows) {
+			return (int)$query->row['restaurant_order_id'];
+		}
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order`
+			SET table_id = '" . (int)$table_id . "',
+				waiter_user_id = '" . (int)$user_id . "',
+				service_status = 'served',
+				customer_note = 'Kasa manuel adisyon',
+				total_amount = '0.0000',
+				is_paid = '0',
+				date_added = NOW(),
+				date_modified = NOW()");
+
+		$order_id = (int)$this->db->getLastId();
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
+			SET restaurant_order_id = '" . $order_id . "',
+				old_status = NULL,
+				new_status = 'served',
+				user_id = '" . (int)$user_id . "',
+				comment = 'Kasa panelinden manuel adisyon açıldı.',
+				date_added = NOW()");
+
+		return $order_id;
+	}
+
+	private function recalculateOrderTotal($order_id) {
+		$total = $this->db->query("SELECT COALESCE(SUM(total), 0) AS total_amount
+			FROM `" . DB_PREFIX . "restaurant_order_product`
+			WHERE restaurant_order_id = '" . (int)$order_id . "'")->row;
+
+		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+			SET total_amount = '" . (float)$total['total_amount'] . "',
+				date_modified = NOW()
+			WHERE restaurant_order_id = '" . (int)$order_id . "'");
+	}
+
+	private function syncTableStatus($table_id) {
+		$table_id = (int)$table_id;
+		$active = $this->db->query("SELECT COUNT(*) AS active_order_count, COALESCE(SUM(total_amount), 0) AS total_amount
+			FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . $table_id . "'
+			AND service_status = 'served'")->row;
+
+		$count = (int)$active['active_order_count'];
+		$total = (float)$active['total_amount'];
+		$status = $count > 0 ? 'served' : 'empty';
+		$check = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table_status` WHERE table_id = '" . $table_id . "' LIMIT 1");
+
+		if ($check->num_rows) {
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
+				SET service_status = '" . $this->db->escape($status) . "',
+					active_order_count = '" . $count . "',
+					total_amount = '" . $total . "',
+					date_modified = NOW()
+				WHERE table_id = '" . $table_id . "'");
+		} else {
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_table_status`
+				SET table_id = '" . $table_id . "',
+					service_status = '" . $this->db->escape($status) . "',
+					active_order_count = '" . $count . "',
+					total_amount = '" . $total . "',
+					date_modified = NOW()");
+		}
+	}
+
+	private function getTurkishLanguageId() {
+		$query = $this->db->query("SELECT language_id FROM `" . DB_PREFIX . "language`
+			WHERE code = 'tr-tr'
+			LIMIT 1");
+
+		if ($query->num_rows) {
+			return (int)$query->row['language_id'];
+		}
+
+		return (int)$this->config->get('config_language_id');
 	}
 }
