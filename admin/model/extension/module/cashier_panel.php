@@ -113,7 +113,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$category_id = (int)$category_id;
 		$search = trim((string)$search);
 
-		$sql = "SELECT DISTINCT p.product_id, p.price, p.model, p.sku, pd.name
+		$sql = "SELECT DISTINCT p.product_id, p.price, p.model, p.sku, p.image, pd.name
 			FROM `" . DB_PREFIX . "product` p
 			INNER JOIN `" . DB_PREFIX . "product_description` pd ON (pd.product_id = p.product_id AND pd.language_id = '" . $language_id . "')";
 
@@ -172,6 +172,93 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$this->syncTableStatus($table_id);
 
 		return array('success' => true, 'message' => 'Ürün adisyona eklendi.', 'detail' => $this->getTableDetail($table_id));
+	}
+
+	public function updateProductQuantity($restaurant_order_product_id, $quantity = 1, $user_id = 0) {
+		$this->install();
+		$restaurant_order_product_id = (int)$restaurant_order_product_id;
+		$quantity = max(1, min(99, (int)$quantity));
+		$user_id = (int)$user_id;
+
+		$query = $this->db->query("SELECT rop.*, ro.table_id, ro.service_status
+			FROM `" . DB_PREFIX . "restaurant_order_product` rop
+			LEFT JOIN `" . DB_PREFIX . "restaurant_order` ro ON (ro.restaurant_order_id = rop.restaurant_order_id)
+			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
+			LIMIT 1");
+
+		if (!$query->num_rows || $query->row['service_status'] !== 'served') {
+			return array('success' => false, 'message' => 'Ürün satırı güncellenemedi.');
+		}
+
+		$order_id = (int)$query->row['restaurant_order_id'];
+		$table_id = (int)$query->row['table_id'];
+		$total = (float)$query->row['price'] * $quantity;
+
+		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order_product`
+			SET quantity = '" . $quantity . "',
+				total = '" . (float)$total . "'
+			WHERE restaurant_order_product_id = '" . $restaurant_order_product_id . "'");
+
+		$this->recalculateOrderTotal($order_id);
+		$this->syncTableStatus($table_id);
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
+			SET restaurant_order_id = '" . $order_id . "',
+				old_status = 'served',
+				new_status = 'served',
+				user_id = '" . $user_id . "',
+				comment = '" . $this->db->escape('Kasa ürün adedini güncelledi: ' . $query->row['name'] . ' x ' . $quantity) . "',
+				date_added = NOW()");
+
+		return array('success' => true, 'message' => 'Ürün adedi güncellendi.', 'detail' => $this->getTableDetail($table_id));
+	}
+
+	public function removeProductFromTable($restaurant_order_product_id, $user_id = 0) {
+		$this->install();
+		$restaurant_order_product_id = (int)$restaurant_order_product_id;
+		$user_id = (int)$user_id;
+
+		$query = $this->db->query("SELECT rop.*, ro.table_id, ro.service_status
+			FROM `" . DB_PREFIX . "restaurant_order_product` rop
+			LEFT JOIN `" . DB_PREFIX . "restaurant_order` ro ON (ro.restaurant_order_id = rop.restaurant_order_id)
+			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
+			LIMIT 1");
+
+		if (!$query->num_rows || $query->row['service_status'] !== 'served') {
+			return array('success' => false, 'message' => 'Ürün satırı silinemedi.');
+		}
+
+		$order_id = (int)$query->row['restaurant_order_id'];
+		$table_id = (int)$query->row['table_id'];
+
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_order_product`
+			WHERE restaurant_order_product_id = '" . $restaurant_order_product_id . "'");
+
+		$count = $this->db->query("SELECT COUNT(*) AS product_count
+			FROM `" . DB_PREFIX . "restaurant_order_product`
+			WHERE restaurant_order_id = '" . $order_id . "'")->row;
+
+		if ((int)$count['product_count'] <= 0) {
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+				SET service_status = 'cancelled',
+					total_amount = '0.0000',
+					date_modified = NOW()
+				WHERE restaurant_order_id = '" . $order_id . "'");
+		} else {
+			$this->recalculateOrderTotal($order_id);
+		}
+
+		$this->syncTableStatus($table_id);
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
+			SET restaurant_order_id = '" . $order_id . "',
+				old_status = 'served',
+				new_status = 'served',
+				user_id = '" . $user_id . "',
+				comment = '" . $this->db->escape('Kasa ürün satırını sildi: ' . $query->row['name']) . "',
+				date_added = NOW()");
+
+		return array('success' => true, 'message' => 'Ürün satırı silindi.', 'detail' => $this->getTableDetail($table_id));
 	}
 
 	public function getSummary() {
