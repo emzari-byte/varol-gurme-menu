@@ -479,6 +479,8 @@ class AkinsoftBridgeAgent {
 	}
 
 	private function log($message) {
-		echo '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
+		$line = '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
+		echo $line;
+		file_put_contents(__DIR__ . DIRECTORY_SEPARATOR . 'bridge_agent.log', $line, FILE_APPEND);
 	}
 }
