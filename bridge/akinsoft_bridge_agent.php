@@ -284,13 +284,7 @@ class AkinsoftBridgeAgent {
 			$pdo->prepare("UPDATE ADISYONFIS SET ARATUTAR = ?, TOPLAMTUTAR = ? WHERE BLKODU = ?")
 				->execute(array($total, $total, $fis_id));
 
-			if (!empty($table['id'])) {
-				$pdo->prepare("UPDATE MASA SET DURUMU = 2, MASAACILIS = CURRENT_TIMESTAMP WHERE BLKODU = ?")
-					->execute(array((int)$table['id']));
-			} else {
-				$pdo->prepare("UPDATE MASA SET DURUMU = 2, MASAACILIS = CURRENT_TIMESTAMP WHERE MASAADI = ?")
-					->execute(array($masaadi));
-			}
+			$this->markTableOccupied($table, $masaadi);
 
 			$pdo->commit();
 
@@ -425,6 +419,43 @@ class AkinsoftBridgeAgent {
 			'id' => 0,
 			'name' => $fallback
 		);
+	}
+
+	private function markTableOccupied(array $table, $masaadi) {
+		$pdo = $this->firebird();
+		$updated = 0;
+
+		if (!empty($table['id'])) {
+			$stmt = $pdo->prepare("UPDATE MASA SET DURUMU = 2, MASAACILIS = CURRENT_TIMESTAMP WHERE BLKODU = ?");
+			$stmt->execute(array((int)$table['id']));
+			$updated = $stmt->rowCount();
+		}
+
+		if (!$updated) {
+			$stmt = $pdo->prepare("UPDATE MASA SET DURUMU = 2, MASAACILIS = CURRENT_TIMESTAMP WHERE MASAADI = ?");
+			$stmt->execute(array($masaadi));
+			$updated = $stmt->rowCount();
+		}
+
+		$status = array();
+
+		if (!empty($table['id'])) {
+			$stmt = $pdo->prepare("SELECT FIRST 1 BLKODU, MASAADI, DURUMU FROM MASA WHERE BLKODU = ?");
+			$stmt->execute(array((int)$table['id']));
+			$status = $stmt->fetch(PDO::FETCH_ASSOC);
+		}
+
+		if (!$status) {
+			$stmt = $pdo->prepare("SELECT FIRST 1 BLKODU, MASAADI, DURUMU FROM MASA WHERE MASAADI = ?");
+			$stmt->execute(array($masaadi));
+			$status = $stmt->fetch(PDO::FETCH_ASSOC);
+		}
+
+		if ($status) {
+			$this->log('Masa durumu guncellendi: BLKODU=' . (int)$status['BLKODU'] . ', MASAADI=' . (string)$status['MASAADI'] . ', DURUMU=' . (string)$status['DURUMU'] . ', etkilenen=' . (int)$updated);
+		} else {
+			$this->log('UYARI: MASA durumu okunamadi. MASAADI=' . (string)$masaadi . ', etkilenen=' . (int)$updated);
+		}
 	}
 
 	private function formatTableName($table_no) {
