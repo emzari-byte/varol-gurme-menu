@@ -1,0 +1,26 @@
+@echo off
+setlocal
+cd /d "%~dp0"
+
+set /p ADISYON_NO=Kapatilacak Akinsoft adisyon no: 
+
+if "%ADISYON_NO%"=="" (
+  echo Adisyon no bos olamaz.
+  pause
+  exit /b 1
+)
+
+set "PHP_EXE="
+
+if exist "%~dp0php\php.exe" set "PHP_EXE=%~dp0php\php.exe"
+if exist "C:\xampp\php\php.exe" set "PHP_EXE=C:\xampp\php\php.exe"
+if "%PHP_EXE%"=="" for %%P in (php.exe) do set "PHP_EXE=%%~$PATH:P"
+
+if "%PHP_EXE%"=="" (
+  echo PHP bulunamadi. C:\VarolBridge\php\php.exe veya C:\xampp\php\php.exe yolunu kontrol edin.
+  pause
+  exit /b 1
+)
+
+"%PHP_EXE%" "%~dp0akinsoft_bridge_agent.php" --demo-close-receipt=%ADISYON_NO%
+pause

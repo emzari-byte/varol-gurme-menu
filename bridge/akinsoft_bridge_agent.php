@@ -46,6 +46,13 @@ if (in_array('--sync-all', $argv, true)) {
 	exit;
 }
 
+foreach ($argv as $arg) {
+	if (strpos($arg, '--demo-close-receipt=') === 0) {
+		$agent->demoCloseReceipt((int)substr($arg, strlen('--demo-close-receipt=')));
+		exit;
+	}
+}
+
 $agent->run();
 
 class AkinsoftBridgeAgent {
@@ -120,6 +127,60 @@ class AkinsoftBridgeAgent {
 			$this->log($this->message($response));
 		} catch (Exception $e) {
 			$this->log('Fiyat senkronu hatasi: ' . $e->getMessage());
+		}
+	}
+
+	public function demoCloseReceipt($adisyon_no) {
+		$adisyon_no = (int)$adisyon_no;
+
+		if (!$adisyon_no) {
+			$this->log('Demo kapatma hatasi: adisyon no eksik.');
+			return;
+		}
+
+		try {
+			$this->resetFirebirdConnection();
+			$pdo = $this->firebird();
+			$this->closeOpenFirebirdTransaction($pdo);
+			$pdo->beginTransaction();
+
+			$stmt = $pdo->prepare("SELECT FIRST 1 BLKODU, ADISYONNO, MASAADI, KAPANISTARIHI
+				FROM ADISYONFIS
+				WHERE ADISYONNO = ?
+				ORDER BY BLKODU DESC");
+			$stmt->execute(array($adisyon_no));
+			$fis = $stmt->fetch(PDO::FETCH_ASSOC);
+
+			if (!$fis) {
+				throw new Exception('Adisyon bulunamadi: #' . $adisyon_no);
+			}
+
+			if (empty($fis['KAPANISTARIHI'])) {
+				$update = $pdo->prepare("UPDATE ADISYONFIS
+					SET KAPANISTARIHI = CURRENT_TIMESTAMP,
+						FISIKAPATAN = 'Yetkili  (SYSDBA)',
+						DURUMU = 2
+					WHERE BLKODU = ?");
+				$update->execute(array((int)$fis['BLKODU']));
+			}
+
+			$masaadi = trim((string)$fis['MASAADI']);
+
+			if ($masaadi !== '') {
+				$masa = $pdo->prepare("UPDATE MASA
+					SET DURUMU = 1
+					WHERE MASAADI = ?");
+				$masa->execute(array($masaadi));
+			}
+
+			$pdo->commit();
+			$this->log('Demo adisyon kapatildi: #' . $adisyon_no . ' MASA=' . $masaadi);
+		} catch (Exception $e) {
+			if (isset($pdo) && $pdo->inTransaction()) {
+				$pdo->rollBack();
+			}
+
+			$this->log('Demo kapatma hatasi: ' . $e->getMessage());
 		}
 	}
 
