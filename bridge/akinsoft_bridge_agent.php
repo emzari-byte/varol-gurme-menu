@@ -109,7 +109,7 @@ class AkinsoftBridgeAgent {
 			$rows = $this->firebird()->query("SELECT BLKODU, MASAADI, MASAGRUBU, KACKISILIK, GIZLI FROM MASA ORDER BY BLKODU ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 			$response = $this->request('extension/module/akinsoft_bridge/syncTables', array(), array(
-				'tables_json' => json_encode($rows)
+				'tables_json' => $this->jsonEncodeFirebirdRows($rows)
 			));
 
 			if (empty($response['success'])) {
@@ -135,7 +135,7 @@ class AkinsoftBridgeAgent {
 					AND f.FIYATI IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
 
 			$response = $this->request('extension/module/akinsoft_bridge/syncPrices', array(), array(
-				'prices_json' => json_encode($rows)
+				'prices_json' => $this->jsonEncodeFirebirdRows($rows)
 			));
 
 			if (empty($response['success'])) {
@@ -533,6 +533,51 @@ class AkinsoftBridgeAgent {
 		}
 
 		return substr($text, 0, $length);
+	}
+
+	private function jsonEncodeFirebirdRows(array $rows) {
+		$rows = $this->convertFirebirdEncoding($rows);
+		$json = json_encode($rows);
+
+		if ($json === false) {
+			throw new Exception('Firebird verisi JSON formatina cevrilemedi: ' . json_last_error_msg());
+		}
+
+		return $json;
+	}
+
+	private function convertFirebirdEncoding($value) {
+		if (is_array($value)) {
+			$converted = array();
+
+			foreach ($value as $key => $item) {
+				$converted[$key] = $this->convertFirebirdEncoding($item);
+			}
+
+			return $converted;
+		}
+
+		if (!is_string($value)) {
+			return $value;
+		}
+
+		if (function_exists('mb_check_encoding') && mb_check_encoding($value, 'UTF-8')) {
+			return $value;
+		}
+
+		if (function_exists('mb_convert_encoding')) {
+			return mb_convert_encoding($value, 'UTF-8', 'Windows-1254');
+		}
+
+		if (function_exists('iconv')) {
+			$converted = iconv('Windows-1254', 'UTF-8//IGNORE', $value);
+
+			if ($converted !== false) {
+				return $converted;
+			}
+		}
+
+		return $value;
 	}
 
 	private function message($response) {
