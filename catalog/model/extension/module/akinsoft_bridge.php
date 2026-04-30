@@ -139,6 +139,48 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 		return true;
 	}
 
+	public function markOrderPaidByExternalNo($external_order_no, $external_fis_id = 0, $closed_at = '', $message = '') {
+		$this->ensureIntegrationColumns();
+
+		$external_order_no = trim((string)$external_order_no);
+
+		if ($external_order_no === '') {
+			return array(
+				'success' => false,
+				'message' => 'External adisyon no bos.'
+			);
+		}
+
+		$order_query = $this->db->query("SELECT restaurant_order_id, service_status
+			FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE external_order_no = '" . $this->db->escape($external_order_no) . "'
+			ORDER BY restaurant_order_id DESC
+			LIMIT 1");
+
+		if (!$order_query->num_rows) {
+			return array(
+				'success' => false,
+				'message' => 'External adisyon no ile siparis bulunamadi: ' . $external_order_no
+			);
+		}
+
+		if ($order_query->row['service_status'] === 'paid') {
+			return array(
+				'success' => true,
+				'message' => 'Siparis zaten paid durumda.',
+				'restaurant_order_id' => (int)$order_query->row['restaurant_order_id']
+			);
+		}
+
+		$ok = $this->markOrderPaid((int)$order_query->row['restaurant_order_id'], $external_fis_id, $closed_at, $message);
+
+		return array(
+			'success' => (bool)$ok,
+			'message' => $ok ? 'Order marked paid by external adisyon no' : 'Siparis paid yapilamadi.',
+			'restaurant_order_id' => (int)$order_query->row['restaurant_order_id']
+		);
+	}
+
 	public function getPendingCommands($limit = 10) {
 		$this->installBridgeCommandTable();
 

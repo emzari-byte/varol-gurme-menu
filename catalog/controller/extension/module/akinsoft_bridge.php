@@ -115,6 +115,34 @@ class ControllerExtensionModuleAkinsoftBridge extends Controller {
 		}
 	}
 
+	public function paidExternal() {
+		try {
+			$this->load->model('extension/module/akinsoft_bridge');
+
+			if (!$this->isAuthorized()) {
+				return $this->json(array(
+					'success' => false,
+					'message' => 'Unauthorized'
+				), 401);
+			}
+
+			$external_order_no = isset($this->request->post['external_order_no']) ? (string)$this->request->post['external_order_no'] : '';
+			$external_fis_id = isset($this->request->post['external_fis_id']) ? (int)$this->request->post['external_fis_id'] : 0;
+			$closed_at = isset($this->request->post['closed_at']) ? (string)$this->request->post['closed_at'] : '';
+			$message = isset($this->request->post['message']) ? (string)$this->request->post['message'] : '';
+
+			$result = $this->model_extension_module_akinsoft_bridge->markOrderPaidByExternalNo($external_order_no, $external_fis_id, $closed_at, $message);
+
+			if (empty($result['success'])) {
+				return $this->json($result, 400);
+			}
+
+			return $this->json($result);
+		} catch (Exception $e) {
+			return $this->error($e);
+		}
+	}
+
 	public function commands() {
 		try {
 			$this->load->model('extension/module/akinsoft_bridge');

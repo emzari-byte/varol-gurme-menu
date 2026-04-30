@@ -157,6 +157,10 @@ class AkinsoftBridgeAgent {
 				$this->log('Demo acik adisyon yoktu, masa durumu temizlendi. Girilen=' . $identifier . ', masa=' . $cleared_table);
 
 				try {
+					if (ctype_digit($identifier)) {
+						$this->syncClosedReceiptByExternalNo($identifier);
+					}
+
 					$this->syncClosedOrders();
 				} catch (Exception $sync_exception) {
 					$this->log('Demo kapanis site senkronu basarisiz: ' . $sync_exception->getMessage());
@@ -195,6 +199,10 @@ class AkinsoftBridgeAgent {
 			$this->log('Demo adisyon kapatildi. Girilen=' . $identifier . ', adisyon=' . implode(',', $closed_adisyon) . ', masa=' . implode(',', $closed_tables));
 
 			try {
+				foreach ($closed_adisyon as $adisyon_no) {
+					$this->syncClosedReceiptByExternalNo($adisyon_no);
+				}
+
 				$this->syncClosedOrders();
 			} catch (Exception $sync_exception) {
 				$this->log('Demo kapanis site senkronu basarisiz: ' . $sync_exception->getMessage());
@@ -257,6 +265,36 @@ class AkinsoftBridgeAgent {
 		$stmt->execute(array($masaadi));
 
 		return $stmt->rowCount() ? $masaadi : '';
+	}
+
+	private function syncClosedReceiptByExternalNo($external_order_no) {
+		$external_order_no = trim((string)$external_order_no);
+
+		if ($external_order_no === '') {
+			return;
+		}
+
+		$fis = $this->fetchClosedReceipt($external_order_no);
+
+		if (!$fis) {
+			$this->log('External adisyon kapanisi siteye gonderilemedi, kapali fis bulunamadi: #' . $external_order_no);
+			return;
+		}
+
+		$result = $this->request('extension/module/akinsoft_bridge/paidExternal', array(), array(
+			'external_order_no' => $external_order_no,
+			'external_fis_id' => (int)$fis['BLKODU'],
+			'closed_at' => (string)$fis['KAPANISTARIHI'],
+			'message' => 'Akinsoft adisyon kapandi. Fis #' . (int)$fis['BLKODU'] . ' - ' . (string)$fis['KAPANISTARIHI']
+		));
+
+		if (empty($result['success'])) {
+			$this->log('External adisyon #' . $external_order_no . ' siteye paid islenemedi: ' . $this->message($result));
+			return;
+		}
+
+		$order_id = !empty($result['restaurant_order_id']) ? ' Siparis #' . (int)$result['restaurant_order_id'] : '';
+		$this->log('External adisyon #' . $external_order_no . $order_id . ' paid yapildi.');
 	}
 
 	private function syncCommands() {
