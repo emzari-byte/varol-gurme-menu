@@ -2,10 +2,10 @@
 setlocal
 cd /d "%~dp0"
 
-set /p ADISYON_NO=Kapatilacak Akinsoft adisyon no: 
+set /p ADISYON_NO=Kapatilacak Akinsoft adisyon no veya masa no:
 
 if "%ADISYON_NO%"=="" (
-  echo Adisyon no bos olamaz.
+  echo Adisyon/masa no bos olamaz.
   pause
   exit /b 1
 )

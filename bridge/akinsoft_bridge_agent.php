@@ -48,7 +48,7 @@ if (in_array('--sync-all', $argv, true)) {
 
 foreach ($argv as $arg) {
 	if (strpos($arg, '--demo-close-receipt=') === 0) {
-		$agent->demoCloseReceipt((int)substr($arg, strlen('--demo-close-receipt=')));
+		$agent->demoCloseReceipt(substr($arg, strlen('--demo-close-receipt=')));
 		exit;
 	}
 }
@@ -130,11 +130,11 @@ class AkinsoftBridgeAgent {
 		}
 	}
 
-	public function demoCloseReceipt($adisyon_no) {
-		$adisyon_no = (int)$adisyon_no;
+	public function demoCloseReceipt($identifier) {
+		$identifier = trim((string)$identifier);
 
-		if (!$adisyon_no) {
-			$this->log('Demo kapatma hatasi: adisyon no eksik.');
+		if ($identifier === '') {
+			$this->log('Demo kapatma hatasi: adisyon/masa no eksik.');
 			return;
 		}
 
@@ -144,37 +144,48 @@ class AkinsoftBridgeAgent {
 			$this->closeOpenFirebirdTransaction($pdo);
 			$pdo->beginTransaction();
 
-			$stmt = $pdo->prepare("SELECT FIRST 1 BLKODU, ADISYONNO, MASAADI, KAPANISTARIHI
-				FROM ADISYONFIS
-				WHERE ADISYONNO = ?
-				ORDER BY BLKODU DESC");
-			$stmt->execute(array($adisyon_no));
-			$fis = $stmt->fetch(PDO::FETCH_ASSOC);
+			$fisler = $this->findDemoReceiptsToClose($pdo, $identifier);
 
-			if (!$fis) {
-				throw new Exception('Adisyon bulunamadi: #' . $adisyon_no);
+			if (!$fisler) {
+				$cleared_table = $this->clearDemoTableState($pdo, $identifier);
+
+				if ($cleared_table === '') {
+					throw new Exception('Acik adisyon veya masa bulunamadi. Girilen deger: ' . $identifier);
+				}
+
+				$pdo->commit();
+				$this->log('Demo acik adisyon yoktu, masa durumu temizlendi. Girilen=' . $identifier . ', masa=' . $cleared_table);
+				return;
 			}
 
-			if (empty($fis['KAPANISTARIHI'])) {
+			$closed_adisyon = array();
+			$closed_tables = array();
+
+			foreach ($fisler as $fis) {
 				$update = $pdo->prepare("UPDATE ADISYONFIS
 					SET KAPANISTARIHI = CURRENT_TIMESTAMP,
 						FISIKAPATAN = 'Yetkili  (SYSDBA)',
 						DURUMU = 2
 					WHERE BLKODU = ?");
 				$update->execute(array((int)$fis['BLKODU']));
-			}
 
-			$masaadi = trim((string)$fis['MASAADI']);
+				$masaadi = trim((string)$fis['MASAADI']);
+				$closed_adisyon[] = (string)$fis['ADISYONNO'];
 
-			if ($masaadi !== '') {
-				$masa = $pdo->prepare("UPDATE MASA
-					SET DURUMU = 1
-					WHERE MASAADI = ?");
-				$masa->execute(array($masaadi));
+				if ($masaadi !== '' && !in_array($masaadi, $closed_tables, true)) {
+					$masa = $pdo->prepare("UPDATE MASA
+						SET DURUMU = 1,
+							MASAACILIS = NULL,
+							GARSONCAGRIDURUM = 0,
+							GARSONCAGRIID = NULL
+						WHERE MASAADI = ?");
+					$masa->execute(array($masaadi));
+					$closed_tables[] = $masaadi;
+				}
 			}
 
 			$pdo->commit();
-			$this->log('Demo adisyon kapatildi: #' . $adisyon_no . ' MASA=' . $masaadi);
+			$this->log('Demo adisyon kapatildi. Girilen=' . $identifier . ', adisyon=' . implode(',', $closed_adisyon) . ', masa=' . implode(',', $closed_tables));
 
 			try {
 				$this->syncClosedOrders();
@@ -188,6 +199,57 @@ class AkinsoftBridgeAgent {
 
 			$this->log('Demo kapatma hatasi: ' . $e->getMessage());
 		}
+	}
+
+	private function findDemoReceiptsToClose(PDO $pdo, $identifier) {
+		$identifier = trim((string)$identifier);
+		$candidates = array();
+
+		if (ctype_digit($identifier)) {
+			$stmt = $pdo->prepare("SELECT FIRST 1 BLKODU, ADISYONNO, MASAADI, KAPANISTARIHI
+				FROM ADISYONFIS
+				WHERE ADISYONNO = ?
+					AND KAPANISTARIHI IS NULL
+				ORDER BY BLKODU DESC");
+			$stmt->execute(array((int)$identifier));
+			$fis = $stmt->fetch(PDO::FETCH_ASSOC);
+
+			if ($fis) {
+				$candidates[] = $fis;
+			}
+		}
+
+		if (!$candidates) {
+			$masaadi = ctype_digit($identifier) ? $this->formatTableName((int)$identifier) : $identifier;
+			$stmt = $pdo->prepare("SELECT BLKODU, ADISYONNO, MASAADI, KAPANISTARIHI
+				FROM ADISYONFIS
+				WHERE MASAADI = ?
+					AND KAPANISTARIHI IS NULL
+				ORDER BY BLKODU DESC");
+			$stmt->execute(array($masaadi));
+			$candidates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		}
+
+		return $candidates ? $candidates : array();
+	}
+
+	private function clearDemoTableState(PDO $pdo, $identifier) {
+		$identifier = trim((string)$identifier);
+
+		if ($identifier === '') {
+			return '';
+		}
+
+		$masaadi = ctype_digit($identifier) ? $this->formatTableName((int)$identifier) : $identifier;
+		$stmt = $pdo->prepare("UPDATE MASA
+			SET DURUMU = 1,
+				MASAACILIS = NULL,
+				GARSONCAGRIDURUM = 0,
+				GARSONCAGRIID = NULL
+			WHERE MASAADI = ?");
+		$stmt->execute(array($masaadi));
+
+		return $stmt->rowCount() ? $masaadi : '';
 	}
 
 	private function syncCommands() {
