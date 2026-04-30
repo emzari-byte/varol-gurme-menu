@@ -222,7 +222,26 @@ Current status:
 - Test endpoint is reached.
 - SiparisSayiGetirV2 endpoint is reached.
 - Waiter panel can send order without pdo_firebird error.
-- Next task is to implement the order detail endpoint that Akınsoft calls after detecting pending orders.
+- WebEnt order list/detail handler is implemented for likely Akinsoft endpoints:
+  - `SiparisGetir`
+  - `SiparisGetirV2`
+  - `SiparisDetayGetir`
+  - `SiparisDetayGetirV2`
+  - `SiparisleriGetir`
+  - `SiparisleriGetirV2`
+  - `SiparisListesiGetir`
+  - `SiparisListesiGetirV2`
+- Handler returns table number/name, customer note, total, Turkish product names, product quantities, prices and row totals.
+- Export marking is separated into likely confirmation endpoints:
+  - `SiparisAktarildi`
+  - `SiparisAktarildiV2`
+  - `SiparisDurumGuncelle`
+  - `SiparisDurumGuncelleV2`
+  - `SiparisOnayla`
+  - `SiparisOnaylaV2`
+  - `SiparisKapat`
+  - `SiparisKapatV2`
+- Next task is to deploy, let Akinsoft call the live endpoint, then inspect `akinsoft_webent_request.log` for the exact detail/confirmation endpoint names and adjust response keys if needed.
 
 When Akınsoft logs a new endpoint after `SiparisSayiGetirV2`, inspect that endpoint and implement the expected response format.
 
@@ -261,9 +280,9 @@ Do not revert or stage it unless the user explicitly asks.
 
 ## Next Tasks
 
-1. Complete Akınsoft WebEnt order detail endpoint.
-2. Return order products with Turkish product names, quantities, prices, table number and note.
-3. Mark order as exported only after Akınsoft successfully receives it.
+1. Deploy WebEnt order detail endpoint and test with Akınsoft Web Entegrasyon.
+2. Inspect live `akinsoft_webent_request.log` after Akınsoft detects pending orders.
+3. Adjust exact response keys if Akınsoft expects XML or a different JSON envelope.
 4. Later, sync paid/closed status from Akınsoft back to restaurant table/session state.
 5. Move remaining footer feedback email and logo settings if not fully completed.
 6. Continue polishing customer menu UX after ERP flow is stable.
