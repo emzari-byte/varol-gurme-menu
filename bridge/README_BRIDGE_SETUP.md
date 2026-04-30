@@ -48,6 +48,8 @@ pdo_firebird
 
 5. `install_bridge_task.bat` dosyasini sag tiklayip **Yonetici olarak calistir** secin.
 
+Agent dosyasi guncellendiginde `restart_bridge_task.bat` dosyasini sag tiklayip **Yonetici olarak calistir** secin. Aksi halde arka plandaki eski PHP sureci eski kodla calismaya devam edebilir.
+
 ## Masa ve Fiyat Senkronu
 
 Canli sunucuda Firebird eklentisi gerekmedigi icin masa/fiyat senkronu da Bridge PC'den calistirilir:
