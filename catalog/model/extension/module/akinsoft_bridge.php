@@ -1,6 +1,13 @@
 <?php
 class ModelExtensionModuleAkinsoftBridge extends Model {
 	public function getSetting($key, $default = '') {
+		$table = DB_PREFIX . 'ayarlar';
+		$exists = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+
+		if (!$exists->num_rows) {
+			return $default;
+		}
+
 		$query = $this->db->query("SELECT ayar_value FROM `" . DB_PREFIX . "ayarlar`
 			WHERE ayar_key = '" . $this->db->escape($key) . "'
 			LIMIT 1");
@@ -9,6 +16,8 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 	}
 
 	public function getPendingOrders($limit = 20) {
+		$this->ensureIntegrationColumns();
+
 		$limit = max(1, min(100, (int)$limit));
 		$language_id = $this->getTurkishLanguageId();
 
@@ -29,6 +38,8 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 	}
 
 	public function markOrder($restaurant_order_id, $status, $external_order_no = '', $message = '') {
+		$this->ensureIntegrationColumns();
+
 		$restaurant_order_id = (int)$restaurant_order_id;
 		$allowed = array('sent', 'failed');
 
@@ -47,6 +58,8 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 	}
 
 	public function getSentOrders($limit = 50) {
+		$this->ensureIntegrationColumns();
+
 		$limit = max(1, min(200, (int)$limit));
 
 		return $this->db->query("SELECT restaurant_order_id, table_id, external_order_no, service_status, date_modified
@@ -60,6 +73,8 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 	}
 
 	public function markOrderPaid($restaurant_order_id, $external_fis_id = 0, $closed_at = '', $message = '') {
+		$this->ensureIntegrationColumns();
+
 		$restaurant_order_id = (int)$restaurant_order_id;
 
 		if (!$restaurant_order_id) {
@@ -136,6 +151,32 @@ class ModelExtensionModuleAkinsoftBridge extends Model {
 			LEFT JOIN `" . DB_PREFIX . "product_description` pd ON (pd.product_id = rop.product_id AND pd.language_id = '" . (int)$language_id . "')
 			WHERE rop.restaurant_order_id = '" . (int)$restaurant_order_id . "'
 			ORDER BY rop.restaurant_order_product_id ASC")->rows;
+	}
+
+	private function ensureIntegrationColumns() {
+		$table = DB_PREFIX . 'restaurant_order';
+		$columns = array();
+		$query = $this->db->query("SHOW COLUMNS FROM `" . $this->db->escape($table) . "`");
+
+		foreach ($query->rows as $row) {
+			$columns[$row['Field']] = true;
+		}
+
+		if (empty($columns['integration_status'])) {
+			$this->db->query("ALTER TABLE `" . $this->db->escape($table) . "` ADD `integration_status` varchar(32) NOT NULL DEFAULT 'none'");
+		}
+
+		if (empty($columns['integration_message'])) {
+			$this->db->query("ALTER TABLE `" . $this->db->escape($table) . "` ADD `integration_message` text NULL");
+		}
+
+		if (empty($columns['integration_date'])) {
+			$this->db->query("ALTER TABLE `" . $this->db->escape($table) . "` ADD `integration_date` datetime NULL");
+		}
+
+		if (empty($columns['external_order_no'])) {
+			$this->db->query("ALTER TABLE `" . $this->db->escape($table) . "` ADD `external_order_no` varchar(64) NULL");
+		}
 	}
 
 	private function getTurkishLanguageId() {
