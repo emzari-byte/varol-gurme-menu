@@ -133,6 +133,7 @@ class ModelCatalogProduct extends Model {
 			}
 		}
 
+		$this->saveProductRestaurantAllergens($product_id, isset($data['product_allergen']) ? $data['product_allergen'] : array());
 
 		$this->cache->delete('product');
 
@@ -299,6 +300,8 @@ class ModelCatalogProduct extends Model {
 			}
 		}
 
+		$this->saveProductRestaurantAllergens($product_id, isset($data['product_allergen']) ? $data['product_allergen'] : array());
+
 		$this->cache->delete('product');
 	}
 
@@ -328,6 +331,7 @@ class ModelCatalogProduct extends Model {
 			$data['product_layout'] = $this->getProductLayouts($product_id);
 			$data['product_store'] = $this->getProductStores($product_id);
 			$data['product_recurrings'] = $this->getRecurrings($product_id);
+			$data['product_allergen'] = $this->getProductRestaurantAllergenIds($product_id);
 
 			$this->addProduct($data);
 		}
@@ -444,8 +448,102 @@ class ModelCatalogProduct extends Model {
 		$this->db->query("DELETE FROM " . DB_PREFIX . "review WHERE product_id = '" . (int)$product_id . "'");
 		$this->db->query("DELETE FROM " . DB_PREFIX . "seo_url WHERE query = 'product_id=" . (int)$product_id . "'");
 		$this->db->query("DELETE FROM " . DB_PREFIX . "coupon_product WHERE product_id = '" . (int)$product_id . "'");
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_product_allergen` WHERE product_id = '" . (int)$product_id . "'");
 
 		$this->cache->delete('product');
+	}
+
+	private function ensureRestaurantAllergenTables() {
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_allergen` (
+			`allergen_id` int(11) NOT NULL AUTO_INCREMENT,
+			`old_option_value_id` int(11) NOT NULL DEFAULT '0',
+			`name` varchar(128) NOT NULL,
+			`image` varchar(255) NOT NULL DEFAULT '',
+			`sort_order` int(11) NOT NULL DEFAULT '0',
+			`status` tinyint(1) NOT NULL DEFAULT '1',
+			`date_added` datetime NOT NULL,
+			`date_modified` datetime NOT NULL,
+			PRIMARY KEY (`allergen_id`),
+			KEY `old_option_value_id` (`old_option_value_id`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_product_allergen` (
+			`product_id` int(11) NOT NULL,
+			`allergen_id` int(11) NOT NULL,
+			PRIMARY KEY (`product_id`,`allergen_id`),
+			KEY `allergen_id` (`allergen_id`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->migrateRestaurantAllergensFromOption();
+	}
+
+	private function migrateRestaurantAllergensFromOption() {
+		$option_id = 14;
+		$language_id = (int)$this->config->get('config_language_id');
+
+		$option_values = $this->db->query("SELECT ov.option_value_id, ov.image, ov.sort_order, ovd.name
+			FROM `" . DB_PREFIX . "option_value` ov
+			LEFT JOIN `" . DB_PREFIX . "option_value_description` ovd ON (ov.option_value_id = ovd.option_value_id AND ovd.language_id = '" . $language_id . "')
+			WHERE ov.option_id = '" . (int)$option_id . "'
+			ORDER BY ov.sort_order ASC, ovd.name ASC");
+
+		foreach ($option_values->rows as $option_value) {
+			$exists = $this->db->query("SELECT allergen_id FROM `" . DB_PREFIX . "restaurant_allergen`
+				WHERE old_option_value_id = '" . (int)$option_value['option_value_id'] . "'
+				LIMIT 1");
+
+			if (!$exists->num_rows) {
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_allergen`
+					SET old_option_value_id = '" . (int)$option_value['option_value_id'] . "',
+						name = '" . $this->db->escape($option_value['name']) . "',
+						image = '" . $this->db->escape($option_value['image']) . "',
+						sort_order = '" . (int)$option_value['sort_order'] . "',
+						status = '1',
+						date_added = NOW(),
+						date_modified = NOW()");
+			}
+		}
+
+		$this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "restaurant_product_allergen` (product_id, allergen_id)
+			SELECT DISTINCT pov.product_id, ra.allergen_id
+			FROM `" . DB_PREFIX . "product_option_value` pov
+			INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.old_option_value_id = pov.option_value_id)
+			WHERE pov.option_id = '" . (int)$option_id . "'");
+	}
+
+	private function saveProductRestaurantAllergens($product_id, $allergens) {
+		$this->ensureRestaurantAllergenTables();
+
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_product_allergen` WHERE product_id = '" . (int)$product_id . "'");
+
+		foreach ((array)$allergens as $allergen_id) {
+			$this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "restaurant_product_allergen`
+				SET product_id = '" . (int)$product_id . "',
+					allergen_id = '" . (int)$allergen_id . "'");
+		}
+	}
+
+	public function getRestaurantAllergens() {
+		$this->ensureRestaurantAllergenTables();
+
+		return $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_allergen`
+			WHERE status = '1'
+			ORDER BY sort_order ASC, name ASC")->rows;
+	}
+
+	public function getProductRestaurantAllergenIds($product_id) {
+		$this->ensureRestaurantAllergenTables();
+
+		$query = $this->db->query("SELECT allergen_id FROM `" . DB_PREFIX . "restaurant_product_allergen`
+			WHERE product_id = '" . (int)$product_id . "'");
+
+		$allergens = array();
+
+		foreach ($query->rows as $row) {
+			$allergens[] = (int)$row['allergen_id'];
+		}
+
+		return $allergens;
 	}
 
 	public function getProduct($product_id) {

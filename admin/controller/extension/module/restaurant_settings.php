@@ -82,7 +82,7 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 		$data['cancel'] = $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true);
 		$data['restaurant_tables_url'] = $this->url->link('extension/module/restaurant_tables', 'user_token=' . $this->session->data['user_token'], true);
 		$data['restaurant_waiters_url'] = $this->url->link('extension/module/restaurant_waiters', 'user_token=' . $this->session->data['user_token'], true);
-		$data['allergen_url'] = $this->url->link('catalog/option/edit', 'user_token=' . $this->session->data['user_token'] . '&option_id=14', true);
+		$data['allergen_url'] = $this->url->link('extension/module/restaurant_allergens', 'user_token=' . $this->session->data['user_token'], true);
 		$data['recommendation_url'] = $this->url->link('extension/module/menu_recommendation_manager', 'user_token=' . $this->session->data['user_token'], true);
 		$data['product_url'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'], true);
 		$data['category_url'] = $this->url->link('catalog/category', 'user_token=' . $this->session->data['user_token'], true);

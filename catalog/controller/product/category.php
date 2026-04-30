@@ -302,6 +302,7 @@ class ControllerProductCategory extends Controller {
 
     private function getProductsByCategoryId(int $category_id, string $gun): array {
         $products = array();
+        $this->ensureRestaurantAllergens();
         $show_prices = $this->model_common_menu_order->getRestaurantSettingValue('restaurant_qr_order_menu', 1) === 1;
 
         $filter_data = array(
@@ -362,12 +363,12 @@ class ControllerProductCategory extends Controller {
             }
 
             $querya = $this->db->query("
-                SELECT ov.image, ovd.name
-                FROM " . DB_PREFIX . "option_value ov
-                LEFT JOIN " . DB_PREFIX . "product_option_value pov ON (ov.option_value_id = pov.option_value_id)
-                LEFT JOIN " . DB_PREFIX . "option_value_description ovd ON (ov.option_value_id = ovd.option_value_id)
-                WHERE pov.product_id = '" . (int)$result['product_id'] . "'
-                AND ovd.language_id = '" . (int)$active_language_id . "'
+                SELECT ra.image, ra.name
+                FROM " . DB_PREFIX . "restaurant_product_allergen rpa
+                INNER JOIN " . DB_PREFIX . "restaurant_allergen ra ON (ra.allergen_id = rpa.allergen_id)
+                WHERE rpa.product_id = '" . (int)$result['product_id'] . "'
+                AND ra.status = '1'
+                ORDER BY ra.sort_order ASC, ra.name ASC
             ");
 
             foreach ($querya->rows as $resa) {
@@ -395,5 +396,45 @@ class ControllerProductCategory extends Controller {
         }
 
         return $products;
+    }
+
+    private function ensureRestaurantAllergens(): void {
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_allergen` (
+            `allergen_id` int(11) NOT NULL AUTO_INCREMENT,
+            `old_option_value_id` int(11) NOT NULL DEFAULT '0',
+            `name` varchar(128) NOT NULL,
+            `image` varchar(255) NOT NULL DEFAULT '',
+            `sort_order` int(11) NOT NULL DEFAULT '0',
+            `status` tinyint(1) NOT NULL DEFAULT '1',
+            `date_added` datetime NOT NULL,
+            `date_modified` datetime NOT NULL,
+            PRIMARY KEY (`allergen_id`),
+            KEY `old_option_value_id` (`old_option_value_id`)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_product_allergen` (
+            `product_id` int(11) NOT NULL,
+            `allergen_id` int(11) NOT NULL,
+            PRIMARY KEY (`product_id`,`allergen_id`),
+            KEY `allergen_id` (`allergen_id`)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+        $language_id = (int)$this->config->get('config_language_id');
+        $option_id = 14;
+
+        $this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "restaurant_allergen` (old_option_value_id, name, image, sort_order, status, date_added, date_modified)
+            SELECT ov.option_value_id, ovd.name, ov.image, ov.sort_order, 1, NOW(), NOW()
+            FROM `" . DB_PREFIX . "option_value` ov
+            LEFT JOIN `" . DB_PREFIX . "option_value_description` ovd ON (ov.option_value_id = ovd.option_value_id AND ovd.language_id = '" . $language_id . "')
+            WHERE ov.option_id = '" . (int)$option_id . "'
+            AND NOT EXISTS (
+                SELECT 1 FROM `" . DB_PREFIX . "restaurant_allergen` ra WHERE ra.old_option_value_id = ov.option_value_id
+            )");
+
+        $this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "restaurant_product_allergen` (product_id, allergen_id)
+            SELECT DISTINCT pov.product_id, ra.allergen_id
+            FROM `" . DB_PREFIX . "product_option_value` pov
+            INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.old_option_value_id = pov.option_value_id)
+            WHERE pov.option_id = '" . (int)$option_id . "'");
     }
 }

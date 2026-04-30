@@ -1144,6 +1144,12 @@ class ControllerCatalogProduct extends Controller {
 			$product_options = array();
 		}
 
+		foreach ($product_options as $key => $product_option) {
+			if ((int)$product_option['option_id'] === 14) {
+				unset($product_options[$key]);
+			}
+		}
+
 		$data['product_options'] = array();
 
 		foreach ($product_options as $product_option) {
@@ -1252,6 +1258,27 @@ class ControllerCatalogProduct extends Controller {
 		}
 
 		$data['placeholder'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+
+		if (isset($this->request->post['product_allergen'])) {
+			$data['product_allergen'] = (array)$this->request->post['product_allergen'];
+		} elseif (isset($this->request->get['product_id'])) {
+			$data['product_allergen'] = $this->model_catalog_product->getProductRestaurantAllergenIds($this->request->get['product_id']);
+		} else {
+			$data['product_allergen'] = array();
+		}
+
+		$data['restaurant_allergens'] = array();
+
+		foreach ($this->model_catalog_product->getRestaurantAllergens() as $allergen) {
+			$image = !empty($allergen['image']) && is_file(DIR_IMAGE . $allergen['image']) ? $allergen['image'] : 'no_image.png';
+
+			$data['restaurant_allergens'][] = array(
+				'allergen_id' => (int)$allergen['allergen_id'],
+				'name' => $allergen['name'],
+				'image' => $allergen['image'],
+				'thumb' => $this->model_tool_image->resize($image, 48, 48)
+			);
+		}
 
 		// Images
 		if (isset($this->request->post['product_image'])) {

@@ -1,0 +1,107 @@
+<?php
+class ModelExtensionModuleRestaurantAllergens extends Model {
+	private $option_id = 14;
+
+	public function install() {
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_allergen` (
+			`allergen_id` int(11) NOT NULL AUTO_INCREMENT,
+			`old_option_value_id` int(11) NOT NULL DEFAULT '0',
+			`name` varchar(128) NOT NULL,
+			`image` varchar(255) NOT NULL DEFAULT '',
+			`sort_order` int(11) NOT NULL DEFAULT '0',
+			`status` tinyint(1) NOT NULL DEFAULT '1',
+			`date_added` datetime NOT NULL,
+			`date_modified` datetime NOT NULL,
+			PRIMARY KEY (`allergen_id`),
+			KEY `old_option_value_id` (`old_option_value_id`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_product_allergen` (
+			`product_id` int(11) NOT NULL,
+			`allergen_id` int(11) NOT NULL,
+			PRIMARY KEY (`product_id`,`allergen_id`),
+			KEY `allergen_id` (`allergen_id`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->migrateFromOption();
+	}
+
+	public function migrateFromOption() {
+		$language_id = (int)$this->config->get('config_language_id');
+		$query = $this->db->query("SELECT ov.option_value_id, ov.image, ov.sort_order, ovd.name
+			FROM `" . DB_PREFIX . "option_value` ov
+			LEFT JOIN `" . DB_PREFIX . "option_value_description` ovd ON (ov.option_value_id = ovd.option_value_id AND ovd.language_id = '" . $language_id . "')
+			WHERE ov.option_id = '" . (int)$this->option_id . "'
+			ORDER BY ov.sort_order ASC, ovd.name ASC");
+
+		foreach ($query->rows as $row) {
+			$exists = $this->db->query("SELECT allergen_id FROM `" . DB_PREFIX . "restaurant_allergen`
+				WHERE old_option_value_id = '" . (int)$row['option_value_id'] . "'
+				LIMIT 1");
+
+			if (!$exists->num_rows) {
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_allergen`
+					SET old_option_value_id = '" . (int)$row['option_value_id'] . "',
+						name = '" . $this->db->escape($row['name']) . "',
+						image = '" . $this->db->escape($row['image']) . "',
+						sort_order = '" . (int)$row['sort_order'] . "',
+						status = '1',
+						date_added = NOW(),
+						date_modified = NOW()");
+			}
+		}
+
+		$this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "restaurant_product_allergen` (product_id, allergen_id)
+			SELECT DISTINCT pov.product_id, ra.allergen_id
+			FROM `" . DB_PREFIX . "product_option_value` pov
+			INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.old_option_value_id = pov.option_value_id)
+			WHERE pov.option_id = '" . (int)$this->option_id . "'");
+	}
+
+	public function getAllergens() {
+		$this->install();
+
+		return $this->db->query("SELECT ra.*,
+				(SELECT COUNT(*) FROM `" . DB_PREFIX . "restaurant_product_allergen` rpa WHERE rpa.allergen_id = ra.allergen_id) AS product_count
+			FROM `" . DB_PREFIX . "restaurant_allergen` ra
+			ORDER BY ra.sort_order ASC, ra.name ASC")->rows;
+	}
+
+	public function saveAllergens($rows) {
+		$this->install();
+		$seen = array();
+
+		foreach ((array)$rows as $row) {
+			$name = trim((string)($row['name'] ?? ''));
+
+			if ($name === '') {
+				continue;
+			}
+
+			$allergen_id = (int)($row['allergen_id'] ?? 0);
+			$image = trim((string)($row['image'] ?? ''));
+			$sort_order = (int)($row['sort_order'] ?? 0);
+			$status = !empty($row['status']) ? 1 : 0;
+
+			if ($allergen_id) {
+				$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_allergen`
+					SET name = '" . $this->db->escape($name) . "',
+						image = '" . $this->db->escape($image) . "',
+						sort_order = '" . $sort_order . "',
+						status = '" . $status . "',
+						date_modified = NOW()
+					WHERE allergen_id = '" . $allergen_id . "'");
+				$seen[] = $allergen_id;
+			} else {
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_allergen`
+					SET name = '" . $this->db->escape($name) . "',
+						image = '" . $this->db->escape($image) . "',
+						sort_order = '" . $sort_order . "',
+						status = '" . $status . "',
+						date_added = NOW(),
+						date_modified = NOW()");
+				$seen[] = (int)$this->db->getLastId();
+			}
+		}
+	}
+}
