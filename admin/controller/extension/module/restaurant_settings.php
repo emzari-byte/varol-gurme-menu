@@ -24,14 +24,18 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 				$this->request->post['restaurant_feedback_email'] = trim((string)$this->request->post['restaurant_feedback_email']);
 			}
 
-			foreach (array('restaurant_brand_logo', 'restaurant_akinsoft_host', 'restaurant_akinsoft_port', 'restaurant_akinsoft_db_path', 'restaurant_akinsoft_charset', 'restaurant_akinsoft_bridge_url', 'restaurant_akinsoft_bridge_token', 'restaurant_akinsoft_company', 'restaurant_akinsoft_branch', 'restaurant_akinsoft_user') as $key) {
+			foreach (array('restaurant_menu_logo', 'restaurant_admin_logo', 'restaurant_brand_logo', 'restaurant_akinsoft_host', 'restaurant_akinsoft_port', 'restaurant_akinsoft_db_path', 'restaurant_akinsoft_charset', 'restaurant_akinsoft_bridge_url', 'restaurant_akinsoft_bridge_token', 'restaurant_akinsoft_company', 'restaurant_akinsoft_branch', 'restaurant_akinsoft_user', 'restaurant_mail_host', 'restaurant_mail_username', 'restaurant_mail_port', 'restaurant_mail_from_email', 'restaurant_mail_from_name') as $key) {
 				if (isset($this->request->post[$key])) {
 					$this->request->post[$key] = trim((string)$this->request->post[$key]);
 				}
 			}
 
-			if (empty($this->request->post['restaurant_menu_theme']) || !in_array($this->request->post['restaurant_menu_theme'], array('v1', 'v2', 'v3', 'v4', 'v5'), true)) {
-				$this->request->post['restaurant_menu_theme'] = 'v1';
+			if (isset($this->request->post['restaurant_mail_password'])) {
+				$this->request->post['restaurant_mail_password'] = trim((string)$this->request->post['restaurant_mail_password']);
+			}
+
+			if (empty($this->request->post['restaurant_menu_theme']) || !in_array($this->request->post['restaurant_menu_theme'], array('default', 'v1', 'v2', 'v3', 'v4', 'v5'), true)) {
+				$this->request->post['restaurant_menu_theme'] = 'default';
 			}
 
 			if (empty($this->request->post['restaurant_akinsoft_mode']) || !in_array($this->request->post['restaurant_akinsoft_mode'], array('local_firebird', 'bridge_agent'), true)) {
@@ -89,10 +93,24 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 		$data['akinsoft_sync_prices_url'] = $this->url->link('extension/module/restaurant_settings/syncAkinsoftPrices', 'user_token=' . $this->session->data['user_token'], true);
 		$this->load->model('tool/image');
 
-		if (!empty($data['restaurant_brand_logo']) && is_file(DIR_IMAGE . $data['restaurant_brand_logo'])) {
-			$data['restaurant_brand_logo_thumb'] = $this->model_tool_image->resize($data['restaurant_brand_logo'], 100, 100);
+		if (empty($data['restaurant_menu_logo']) && !empty($data['restaurant_brand_logo'])) {
+			$data['restaurant_menu_logo'] = $data['restaurant_brand_logo'];
+		}
+
+		if (empty($data['restaurant_admin_logo']) && !empty($data['restaurant_brand_logo'])) {
+			$data['restaurant_admin_logo'] = $data['restaurant_brand_logo'];
+		}
+
+		if (!empty($data['restaurant_menu_logo']) && is_file(DIR_IMAGE . $data['restaurant_menu_logo'])) {
+			$data['restaurant_menu_logo_thumb'] = $this->model_tool_image->resize($data['restaurant_menu_logo'], 100, 100);
 		} else {
-			$data['restaurant_brand_logo_thumb'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+			$data['restaurant_menu_logo_thumb'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+		}
+
+		if (!empty($data['restaurant_admin_logo']) && is_file(DIR_IMAGE . $data['restaurant_admin_logo'])) {
+			$data['restaurant_admin_logo_thumb'] = $this->model_tool_image->resize($data['restaurant_admin_logo'], 180, 60);
+		} else {
+			$data['restaurant_admin_logo_thumb'] = $this->model_tool_image->resize('no_image.png', 180, 60);
 		}
 
 		$data['placeholder'] = $this->model_tool_image->resize('no_image.png', 100, 100);

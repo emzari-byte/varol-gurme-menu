@@ -57,13 +57,36 @@
           <div class="tab-content">
             <div class="tab-pane active" id="tab-menu-settings">
               <div class="form-group">
-                <label class="col-sm-3 control-label">Restoran Logosu</label>
-                <div class="col-sm-9">
-                  <a href="" id="thumb-restaurant-logo" data-toggle="image" class="img-thumbnail">
-                    <img src="{{ restaurant_brand_logo_thumb }}" alt="" title="" data-placeholder="{{ placeholder }}" />
+                <label class="col-sm-3 control-label">Menü Logo</label>
+                <div class="col-sm-3">
+                  <a href="" id="thumb-menu-logo" data-toggle="image" class="img-thumbnail">
+                    <img src="{{ restaurant_menu_logo_thumb }}" alt="" title="" data-placeholder="{{ placeholder }}" />
                   </a>
-                  <input type="hidden" name="restaurant_brand_logo" value="{{ restaurant_brand_logo }}" id="input-restaurant-logo" />
-                  <p class="help-block">Home sayfası, QR menü faviconu ve admin panel logosu için kullanılır.</p>
+                  <input type="hidden" name="restaurant_menu_logo" value="{{ restaurant_menu_logo }}" id="input-menu-logo" />
+                  <p class="help-block">Müşteri home/QR menü ekranlarında kullanılır.</p>
+                </div>
+                <label class="col-sm-2 control-label">Admin Logo</label>
+                <div class="col-sm-4">
+                  <a href="" id="thumb-admin-logo" data-toggle="image" class="img-thumbnail">
+                    <img src="{{ restaurant_admin_logo_thumb }}" alt="" title="" data-placeholder="{{ placeholder }}" />
+                  </a>
+                  <input type="hidden" name="restaurant_admin_logo" value="{{ restaurant_admin_logo }}" id="input-admin-logo" />
+                  <p class="help-block">Admin panel üst alanı için yatay/dikdörtgen logo kullanın.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Müşteri Menü Teması</label>
+                <div class="col-sm-9">
+                  <select name="restaurant_menu_theme" class="form-control" style="max-width:320px;">
+                    <option value="default" {% if restaurant_menu_theme == 'default' %}selected{% endif %}>Default - Orijinal Tasarım</option>
+                    <option value="v1" {% if restaurant_menu_theme == 'v1' %}selected{% endif %}>V1 - Ferah Klasik</option>
+                    <option value="v2" {% if restaurant_menu_theme == 'v2' %}selected{% endif %}>V2 - Koyu Bistro</option>
+                    <option value="v3" {% if restaurant_menu_theme == 'v3' %}selected{% endif %}>V3 - Minimal Beyaz</option>
+                    <option value="v4" {% if restaurant_menu_theme == 'v4' %}selected{% endif %}>V4 - Premium Gece</option>
+                    <option value="v5" {% if restaurant_menu_theme == 'v5' %}selected{% endif %}>V5 - Renkli Casual</option>
+                  </select>
+                  <p class="help-block">Default, tema eklenmeden önceki orijinal müşteri ekranıdır. V1-V5 farklı restoranlara göre alternatif görünümler sağlar.</p>
                 </div>
               </div>
 
@@ -122,20 +145,6 @@
                     <span class="input-group-addon">dk</span>
                   </div>
                   <p class="help-block">Garson hesap talebini gördükten sonra müşterinin tekrar hesap isteyebileceği süre. Önerilen değer 5 dakikadır.</p>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="col-sm-3 control-label">Müşteri Menü Teması</label>
-                <div class="col-sm-9">
-                  <select name="restaurant_menu_theme" class="form-control" style="max-width:320px;">
-                    <option value="v1" {% if restaurant_menu_theme == 'v1' %}selected{% endif %}>V1 - Ferah Klasik</option>
-                    <option value="v2" {% if restaurant_menu_theme == 'v2' %}selected{% endif %}>V2 - Koyu Bistro</option>
-                    <option value="v3" {% if restaurant_menu_theme == 'v3' %}selected{% endif %}>V3 - Minimal Beyaz</option>
-                    <option value="v4" {% if restaurant_menu_theme == 'v4' %}selected{% endif %}>V4 - Premium Gece</option>
-                    <option value="v5" {% if restaurant_menu_theme == 'v5' %}selected{% endif %}>V5 - Renkli Casual</option>
-                  </select>
-                  <p class="help-block">Müşteri home/menü/category ekranlarında kullanılacak genel görünüm.</p>
                 </div>
               </div>
             </div>
@@ -268,6 +277,48 @@
                 <div class="col-sm-9">
                   <input type="email" name="restaurant_feedback_email" value="{{ restaurant_feedback_email }}" placeholder="mail@domain.com" class="form-control">
                   <p class="help-block">Müşteri feedback formları bu adrese gönderilir.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">SMTP Sunucu</label>
+                <div class="col-sm-5">
+                  <input type="text" name="restaurant_mail_host" value="{{ restaurant_mail_host }}" placeholder="smtp.domain.com" class="form-control">
+                </div>
+                <div class="col-sm-2">
+                  <input type="number" name="restaurant_mail_port" value="{{ restaurant_mail_port }}" placeholder="465" class="form-control">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">SMTP Kullanıcı</label>
+                <div class="col-sm-9">
+                  <input type="text" name="restaurant_mail_username" value="{{ restaurant_mail_username }}" class="form-control">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">SMTP Şifre</label>
+                <div class="col-sm-9">
+                  <input type="password" name="restaurant_mail_password" value="{{ restaurant_mail_password }}" class="form-control" autocomplete="new-password">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Gönderen Mail / Ad</label>
+                <div class="col-sm-4">
+                  <input type="email" name="restaurant_mail_from_email" value="{{ restaurant_mail_from_email }}" placeholder="noreply@domain.com" class="form-control">
+                </div>
+                <div class="col-sm-5">
+                  <input type="text" name="restaurant_mail_from_name" value="{{ restaurant_mail_from_name }}" placeholder="Restoran adı" class="form-control">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Analytics Kodu</label>
+                <div class="col-sm-9">
+                  <textarea name="restaurant_analytics_code" rows="7" class="form-control" placeholder="Google Analytics / Pixel / özel takip kodu">{{ restaurant_analytics_code }}</textarea>
+                  <p class="help-block">Bu kod müşteri QR home, menü ve kategori sayfalarının head alanına eklenir.</p>
                 </div>
               </div>
             </div>

@@ -20,7 +20,7 @@ class ControllerCommonHome extends Controller {
 		}
 
 		$this->load->model('common/restaurant_settings');
-		$brand_logo = (string)$this->model_common_restaurant_settings->get('restaurant_brand_logo', $this->config->get('config_logo'));
+		$brand_logo = (string)$this->model_common_restaurant_settings->get('restaurant_menu_logo', $this->model_common_restaurant_settings->get('restaurant_brand_logo', $this->config->get('config_logo')));
 
 		if (is_file(DIR_IMAGE . $brand_logo)) {
 			$data['logo'] = $server . 'image/' . $brand_logo;
@@ -30,8 +30,9 @@ class ControllerCommonHome extends Controller {
 			$data['logo'] = '';
 		}
 
-		$menu_theme = (string)$this->model_common_restaurant_settings->get('restaurant_menu_theme', 'v1');
-		$data['restaurant_menu_theme'] = in_array($menu_theme, array('v1', 'v2', 'v3', 'v4', 'v5'), true) ? $menu_theme : 'v1';
+		$menu_theme = (string)$this->model_common_restaurant_settings->get('restaurant_menu_theme', 'default');
+		$data['restaurant_menu_theme'] = in_array($menu_theme, array('default', 'v1', 'v2', 'v3', 'v4', 'v5'), true) ? $menu_theme : 'default';
+		$data['restaurant_analytics_code'] = (string)$this->model_common_restaurant_settings->get('restaurant_analytics_code', '');
 
 		$this->load->language('common/home');
 

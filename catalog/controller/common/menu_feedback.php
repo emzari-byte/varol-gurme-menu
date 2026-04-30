@@ -46,13 +46,21 @@ class ControllerCommonMenuFeedback extends Controller {
 			return;
 		}
 
-		$mail_host     = 'proxy.uzmanposta.com';
-		$mail_username = 'emzari@varoltekstil.com.tr';
-		$mail_password = '.Emir190522*';
-		$mail_port     = 465;
+		$mail_host     = trim((string)$this->model_common_restaurant_settings->get('restaurant_mail_host', 'proxy.uzmanposta.com'));
+		$mail_username = trim((string)$this->model_common_restaurant_settings->get('restaurant_mail_username', 'emzari@varoltekstil.com.tr'));
+		$mail_password = trim((string)$this->model_common_restaurant_settings->get('restaurant_mail_password', '.Emir190522*'));
+		$mail_port     = (int)$this->model_common_restaurant_settings->get('restaurant_mail_port', '465');
 
-		$from_email = 'emzari@varoltekstil.com.tr';
-		$from_name  = 'Varol Gurme Şikayet & Öneri';
+		$from_email = trim((string)$this->model_common_restaurant_settings->get('restaurant_mail_from_email', $mail_username));
+		$from_name  = trim((string)$this->model_common_restaurant_settings->get('restaurant_mail_from_name', 'Varol Gurme Sikayet & Oneri'));
+
+		if ($mail_port <= 0) {
+			$mail_port = 465;
+		}
+
+		if ($from_email === '' || !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
+			$from_email = $mail_username;
+		}
 
 		$to_email = trim((string)$this->model_common_restaurant_settings->get('restaurant_feedback_email', 'can@varoltekstil.com.tr'));
 		if ($to_email === '' || !filter_var($to_email, FILTER_VALIDATE_EMAIL)) {

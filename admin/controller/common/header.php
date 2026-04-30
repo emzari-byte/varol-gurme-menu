@@ -35,11 +35,15 @@ class ControllerCommonHeader extends Controller {
 
 		$this->load->model('extension/module/restaurant_settings');
 		$restaurant_settings = $this->model_extension_module_restaurant_settings->getSettings();
-		$brand_logo = !empty($restaurant_settings['restaurant_brand_logo']) ? (string)$restaurant_settings['restaurant_brand_logo'] : '';
+		$admin_logo = !empty($restaurant_settings['restaurant_admin_logo']) ? (string)$restaurant_settings['restaurant_admin_logo'] : '';
+		$menu_logo = !empty($restaurant_settings['restaurant_menu_logo']) ? (string)$restaurant_settings['restaurant_menu_logo'] : (!empty($restaurant_settings['restaurant_brand_logo']) ? (string)$restaurant_settings['restaurant_brand_logo'] : '');
 
-		if ($brand_logo !== '' && is_file(DIR_IMAGE . $brand_logo)) {
-			$data['admin_brand_logo'] = HTTP_CATALOG . 'image/' . $brand_logo;
-			$data['pwa_icon'] = '/menu/image/' . $brand_logo;
+		if ($admin_logo !== '' && is_file(DIR_IMAGE . $admin_logo)) {
+			$data['admin_brand_logo'] = HTTP_CATALOG . 'image/' . $admin_logo;
+		}
+
+		if ($menu_logo !== '' && is_file(DIR_IMAGE . $menu_logo)) {
+			$data['pwa_icon'] = '/menu/image/' . $menu_logo;
 		}
 
 		$this->load->language('common/header');
