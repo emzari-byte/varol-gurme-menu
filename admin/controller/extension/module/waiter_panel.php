@@ -270,7 +270,7 @@ true
 						$settings = $this->model_extension_module_restaurant_settings->getSettings();
 						$akinsoft_mode = !empty($settings['restaurant_akinsoft_mode']) ? $settings['restaurant_akinsoft_mode'] : 'local_firebird';
 
-						if ($akinsoft_mode === 'local_firebird') {
+						if ($akinsoft_mode === 'local_firebird' && extension_loaded('pdo_firebird')) {
 							$this->load->model('extension/module/akinsoft');
 
 							$export = $this->model_extension_module_akinsoft->exportRestaurantOrder(
@@ -475,6 +475,7 @@ public function addManualOrder() {
 
 	private function isAkinsoftDirectFirebirdMode() {
 		return $this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)
-			&& $this->getRestaurantSettingValue('restaurant_akinsoft_mode', 'local_firebird') === 'local_firebird';
+			&& $this->getRestaurantSettingValue('restaurant_akinsoft_mode', 'local_firebird') === 'local_firebird'
+			&& extension_loaded('pdo_firebird');
 	}
 }
