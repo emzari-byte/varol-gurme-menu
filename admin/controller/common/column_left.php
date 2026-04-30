@@ -12,14 +12,17 @@ class ControllerCommonColumnLeft extends Controller {
 		$this->load->language('common/column_left');
 
 		$data['menus'] = array();
+		$cashier_only = $this->isCashierOnlyUser();
 
-		$data['menus'][] = array(
-			'id'       => 'menu-dashboard',
-			'icon'     => 'fa-dashboard',
-			'name'     => 'Kontrol Paneli',
-			'href'     => $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true),
-			'children' => array()
-		);
+		if (!$cashier_only) {
+			$data['menus'][] = array(
+				'id'       => 'menu-dashboard',
+				'icon'     => 'fa-dashboard',
+				'name'     => 'Kontrol Paneli',
+				'href'     => $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true),
+				'children' => array()
+			);
+		}
 
 		$operations = array();
 
@@ -168,5 +171,37 @@ class ControllerCommonColumnLeft extends Controller {
 		}
 
 		return (int)$query->row['ayar_value'] === 1;
+	}
+
+	private function isCashierOnlyUser() {
+		if (
+			!$this->getRestaurantAyar('restaurant_cashier_panel', 1) ||
+			$this->getRestaurantAyar('restaurant_akinsoft_enabled', 0) ||
+			!$this->user->hasPermission('access', 'extension/module/cashier_panel')
+		) {
+			return false;
+		}
+
+		$broader_routes = array(
+			'extension/module/waiter_panel',
+			'extension/module/kitchen_display',
+			'extension/module/restaurant_settings',
+			'extension/module/restaurant_tables',
+			'extension/module/restaurant_waiters',
+			'extension/module/restaurant_home_products',
+			'catalog/product',
+			'catalog/category',
+			'user/user',
+			'user/user_permission',
+			'setting/setting'
+		);
+
+		foreach ($broader_routes as $route) {
+			if ($this->user->hasPermission('access', $route)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

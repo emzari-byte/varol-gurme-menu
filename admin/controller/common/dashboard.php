@@ -16,6 +16,11 @@ class ControllerCommonDashboard extends Controller {
 			return;
 		}
 
+		if ($this->user->isLogged() && $this->isCashierOnlyUser()) {
+			$this->response->redirect($this->url->link('extension/module/cashier_panel', 'user_token=' . $this->session->data['user_token'], true));
+			return;
+		}
+
 		$this->load->language('common/dashboard');
 
 		$this->document->setTitle('Restoran Kontrol Paneli');
@@ -171,5 +176,37 @@ class ControllerCommonDashboard extends Controller {
 		$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . $table) . "'");
 
 		return $query->num_rows > 0;
+	}
+
+	private function isCashierOnlyUser() {
+		if (
+			!$this->getRestaurantAyar('restaurant_cashier_panel', 1) ||
+			$this->getRestaurantAyar('restaurant_akinsoft_enabled', 0) ||
+			!$this->user->hasPermission('access', 'extension/module/cashier_panel')
+		) {
+			return false;
+		}
+
+		$broader_routes = array(
+			'extension/module/waiter_panel',
+			'extension/module/kitchen_display',
+			'extension/module/restaurant_settings',
+			'extension/module/restaurant_tables',
+			'extension/module/restaurant_waiters',
+			'extension/module/restaurant_home_products',
+			'catalog/product',
+			'catalog/category',
+			'user/user',
+			'user/user_permission',
+			'setting/setting'
+		);
+
+		foreach ($broader_routes as $route) {
+			if ($this->user->hasPermission('access', $route)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }
