@@ -26,20 +26,27 @@ class ModelCommonRestaurantSettings extends Model {
 		}
 
 		$total = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_table` WHERE status = '1'")->row;
-		$order_join = $this->tableExists(DB_PREFIX . 'restaurant_order')
+		$has_order_table = $this->tableExists(DB_PREFIX . 'restaurant_order');
+		$has_payment_status = $has_order_table && $this->columnExists(DB_PREFIX . 'restaurant_order', 'payment_status');
+		$has_active_order_count = $this->columnExists(DB_PREFIX . 'restaurant_table_status', 'active_order_count');
+
+		$payment_condition = $has_payment_status ? "AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')" : "";
+		$active_order_condition = $has_active_order_count ? "COALESCE(rts.active_order_count, 0) > 0 OR " : "";
+
+		$order_join = $has_order_table
 			? "LEFT JOIN `" . DB_PREFIX . "restaurant_order` ro ON (ro.table_id = rt.table_id
 				AND ro.service_status IN ('waiting_order','in_kitchen','ready_for_service','out_for_service','served','payment_pending','cashier_draft')
-				AND (ro.payment_status IS NULL OR ro.payment_status != 'paid'))"
+				" . $payment_condition . ")"
 			: "";
-		$order_condition = $this->tableExists(DB_PREFIX . 'restaurant_order') ? " OR ro.restaurant_order_id IS NOT NULL" : "";
+		$order_condition = $has_order_table ? " OR ro.restaurant_order_id IS NOT NULL" : "";
 		$open = $this->db->query("SELECT COUNT(DISTINCT rt.table_id) AS total
 			FROM `" . DB_PREFIX . "restaurant_table` rt
 			LEFT JOIN `" . DB_PREFIX . "restaurant_table_status` rts ON (rts.table_id = rt.table_id)
 			" . $order_join . "
 			WHERE rt.status = '1'
 			AND (
-				COALESCE(rts.active_order_count, 0) > 0
-				OR COALESCE(rts.service_status, 'empty') NOT IN ('', 'empty', 'paid', 'completed', 'cancelled')
+				" . $active_order_condition . "
+				COALESCE(rts.service_status, 'empty') NOT IN ('', 'empty', 'paid', 'completed', 'cancelled')
 				" . $order_condition . "
 			)")->row;
 
@@ -135,6 +142,11 @@ class ModelCommonRestaurantSettings extends Model {
 
 	private function tableExists($table) {
 		$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+		return $query->num_rows > 0;
+	}
+
+	private function columnExists($table, $column) {
+		$query = $this->db->query("SHOW COLUMNS FROM `" . $this->db->escape($table) . "` LIKE '" . $this->db->escape($column) . "'");
 		return $query->num_rows > 0;
 	}
 }
