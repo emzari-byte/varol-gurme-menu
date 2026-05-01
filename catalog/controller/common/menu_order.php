@@ -108,6 +108,17 @@ public function requestWaiter() {
 		$this->jsonOut($result);
 	}
 
+	public function submitReview() {
+		$this->jsonStart();
+		$this->load->model('common/menu_order');
+
+		$rating = isset($this->request->post['rating']) ? (int)$this->request->post['rating'] : 0;
+		$note = isset($this->request->post['note']) ? trim((string)$this->request->post['note']) : '';
+		$close = !empty($this->request->post['close']) ? 1 : 0;
+
+		$this->jsonOut($this->model_common_menu_order->submitReview($rating, $note, $close));
+	}
+
 	private function jsonStart() {
 		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
 	}

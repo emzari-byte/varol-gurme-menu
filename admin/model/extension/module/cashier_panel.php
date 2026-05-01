@@ -90,6 +90,20 @@ class ModelExtensionModuleCashierPanel extends Model {
 			KEY `reason_code` (`reason_code`),
 			KEY `date_added` (`date_added`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_review_invite` (
+			`invite_id` int(11) NOT NULL AUTO_INCREMENT,
+			`table_id` int(11) NOT NULL DEFAULT '0',
+			`session_token` varchar(64) NOT NULL DEFAULT '',
+			`restaurant_order_ids` varchar(255) NOT NULL DEFAULT '',
+			`waiter_user_id` int(11) NOT NULL DEFAULT '0',
+			`waiter_name` varchar(128) NOT NULL DEFAULT '',
+			`date_added` datetime NOT NULL,
+			PRIMARY KEY (`invite_id`),
+			KEY `table_id` (`table_id`),
+			KEY `session_token` (`session_token`),
+			KEY `date_added` (`date_added`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 	}
 
 	public function tableExists($table) {
@@ -963,6 +977,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 				AND call_type IN ('bill_request','waiter_call')
 				AND status IN ('new','seen')");
 
+			$this->createReviewInvite($table_id, $orders);
+
 			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
 				SET service_status = 'empty',
 					active_order_count = '0',
@@ -1064,21 +1080,72 @@ class ModelExtensionModuleCashierPanel extends Model {
 					date_added = NOW()");
 		}
 
-		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_call`
-			SET status = 'closed', date_modified = NOW()
-			WHERE table_id = '" . $table_id . "'
-			AND call_type IN ('bill_request','waiter_call')
-			AND status IN ('new','seen')");
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_call`
+				SET status = 'closed', date_modified = NOW()
+				WHERE table_id = '" . $table_id . "'
+				AND call_type IN ('bill_request','waiter_call')
+				AND status IN ('new','seen')");
 
-		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
-			SET service_status = 'empty',
-				active_order_count = '0',
+			$this->createReviewInvite($table_id, $orders);
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
+				SET service_status = 'empty',
+					active_order_count = '0',
 				total_amount = '0.0000',
 				active_session_token = NULL,
 				date_modified = NOW()
 			WHERE table_id = '" . $table_id . "'");
 
 		return array('success' => true, 'message' => 'Ödeme alındı ve masa kapatıldı.');
+	}
+
+	private function createReviewInvite($table_id, $orders) {
+		$table_id = (int)$table_id;
+
+		if (!$table_id || empty($orders)) {
+			return;
+		}
+
+		$status = $this->db->query("SELECT active_session_token
+			FROM `" . DB_PREFIX . "restaurant_table_status`
+			WHERE table_id = '" . $table_id . "'
+			LIMIT 1");
+
+		if (!$status->num_rows || trim((string)$status->row['active_session_token']) === '') {
+			return;
+		}
+
+		$order_ids = array();
+		$waiter_user_id = 0;
+		$waiter_name = '';
+
+		foreach ($orders as $order) {
+			$order_ids[] = (int)$order['restaurant_order_id'];
+
+			if (!$waiter_user_id) {
+				$order_user = $this->db->query("SELECT ro.waiter_user_id, u.firstname, u.lastname, u.username
+					FROM `" . DB_PREFIX . "restaurant_order` ro
+					LEFT JOIN `" . DB_PREFIX . "user` u ON (u.user_id = ro.waiter_user_id)
+					WHERE ro.restaurant_order_id = '" . (int)$order['restaurant_order_id'] . "'
+					LIMIT 1");
+
+				if ($order_user->num_rows && (int)$order_user->row['waiter_user_id'] > 0) {
+					$waiter_user_id = (int)$order_user->row['waiter_user_id'];
+					$waiter_name = trim($order_user->row['firstname'] . ' ' . $order_user->row['lastname']);
+					if ($waiter_name === '') {
+						$waiter_name = (string)$order_user->row['username'];
+					}
+				}
+			}
+		}
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_review_invite`
+			SET table_id = '" . $table_id . "',
+				session_token = '" . $this->db->escape((string)$status->row['active_session_token']) . "',
+				restaurant_order_ids = '" . $this->db->escape(implode(',', $order_ids)) . "',
+				waiter_user_id = '" . (int)$waiter_user_id . "',
+				waiter_name = '" . $this->db->escape($waiter_name) . "',
+				date_added = NOW()");
 	}
 
 	public function getDailyReport($date) {

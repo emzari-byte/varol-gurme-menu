@@ -1,5 +1,44 @@
 <?php
 class ModelCommonMenuOrder extends Model {
+	private function ensureReviewTable() {
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_review` (
+			`review_id` int(11) NOT NULL AUTO_INCREMENT,
+			`table_id` int(11) NOT NULL DEFAULT '0',
+			`table_no` int(11) NOT NULL DEFAULT '0',
+			`table_name` varchar(128) NOT NULL DEFAULT '',
+			`waiter_user_id` int(11) NOT NULL DEFAULT '0',
+			`waiter_name` varchar(128) NOT NULL DEFAULT '',
+			`restaurant_order_ids` varchar(255) NOT NULL DEFAULT '',
+			`session_token` varchar(64) NOT NULL DEFAULT '',
+			`rating` tinyint(1) NOT NULL DEFAULT '0',
+			`note` text NOT NULL,
+			`is_closed` tinyint(1) NOT NULL DEFAULT '0',
+			`ip` varchar(64) NOT NULL DEFAULT '',
+			`user_agent` varchar(255) NOT NULL DEFAULT '',
+			`date_added` datetime NOT NULL,
+			`date_modified` datetime NOT NULL,
+			PRIMARY KEY (`review_id`),
+			KEY `table_id` (`table_id`),
+			KEY `rating` (`rating`),
+			KEY `date_added` (`date_added`),
+			KEY `session_token` (`session_token`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_review_invite` (
+			`invite_id` int(11) NOT NULL AUTO_INCREMENT,
+			`table_id` int(11) NOT NULL DEFAULT '0',
+			`session_token` varchar(64) NOT NULL DEFAULT '',
+			`restaurant_order_ids` varchar(255) NOT NULL DEFAULT '',
+			`waiter_user_id` int(11) NOT NULL DEFAULT '0',
+			`waiter_name` varchar(128) NOT NULL DEFAULT '',
+			`date_added` datetime NOT NULL,
+			PRIMARY KEY (`invite_id`),
+			KEY `table_id` (`table_id`),
+			KEY `session_token` (`session_token`),
+			KEY `date_added` (`date_added`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+	}
+
 	private function ensureTableOrderColumn() {
 		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "restaurant_table` LIKE 'qr_order_enabled'");
 
@@ -641,6 +680,164 @@ public function requestWaiter() {
 		);
 	}
 
+	private function getReviewPrompt() {
+		$this->ensureReviewTable();
+
+		$table_id = !empty($this->session->data['menu_table_id'])
+			? (int)$this->session->data['menu_table_id']
+			: 0;
+		$session_token = !empty($this->session->data['table_session_token'])
+			? (string)$this->session->data['table_session_token']
+			: '';
+
+		if (!$table_id || $session_token === '') {
+			return array('show' => false);
+		}
+
+		$open = $this->db->query("SELECT COUNT(*) AS total
+			FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . $table_id . "'
+			AND service_status IN ('waiting_order','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
+			AND is_paid = '0'");
+
+		if ((int)$open->row['total'] > 0) {
+			return array('show' => false);
+		}
+
+		$invite = $this->getReviewInvite($table_id, $session_token);
+
+		if (!$invite) {
+			return array('show' => false);
+		}
+
+		$existing = $this->db->query("SELECT review_id, rating, note, is_closed
+			FROM `" . DB_PREFIX . "restaurant_review`
+			WHERE table_id = '" . $table_id . "'
+			AND session_token = '" . $this->db->escape($session_token) . "'
+			ORDER BY review_id DESC
+			LIMIT 1");
+
+		if ($existing->num_rows && (int)$existing->row['is_closed'] === 1) {
+			return array('show' => false);
+		}
+
+		return array(
+			'show' => true,
+			'table_id' => $table_id,
+			'table_no' => !empty($this->session->data['menu_table_no']) ? (int)$this->session->data['menu_table_no'] : 0,
+			'table_name' => !empty($this->session->data['menu_table_name']) ? (string)$this->session->data['menu_table_name'] : '',
+			'rating' => $existing->num_rows ? (int)$existing->row['rating'] : 0,
+			'note' => $existing->num_rows ? (string)$existing->row['note'] : ''
+		);
+	}
+
+	private function getReviewInvite($table_id, $session_token) {
+		$query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "restaurant_review_invite`
+			WHERE table_id = '" . (int)$table_id . "'
+			AND session_token = '" . $this->db->escape((string)$session_token) . "'
+			AND date_added >= DATE_SUB(NOW(), INTERVAL 6 HOUR)
+			ORDER BY invite_id DESC
+			LIMIT 1");
+
+		return $query->num_rows ? $query->row : array();
+	}
+
+	public function submitReview($rating, $note = '', $close = 0) {
+		$this->ensureReviewTable();
+
+		$table_id = !empty($this->session->data['menu_table_id'])
+			? (int)$this->session->data['menu_table_id']
+			: 0;
+		$table_no = !empty($this->session->data['menu_table_no'])
+			? (int)$this->session->data['menu_table_no']
+			: 0;
+		$table_name = !empty($this->session->data['menu_table_name'])
+			? trim((string)$this->session->data['menu_table_name'])
+			: '';
+		$session_token = !empty($this->session->data['table_session_token'])
+			? (string)$this->session->data['table_session_token']
+			: '';
+		$rating = max(0, min(5, (int)$rating));
+		$note = utf8_substr(trim((string)$note), 0, 1000);
+		$close = (int)$close;
+
+		if (!$table_id || $session_token === '') {
+			return array('success' => false, 'message' => 'Masa oturumu bulunamadı.');
+		}
+
+		if ($rating < 1 && !$close) {
+			return array('success' => false, 'message' => 'Lütfen yıldız seçin.');
+		}
+
+		$invite = $this->getReviewInvite($table_id, $session_token);
+
+		if (!$invite) {
+			return array('success' => false, 'message' => 'Değerlendirilecek kapanmış hesap bulunamadı.');
+		}
+
+		$order_ids = array_filter(array_map('intval', explode(',', (string)$invite['restaurant_order_ids'])));
+		$waiter_user_id = (int)$invite['waiter_user_id'];
+		$waiter_name = (string)$invite['waiter_name'];
+
+		$ip = isset($this->request->server['REMOTE_ADDR']) ? (string)$this->request->server['REMOTE_ADDR'] : '';
+		$user_agent = isset($this->request->server['HTTP_USER_AGENT']) ? utf8_substr((string)$this->request->server['HTTP_USER_AGENT'], 0, 255) : '';
+
+		$existing = $this->db->query("SELECT review_id, rating, note
+			FROM `" . DB_PREFIX . "restaurant_review`
+			WHERE table_id = '" . $table_id . "'
+			AND session_token = '" . $this->db->escape($session_token) . "'
+			ORDER BY review_id DESC
+			LIMIT 1");
+
+		if ($existing->num_rows) {
+			$review_id = (int)$existing->row['review_id'];
+			$set = array(
+				"table_no = '" . (int)$table_no . "'",
+				"table_name = '" . $this->db->escape($table_name) . "'",
+				"waiter_user_id = '" . (int)$waiter_user_id . "'",
+				"waiter_name = '" . $this->db->escape($waiter_name) . "'",
+				"restaurant_order_ids = '" . $this->db->escape(implode(',', $order_ids)) . "'",
+				"ip = '" . $this->db->escape($ip) . "'",
+				"user_agent = '" . $this->db->escape($user_agent) . "'",
+				"is_closed = '" . (int)$close . "'",
+				"date_modified = NOW()"
+			);
+
+			if ($rating > 0) {
+				$set[] = "rating = '" . (int)$rating . "'";
+			}
+
+			if ($note !== '' || $close) {
+				$set[] = "note = '" . $this->db->escape($note) . "'";
+			}
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_review` SET " . implode(', ', $set) . " WHERE review_id = '" . $review_id . "'");
+		} else {
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_review`
+				SET table_id = '" . $table_id . "',
+					table_no = '" . (int)$table_no . "',
+					table_name = '" . $this->db->escape($table_name) . "',
+					waiter_user_id = '" . (int)$waiter_user_id . "',
+					waiter_name = '" . $this->db->escape($waiter_name) . "',
+					restaurant_order_ids = '" . $this->db->escape(implode(',', $order_ids)) . "',
+					session_token = '" . $this->db->escape($session_token) . "',
+					rating = '" . (int)$rating . "',
+					note = '" . $this->db->escape($note) . "',
+					is_closed = '" . (int)$close . "',
+					ip = '" . $this->db->escape($ip) . "',
+					user_agent = '" . $this->db->escape($user_agent) . "',
+					date_added = NOW(),
+					date_modified = NOW()");
+		}
+
+		return array(
+			'success' => true,
+			'message' => $close ? 'Değerlendirmeniz için teşekkür ederiz.' : 'Puanınız kaydedildi.',
+			'review_prompt' => $this->getReviewPrompt()
+		);
+	}
+
 	private function closeExpiredBillRequests($table_id) {
 		$table_id = (int)$table_id;
 		$minutes = (int)$this->getRestaurantSettingValue('restaurant_bill_request_reset_minutes', 5);
@@ -739,7 +936,8 @@ $this->db->query("UPDATE `" . DB_PREFIX . "restaurant_call`
 		'can_request_bill'     => $this->canRequestBill(),
 		'has_pending_bill_request' => $this->hasPendingBillRequest(),
 		'bill_request'         => $this->getPendingBillRequest(),
-		'waiter_call'          => $this->getPendingWaiterCall()
+		'waiter_call'          => $this->getPendingWaiterCall(),
+		'review_prompt'        => $this->getReviewPrompt()
 	);
 }
 

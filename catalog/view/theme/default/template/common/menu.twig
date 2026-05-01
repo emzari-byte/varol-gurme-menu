@@ -336,6 +336,29 @@ display:none;
    </div>
 </div>
 
+<div id="restaurantReviewModal" class="restaurant-review-modal" style="display:none;">
+   <div class="restaurant-review-backdrop"></div>
+   <div class="restaurant-review-card">
+      <button type="button" class="restaurant-review-close" id="restaurantReviewClose" aria-label="{{ text_modal_close }}">×</button>
+      <span class="restaurant-review-kicker">Bizi değerlendirin</span>
+      <h3>Deneyiminiz nasıldı?</h3>
+      <p id="restaurantReviewTable">{{ text_table }} {{ table_no }}</p>
+      <div class="restaurant-review-stars" id="restaurantReviewStars" aria-label="Yıldız seçimi">
+         <button type="button" data-rating="1">★</button>
+         <button type="button" data-rating="2">★</button>
+         <button type="button" data-rating="3">★</button>
+         <button type="button" data-rating="4">★</button>
+         <button type="button" data-rating="5">★</button>
+      </div>
+      <label for="restaurantReviewNote">Eklemek istediğiniz bir not var mı?</label>
+      <textarea id="restaurantReviewNote" placeholder="İsterseniz deneyiminizi birkaç cümleyle paylaşabilirsiniz."></textarea>
+      <div class="restaurant-review-actions">
+         <button type="button" id="restaurantReviewSkip" class="restaurant-review-secondary">Kapat</button>
+         <button type="button" id="restaurantReviewSend" class="restaurant-review-primary">Gönder</button>
+      </div>
+   </div>
+</div>
+
 <div id="menuOrderToast" class="menu-order-toast" style="display:none;"></div>
 {% endif %}
 {% if can_track_order %}
@@ -348,6 +371,7 @@ var summaryEndpoint = 'index.php?route=common/menu_order/summary';
 var submitEndpoint = 'index.php?route=common/menu_order/submit';
 var requestBillEndpoint = 'index.php?route=common/menu_order/requestBill';
 var requestWaiterEndpoint = 'index.php?route=common/menu_order/requestWaiter';
+var submitReviewEndpoint = 'index.php?route=common/menu_order/submitReview';
 
 var menuOrderLocale = {
    orderTitle: '{{ text_menu_order|e('js') }}',
@@ -390,6 +414,9 @@ var menuOrderLocale = {
 };
 var waiterCallPosting = false;
 var billRequestPosting = false;
+var reviewPosting = false;
+var currentReviewRating = 0;
+var reviewPromptVisible = false;
 
 function getBillRequestButtonText(state) {
    return state && state.bill_request && state.bill_request.status == 'seen'
@@ -430,6 +457,65 @@ function submitBillRequest(paymentMethod) {
    }, 'json').always(function() {
       billRequestPosting = false;
       $('.bill-payment-choice').prop('disabled', false);
+   });
+}
+
+function setReviewStars(rating) {
+   currentReviewRating = parseInt(rating, 10) || 0;
+   $('#restaurantReviewStars button').each(function() {
+      var value = parseInt($(this).attr('data-rating'), 10) || 0;
+      $(this).toggleClass('active', value <= currentReviewRating);
+   });
+}
+
+function openRestaurantReview(prompt) {
+   if (!prompt || !prompt.show || reviewPromptVisible) {
+      return;
+   }
+
+   reviewPromptVisible = true;
+   setReviewStars(prompt.rating || 0);
+   $('#restaurantReviewNote').val(prompt.note || '');
+   $('#restaurantReviewTable').text((prompt.table_name || (menuOrderLocale.tableLabel + ' ' + (prompt.table_no || ''))));
+   $('#restaurantReviewModal').fadeIn(160);
+}
+
+function closeRestaurantReview(saveClose) {
+   if (saveClose) {
+      submitRestaurantReview(true);
+      return;
+   }
+
+   $('#restaurantReviewModal').fadeOut(140);
+   reviewPromptVisible = false;
+}
+
+function submitRestaurantReview(closeAfter) {
+   if (reviewPosting) {
+      return;
+   }
+
+   reviewPosting = true;
+
+   $.post(submitReviewEndpoint, {
+      rating: currentReviewRating,
+      note: $('#restaurantReviewNote').val() || '',
+      close: closeAfter ? 1 : 0
+   }, function(resp) {
+      if (!resp || !resp.success) {
+         if (!closeAfter) {
+            toast(resp && resp.message ? resp.message : 'Değerlendirme kaydedilemedi.');
+         }
+         return;
+      }
+
+      if (closeAfter) {
+         $('#restaurantReviewModal').fadeOut(140);
+         reviewPromptVisible = false;
+         toast(resp.message || 'Teşekkür ederiz.');
+      }
+   }, 'json').always(function() {
+      reviewPosting = false;
    });
 }
 
@@ -650,6 +736,10 @@ function tickCustomerPrepCountdowns() {
    renderActiveOrders(state);
    renderCart(state.cart || {});
    updateWaiterCallButton(state);
+
+   if (state.review_prompt && state.review_prompt.show) {
+      openRestaurantReview(state.review_prompt);
+   }
 
    var cartCount = 0;
 
@@ -873,6 +963,20 @@ $('.bill-payment-choice').on('click', function() {
 $('.bill-payment-cancel, .bill-payment-backdrop').on('click', function() {
    closeBillPaymentModal();
 });
+
+$('#restaurantReviewStars button').on('click', function() {
+   setReviewStars($(this).attr('data-rating'));
+   submitRestaurantReview(false);
+});
+
+$('#restaurantReviewSend').on('click', function() {
+   closeRestaurantReview(true);
+});
+
+$('#restaurantReviewSkip, #restaurantReviewClose, .restaurant-review-backdrop').on('click', function() {
+   closeRestaurantReview(true);
+});
+
 $(document).on('click', '#callWaiterBtn', function(e) {
    e.preventDefault();
 

@@ -1,0 +1,129 @@
+{{ header }}{{ column_left }}
+<div id="content" class="restaurant-review-admin">
+  <div class="page-header review-page-header">
+    <div class="container-fluid">
+      <h1>Değerlendirmeler</h1>
+      <p>Müşterilerin ödeme sonrası bıraktığı puan ve notları buradan takip edin.</p>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+          <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    <div class="review-stat-grid">
+      <div class="review-stat-card hero">
+        <span>Genel Ortalama</span>
+        <strong>{{ average_all.average|number_format(1, ',', '.') }}</strong>
+        <em>{{ average_all.total }} değerlendirme</em>
+      </div>
+      <div class="review-stat-card">
+        <span>Son 1 Ay</span>
+        <strong>{{ average_month.average|number_format(1, ',', '.') }}</strong>
+        <em>{{ average_month.total }} değerlendirme</em>
+      </div>
+      <div class="review-stat-card">
+        <span>Son 7 Gün</span>
+        <strong>{{ average_week.average|number_format(1, ',', '.') }}</strong>
+        <em>{{ average_week.total }} değerlendirme</em>
+      </div>
+      <div class="review-stat-card">
+        <span>Bugün</span>
+        <strong>{{ average_today.average|number_format(1, ',', '.') }}</strong>
+        <em>{{ average_today.total }} değerlendirme</em>
+      </div>
+    </div>
+
+    <form action="{{ action }}" method="get" class="review-filter-panel">
+      <input type="hidden" name="route" value="extension/module/restaurant_reviews">
+      <input type="hidden" name="user_token" value="{{ user_token }}">
+      <div>
+        <label>Başlangıç</label>
+        <input type="date" name="date_from" value="{{ filter.date_from }}" class="form-control">
+      </div>
+      <div>
+        <label>Bitiş</label>
+        <input type="date" name="date_to" value="{{ filter.date_to }}" class="form-control">
+      </div>
+      <div>
+        <label>Yıldız</label>
+        <select name="rating" class="form-control">
+          <option value="0">Tümü</option>
+          {% for i in 1..5 %}
+            <option value="{{ i }}" {% if filter.rating == i %}selected{% endif %}>{{ i }} yıldız</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="review-filter-actions">
+        <button type="submit" class="btn btn-primary"><i class="fa fa-filter"></i> Filtrele</button>
+        <a href="{{ clear }}" class="btn btn-default">Temizle</a>
+      </div>
+    </form>
+
+    <div class="review-list">
+      {% for review in reviews %}
+        <article class="review-card">
+          <div class="review-card-main">
+            <div class="review-card-title">
+              <strong>{{ review.table_name ? review.table_name : 'Masa ' ~ review.table_no }}</strong>
+              <span>{{ review.date_added|date('d.m.Y H:i') }}</span>
+            </div>
+            <div class="review-stars">
+              {% for i in 1..5 %}<i class="fa fa-star{% if i > review.rating %}-o{% endif %}"></i>{% endfor %}
+              <b>{{ review.rating }}/5</b>
+            </div>
+            {% if review.note %}
+              <p>{{ review.note }}</p>
+            {% else %}
+              <p class="muted">Not eklenmedi.</p>
+            {% endif %}
+          </div>
+          <aside class="review-card-side">
+            <span>Garson</span>
+            <strong>{{ review.waiter_name ? review.waiter_name : '-' }}</strong>
+            <span>Siparişler</span>
+            <strong>{{ review.restaurant_order_ids ? '#' ~ review.restaurant_order_ids : '-' }}</strong>
+          </aside>
+        </article>
+      {% else %}
+        <div class="review-empty">Bu filtrelerde değerlendirme bulunamadı.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <style>
+    .restaurant-review-admin{background:#f5f7f6;min-height:100vh;}
+    .review-page-header{background:#fff;border-bottom:1px solid #e5ebe7;margin-bottom:18px;}
+    .review-page-header h1{margin-bottom:4px;color:#1d3329;font-weight:800;}
+    .review-page-header p{margin:0 0 8px;color:#6f7f77;}
+    .review-stat-grid{display:grid;grid-template-columns:1.2fr repeat(3,1fr);gap:14px;margin-bottom:16px;}
+    .review-stat-card{padding:18px;border:1px solid #dfe8e2;border-radius:12px;background:#fff;box-shadow:0 12px 28px rgba(28,55,42,.06);}
+    .review-stat-card span{display:block;color:#6d7e75;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+    .review-stat-card strong{display:block;margin-top:6px;color:#1d3329;font-size:34px;font-weight:900;line-height:1;}
+    .review-stat-card strong:after{content:' ★';font-size:20px;color:#d3a64e;}
+    .review-stat-card em{display:block;margin-top:7px;color:#7b8982;font-style:normal;}
+    .review-stat-card.hero{background:linear-gradient(135deg,#143629,#2f6b4e);border-color:#143629;}
+    .review-stat-card.hero span,.review-stat-card.hero em{color:#d9eadf;}
+    .review-stat-card.hero strong{color:#fff;}
+    .review-filter-panel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px;align-items:end;margin-bottom:16px;padding:16px;border:1px solid #dfe8e2;border-radius:12px;background:#fff;}
+    .review-filter-panel label{display:block;margin-bottom:6px;color:#30463b;font-weight:800;}
+    .review-filter-actions{display:flex;gap:8px;}
+    .review-list{display:grid;gap:12px;}
+    .review-card{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:16px;padding:18px;border:1px solid #dfe8e2;border-radius:12px;background:#fff;box-shadow:0 10px 22px rgba(28,55,42,.045);}
+    .review-card-title{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;}
+    .review-card-title strong{color:#1d3329;font-size:18px;}
+    .review-card-title span{color:#7b8982;}
+    .review-stars{display:flex;align-items:center;gap:4px;margin-bottom:10px;color:#d3a64e;}
+    .review-stars b{margin-left:8px;color:#30463b;}
+    .review-card p{margin:0;color:#43584d;line-height:1.55;}
+    .review-card p.muted{color:#9aa6a0;}
+    .review-card-side{display:grid;grid-template-columns:1fr;align-content:start;gap:4px;padding-left:16px;border-left:1px solid #edf2ef;}
+    .review-card-side span{color:#829089;font-size:12px;font-weight:800;text-transform:uppercase;}
+    .review-card-side strong{margin-bottom:10px;color:#243b31;}
+    .review-empty{padding:34px;text-align:center;border:1px dashed #cfdcd4;border-radius:12px;background:#fff;color:#819089;font-weight:800;}
+    @media (max-width:991px){.review-stat-grid,.review-filter-panel,.review-card{grid-template-columns:1fr;}.review-card-side{padding-left:0;border-left:0;border-top:1px solid #edf2ef;padding-top:12px;}}
+  </style>
+</div>
+{{ footer }}

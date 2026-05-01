@@ -518,6 +518,8 @@ class ModelExtensionModuleAkinsoft extends Model {
 			AND call_type IN ('bill_request','waiter_call')
 			AND status IN ('new','seen')");
 
+		$this->createReviewInvite($table_id, array($restaurant_order_id));
+
 		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
 			SET service_status = 'empty',
 				active_order_count = '0',
@@ -527,6 +529,52 @@ class ModelExtensionModuleAkinsoft extends Model {
 			WHERE table_id = '" . $table_id . "'");
 
 		return true;
+	}
+
+	private function createReviewInvite($table_id, $order_ids) {
+		$table_id = (int)$table_id;
+
+		if (!$table_id || empty($order_ids)) {
+			return;
+		}
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_review_invite` (
+			`invite_id` int(11) NOT NULL AUTO_INCREMENT,
+			`table_id` int(11) NOT NULL DEFAULT '0',
+			`session_token` varchar(64) NOT NULL DEFAULT '',
+			`restaurant_order_ids` varchar(255) NOT NULL DEFAULT '',
+			`waiter_user_id` int(11) NOT NULL DEFAULT '0',
+			`waiter_name` varchar(128) NOT NULL DEFAULT '',
+			`date_added` datetime NOT NULL,
+			PRIMARY KEY (`invite_id`),
+			KEY `table_id` (`table_id`),
+			KEY `session_token` (`session_token`),
+			KEY `date_added` (`date_added`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$status = $this->db->query("SELECT active_session_token FROM `" . DB_PREFIX . "restaurant_table_status` WHERE table_id = '" . $table_id . "' LIMIT 1");
+
+		if (!$status->num_rows || trim((string)$status->row['active_session_token']) === '') {
+			return;
+		}
+
+		$clean_order_ids = array();
+
+		foreach ($order_ids as $order_id) {
+			if ((int)$order_id > 0) {
+				$clean_order_ids[] = (int)$order_id;
+			}
+		}
+
+		if (!$clean_order_ids) {
+			return;
+		}
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_review_invite`
+			SET table_id = '" . $table_id . "',
+				session_token = '" . $this->db->escape((string)$status->row['active_session_token']) . "',
+				restaurant_order_ids = '" . $this->db->escape(implode(',', $clean_order_ids)) . "',
+				date_added = NOW()");
 	}
 
 	private function fetchAkinsoftStock($pdo, $stock_code) {

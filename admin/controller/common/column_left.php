@@ -136,6 +136,26 @@ class ControllerCommonColumnLeft extends Controller {
 			);
 		}
 
+		$reports = array();
+
+		if ($this->user->hasPermission('access', 'extension/module/restaurant_reviews')) {
+			$reports[] = array(
+				'name'     => 'Değerlendirme',
+				'href'     => $this->url->link('extension/module/restaurant_reviews', 'user_token=' . $this->session->data['user_token'], true),
+				'children' => array()
+			);
+		}
+
+		if ($reports) {
+			$data['menus'][] = array(
+				'id'       => 'menu-restaurant-reports',
+				'icon'     => 'fa-bar-chart',
+				'name'     => 'Raporlar',
+				'href'     => '',
+				'children' => $reports
+			);
+		}
+
 		if ($this->user->hasPermission('access', 'extension/module/restaurant_settings') || $this->user->hasPermission('access', 'setting/setting')) {
 			$data['menus'][] = array(
 				'id'       => 'menu-restaurant-settings',
@@ -189,6 +209,7 @@ class ControllerCommonColumnLeft extends Controller {
 			'extension/module/restaurant_tables',
 			'extension/module/restaurant_waiters',
 			'extension/module/restaurant_home_products',
+			'extension/module/restaurant_reviews',
 			'catalog/product',
 			'catalog/category',
 			'user/user',

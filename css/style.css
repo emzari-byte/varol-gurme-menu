@@ -3927,6 +3927,147 @@ body::before {
    background:#f1f6f3;
 }
 
+.restaurant-review-modal{
+   position:fixed;
+   inset:0;
+   z-index:10030;
+}
+
+.restaurant-review-backdrop{
+   position:absolute;
+   inset:0;
+   background:rgba(22,30,25,.38);
+   backdrop-filter:blur(7px);
+   -webkit-backdrop-filter:blur(7px);
+}
+
+.restaurant-review-card{
+   position:absolute;
+   left:50%;
+   bottom:0;
+   transform:translateX(-50%);
+   width:100%;
+   max-width:560px;
+   padding:24px 22px calc(24px + env(safe-area-inset-bottom));
+   border-radius:28px 28px 0 0;
+   background:#fff;
+   box-shadow:0 -20px 55px rgba(17,34,25,.22);
+}
+
+.restaurant-review-close{
+   position:absolute;
+   right:18px;
+   top:18px;
+   width:42px;
+   height:42px;
+   border:0;
+   border-radius:50%;
+   background:#f1f6f3;
+   color:#172b23;
+   font-size:28px;
+   line-height:42px;
+}
+
+.restaurant-review-kicker{
+   display:inline-flex;
+   margin-bottom:10px;
+   padding:7px 12px;
+   border-radius:999px;
+   background:#eef7f1;
+   color:#2f6b4e;
+   font-size:12px;
+   font-weight:950;
+   letter-spacing:.04em;
+   text-transform:uppercase;
+}
+
+.restaurant-review-card h3{
+   margin:0 48px 4px 0;
+   color:#1d3329;
+   font-size:24px;
+   font-weight:950;
+}
+
+.restaurant-review-card p{
+   margin:0 0 16px;
+   color:#718179;
+   font-size:14px;
+}
+
+.restaurant-review-stars{
+   display:flex;
+   align-items:center;
+   justify-content:center;
+   gap:8px;
+   margin:12px 0 22px;
+}
+
+.restaurant-review-stars button{
+   width:52px;
+   height:52px;
+   border:1px solid #e0e9e4;
+   border-radius:18px;
+   background:#fbfdfc;
+   color:#c9d1cc;
+   font-size:30px;
+   line-height:1;
+   box-shadow:0 10px 24px rgba(26,52,39,.07);
+}
+
+.restaurant-review-stars button.active{
+   border-color:#d3a64e;
+   color:#d3a64e;
+   background:#fff8ea;
+}
+
+.restaurant-review-card label{
+   display:block;
+   margin-bottom:8px;
+   color:#30463b;
+   font-size:14px;
+   font-weight:900;
+}
+
+.restaurant-review-card textarea{
+   width:100%;
+   min-height:112px;
+   padding:14px 16px;
+   border:1px solid #dfe8e2;
+   border-radius:18px;
+   resize:none;
+   color:#243b31;
+   outline:none;
+}
+
+.restaurant-review-card textarea:focus{
+   border-color:#78ad8e;
+   box-shadow:0 0 0 3px rgba(120,173,142,.15);
+}
+
+.restaurant-review-actions{
+   display:flex;
+   gap:10px;
+   margin-top:14px;
+}
+
+.restaurant-review-actions button{
+   flex:1;
+   min-height:48px;
+   border:0;
+   border-radius:16px;
+   font-weight:950;
+}
+
+.restaurant-review-secondary{
+   background:#f2f6f4;
+   color:#607269;
+}
+
+.restaurant-review-primary{
+   background:#143629;
+   color:#fff;
+}
+
 .menu-order-items{
    display:flex;
    flex-direction:column;
