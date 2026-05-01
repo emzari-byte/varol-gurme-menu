@@ -31,7 +31,17 @@
           .restaurant-product-form .restaurant-product-hero h2{margin:0 0 6px;color:#143629;font-size:24px;font-weight:800;}
           .restaurant-product-form .restaurant-product-hero p{margin:0;color:#708078;max-width:680px;}
           .restaurant-product-form .restaurant-form-section{margin:20px 0 14px;padding:18px 20px;border:1px solid #dfe8e2;border-radius:12px;background:#fff;box-shadow:0 10px 28px rgba(20,54,41,.04);}
-          .restaurant-product-form .restaurant-form-section h3{margin:0 0 14px;color:#143629;font-size:16px;font-weight:800;}
+          .restaurant-product-form .restaurant-section-heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px;}
+          .restaurant-product-form .restaurant-section-heading h3{margin:0 0 5px;color:#143629;font-size:16px;font-weight:800;}
+          .restaurant-product-form .restaurant-section-heading p{margin:0;color:#7c8a82;font-size:13px;line-height:1.45;}
+          .restaurant-product-form .restaurant-section-note{margin:-8px 0 16px;color:#7c8a82;font-size:13px;line-height:1.45;}
+          .restaurant-product-form .restaurant-core-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px;}
+          .restaurant-product-form .restaurant-core-grid .form-group{margin-bottom:0;}
+          .restaurant-product-form .restaurant-core-grid .form-group .col-sm-2,.restaurant-product-form .restaurant-core-grid .form-group .col-sm-10{float:none;width:100%;padding-left:0;padding-right:0;text-align:left;}
+          .restaurant-product-form .restaurant-core-grid .control-label{display:block;margin-bottom:7px;}
+          .restaurant-product-form #product-category{height:auto !important;min-height:74px;border:1px dashed #cfe0d5;border-radius:10px;background:#f8fbf9;box-shadow:none;}
+          .restaurant-product-form #product-category>div{display:inline-flex;align-items:center;gap:6px;margin:4px 6px 4px 0;padding:7px 10px;border-radius:999px;background:#e9f5ed;color:#143629;font-weight:700;}
+          .restaurant-product-form #product-category .fa-minus-circle{color:#d24a3a;}
           .restaurant-product-form .form-group{border:0;margin-left:0;margin-right:0;padding-top:6px;padding-bottom:6px;}
           .restaurant-product-form .control-label{color:#33453c;font-weight:800;}
           .restaurant-product-form .form-control{border-color:#dfe8e2;border-radius:8px;box-shadow:none;min-height:40px;}
@@ -39,6 +49,7 @@
           .restaurant-product-form .note-editor{border-color:#dfe8e2;border-radius:10px;overflow:hidden;}
           .restaurant-product-form [data-toggle="tooltip"]{text-decoration:none;border:0;cursor:default;}
           .restaurant-hidden-field{display:none !important;}
+          @media (max-width:991px){.restaurant-product-form .restaurant-core-grid{grid-template-columns:1fr;}}
           @media (max-width:767px){.restaurant-product-form .restaurant-product-hero{display:block;}.restaurant-product-form .control-label{text-align:left;margin-bottom:6px;}}
         </style>
         <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-product" class="form-horizontal restaurant-product-form">
@@ -50,8 +61,6 @@
           </div>
           <ul class="nav nav-tabs">
             <li class="active"><a href="#tab-general" data-toggle="tab">{{ tab_general }}</a></li>
-            <li><a href="#tab-data" data-toggle="tab">{{ tab_data }}</a></li>
-            <li><a href="#tab-links" data-toggle="tab">{{ tab_links }}</a></li>
             <li><a href="#tab-option" data-toggle="tab">Alerjen Tanımları</a></li>
             <li><a href="#tab-image" data-toggle="tab">{{ tab_image }}</a></li>
             <li><a href="#tab-seo" data-toggle="tab">{{ tab_seo }}</a></li>
@@ -109,10 +118,11 @@
                 {% endfor %}</div>
               <div class="restaurant-form-section">
                 <h3>Ürün Bilgileri</h3>
-                <div id="restaurant-product-core-fields"></div>
+                <p class="restaurant-section-note">Kod, kategori, fiyat ve yayın durumunu tek ekrandan yönetin.</p>
+                <div id="restaurant-product-core-fields" class="restaurant-core-grid"></div>
               </div>
             </div>
-            <div class="tab-pane" id="tab-data">
+            <div class="tab-pane restaurant-hidden-field" id="tab-data">
               <div class="form-group required">
                 <label class="col-sm-2 control-label" for="input-model">{{ entry_model }}</label>
                 <div class="col-sm-10">
@@ -394,7 +404,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane" id="tab-links">
+            <div class="tab-pane restaurant-hidden-field" id="tab-links">
               <div class="form-group restaurant-hidden-field">
                 <label class="col-sm-2 control-label" for="input-manufacturer"><span data-toggle="tooltip" title="{{ help_manufacturer }}">{{ entry_manufacturer }}</span></label>
                 <div class="col-sm-10">
@@ -1203,7 +1213,7 @@
     var $core = $('#restaurant-product-core-fields');
 
     if ($core.length) {
-      $('#input-model,#input-sku,#input-price,#input-status,#input-sort-order,#input-category').each(function() {
+      $('#input-model,#input-category,#input-price,#input-status,#input-sort-order').each(function() {
         var $group = $(this).closest('.form-group');
 
         if ($group.length && !$group.data('restaurant-moved')) {
