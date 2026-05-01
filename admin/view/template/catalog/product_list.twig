@@ -399,7 +399,7 @@
                       </div>
                       <div class="quick-product-field">
                         <label>Açıklama</label>
-                        <textarea name="description[{{ language.language_id }}]" class="form-control" placeholder="Kısa, iştah açıcı ürün açıklaması"></textarea>
+                        <textarea name="description[{{ language.language_id }}]" class="form-control quick-product-description-editor" placeholder="Kısa, iştah açıcı ürün açıklaması"></textarea>
                       </div>
                     </div>
                   {% endfor %}
@@ -588,6 +588,33 @@ function renderQuickProductCategoryResults(query) {
 	$('#quick-product-category-results').html(html).show();
 }
 
+function initQuickProductDescriptionEditors() {
+	$('.quick-product-description-editor').each(function() {
+		if ($(this).next('.note-editor').length) {
+			return;
+		}
+
+		$(this).summernote({
+			height: 130,
+			disableDragAndDrop: true,
+			toolbar: [
+				['style', ['bold', 'italic', 'underline', 'clear']],
+				['color', ['color']],
+				['para', ['ul', 'ol']],
+				['view', ['codeview']]
+			]
+		});
+	});
+}
+
+function syncQuickProductDescriptionEditors() {
+	$('.quick-product-description-editor').each(function() {
+		if ($(this).next('.note-editor').length) {
+			$(this).val($(this).summernote('code'));
+		}
+	});
+}
+
 function resetQuickProductForm(mode) {
 	$('#form-quick-product')[0].reset();
 	$('#quick-product-id').val('');
@@ -598,6 +625,11 @@ function resetQuickProductForm(mode) {
 	$('#quick-product-category-search').val('');
 	$('#quick-product-category-results').hide().html('');
 	$('#quick-product-state').text('');
+	$('.quick-product-description-editor').each(function() {
+		if ($(this).next('.note-editor').length) {
+			$(this).summernote('code', '');
+		}
+	});
 
 	if (mode == 'edit') {
 		$('#quick-product-side-title').text('Ürünü Düzenle');
@@ -626,7 +658,12 @@ function fillQuickProductForm(product) {
 
 	$.each(product.descriptions || {}, function(languageId, description) {
 		$('input[name="name[' + languageId + ']"]').val(description.name || '');
-		$('textarea[name="description[' + languageId + ']"]').val(description.description || '');
+		var $description = $('textarea[name="description[' + languageId + ']"]');
+		$description.val(description.description || '');
+
+		if ($description.next('.note-editor').length) {
+			$description.summernote('code', description.description || '');
+		}
 	});
 
 	$.each(product.categories || [], function(index, categoryId) {
@@ -644,6 +681,7 @@ $('#button-open-quick-product').on('click', function(e) {
 	e.preventDefault();
 	resetQuickProductForm('add');
 	$('#modal-quick-product').modal('show');
+	initQuickProductDescriptionEditors();
 });
 
 $('#quick-product-category-search').on('input focus', function() {
@@ -683,6 +721,7 @@ $(document).on('click', '.quick-product-edit', function(e) {
 	resetQuickProductForm('edit');
 	$('#quick-product-state').text('Ürün bilgileri yükleniyor...');
 	$('#modal-quick-product').modal('show');
+	initQuickProductDescriptionEditors();
 
 	$.ajax({
 		url: 'index.php?route=catalog/product/quickForm&user_token={{ user_token }}&product_id=' + productId,
@@ -708,6 +747,7 @@ $('#form-quick-product').on('submit', function(e) {
 	var $form = $(this);
 	var $button = $form.find('button[type="submit"]');
 
+	syncQuickProductDescriptionEditors();
 	$('#quick-product-state').text('Kaydediliyor...');
 	$button.prop('disabled', true);
 

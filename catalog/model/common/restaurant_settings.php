@@ -112,6 +112,27 @@ class ModelCommonRestaurantSettings extends Model {
 		return $tag . $suffix;
 	}
 
+	public function cleanProductDescriptionHtml($html) {
+		$html = (string)$html;
+
+		for ($i = 0; $i < 5; $i++) {
+			$decoded = html_entity_decode($html, ENT_QUOTES, 'UTF-8');
+
+			if ($decoded === $html) {
+				break;
+			}
+
+			$html = $decoded;
+		}
+
+		$html = preg_replace('#<(script|style|iframe|object|embed)[^>]*>.*?</\1>#is', '', $html);
+		$html = strip_tags($html, '<p><br><strong><b><em><i><u><span><div><ul><ol><li>');
+		$html = preg_replace('/\s+on[a-z]+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $html);
+		$html = preg_replace('/\s+(href|src)\s*=\s*("|\')?\s*javascript:[^"\'>\s]+("|\')?/i', '', $html);
+
+		return trim($html);
+	}
+
 	private function tableExists($table) {
 		$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
 		return $query->num_rows > 0;

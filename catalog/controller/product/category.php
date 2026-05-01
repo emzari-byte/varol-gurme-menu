@@ -402,7 +402,7 @@ class ControllerProductCategory extends Controller {
                 'ean'         => $result['ean'],
                 'jan'         => $result['jan'],
                 'isbn'        => $result['isbn'],
-                'description' => html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8')
+                'description' => $this->model_common_restaurant_settings->cleanProductDescriptionHtml($result['description'])
             );
         }
 

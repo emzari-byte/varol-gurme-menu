@@ -116,7 +116,7 @@
 
                               {% if product.description %}
                               <div class="encok-desc-wrap">
-                                 <p class="encok-desc js-encok-desc">{{ product.description|striptags }}</p>
+                                 <div class="encok-desc js-encok-desc">{{ product.description|raw }}</div>
                                  <button type="button" class="encok-desc-toggle" onclick="toggleEncokDesc(this)">{{ text_view_more }}</button>
                               </div>
                               {% endif %}

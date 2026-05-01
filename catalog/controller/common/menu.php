@@ -231,7 +231,7 @@ class ControllerCommonMenu extends Controller {
 			$products[] = array(
 				'product_id'  => (int)$product_info['product_id'],
 				'name'        => $product_info['name'],
-				'description' => html_entity_decode(strip_tags($product_info['description']), ENT_QUOTES, 'UTF-8'),
+				'description' => $this->model_common_restaurant_settings->cleanProductDescriptionHtml($product_info['description']),
 				'thumb'       => $image,
 				'options'     => $options,
 				'tag'         => $this->model_common_restaurant_settings->adjustPreparationTag($product_info['tag'], $prep_extra_minutes),

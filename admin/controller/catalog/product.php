@@ -338,6 +338,7 @@ class ControllerCatalogProduct extends Controller {
 
 				$json['success'] = true;
 				$descriptions = $this->model_catalog_product->getProductDescriptions($product_id);
+				$descriptions = $this->cleanQuickProductDescriptions($descriptions);
 
 				$json['product'] = array(
 					'product_id' => (int)$product_id,
@@ -418,7 +419,7 @@ class ControllerCatalogProduct extends Controller {
 
 					$product_description[$language_id] = array(
 						'name'             => $name,
-						'description'      => isset($descriptions[$language_id]) ? $descriptions[$language_id] : '',
+						'description'      => isset($descriptions[$language_id]) ? $this->cleanProductDescriptionHtml($descriptions[$language_id]) : '',
 						'meta_title'       => $name,
 						'meta_description' => '',
 						'meta_keyword'     => '',
@@ -1029,6 +1030,37 @@ class ControllerCatalogProduct extends Controller {
 		}
 
 		return '';
+	}
+
+	private function cleanQuickProductDescriptions($descriptions) {
+		foreach ($descriptions as $language_id => $description) {
+			if (isset($description['description'])) {
+				$descriptions[$language_id]['description'] = $this->cleanProductDescriptionHtml($description['description']);
+			}
+		}
+
+		return $descriptions;
+	}
+
+	private function cleanProductDescriptionHtml($html) {
+		$html = (string)$html;
+
+		for ($i = 0; $i < 5; $i++) {
+			$decoded = html_entity_decode($html, ENT_QUOTES, 'UTF-8');
+
+			if ($decoded === $html) {
+				break;
+			}
+
+			$html = $decoded;
+		}
+
+		$html = preg_replace('#<(script|style|iframe|object|embed)[^>]*>.*?</\1>#is', '', $html);
+		$html = strip_tags($html, '<p><br><strong><b><em><i><u><span><div><ul><ol><li>');
+		$html = preg_replace('/\s+on[a-z]+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $html);
+		$html = preg_replace('/\s+(href|src)\s*=\s*("|\')?\s*javascript:[^"\'>\s]+("|\')?/i', '', $html);
+
+		return trim($html);
 	}
 
 	private function getAkinsoftProductSyncMap($products) {
