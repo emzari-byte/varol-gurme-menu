@@ -42,9 +42,10 @@ class ControllerCommonMenu extends Controller {
 
 		$data['qr'] = $qr;
 		$data['table_id'] = !empty($this->session->data['menu_table_id']) ? (int)$this->session->data['menu_table_id'] : 0;
-		$data['table_no'] = !empty($this->session->data['menu_table_no']) ? (int)$this->session->data['menu_table_no'] : 0;
-		$data['table_name'] = !empty($this->session->data['menu_table_name']) ? $this->session->data['menu_table_name'] : '';
+        $data['table_no'] = !empty($this->session->data['menu_table_no']) ? (int)$this->session->data['menu_table_no'] : 0;
+        $data['table_name'] = !empty($this->session->data['menu_table_name']) ? $this->session->data['menu_table_name'] : '';
         $data['can_order'] = $this->model_common_menu_order->canOrder();
+        $data['can_track_order'] = $this->model_common_menu_order->canTrackOrder();
         $show_prices = $this->model_common_menu_order->getRestaurantSettingValue('restaurant_qr_order_menu', 1) === 1;
         $data['menu_order_endpoint'] = $this->url->link('common/menu_order/add', '', true);
 

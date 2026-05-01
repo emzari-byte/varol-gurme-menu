@@ -90,6 +90,22 @@
 							</select>
 						</div>
 					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label" for="input-qr-order-enabled">QR Sipariş</label>
+						<div class="col-sm-10">
+							<select name="qr_order_enabled" id="input-qr-order-enabled" class="form-control">
+								{% if qr_order_enabled %}
+									<option value="1" selected="selected">Açık - müşteri QR'dan sipariş verebilir</option>
+									<option value="0">Kapalı - sadece menü ve sipariş takibi</option>
+								{% else %}
+									<option value="1">Açık - müşteri QR'dan sipariş verebilir</option>
+									<option value="0" selected="selected">Kapalı - sadece menü ve sipariş takibi</option>
+								{% endif %}
+							</select>
+							<p class="help-block">Kapalı masalarda QR kod yine çalışır; ürün ekleme ve sipariş oluşturma görünmez.</p>
+						</div>
+					</div>
 				</form>
 			</div>
 		</div>

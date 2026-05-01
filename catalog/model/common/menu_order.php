@@ -1,11 +1,21 @@
 <?php
 class ModelCommonMenuOrder extends Model {
+	private function ensureTableOrderColumn() {
+		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "restaurant_table` LIKE 'qr_order_enabled'");
+
+		if (!$query->num_rows) {
+			$this->db->query("ALTER TABLE `" . DB_PREFIX . "restaurant_table` ADD `qr_order_enabled` TINYINT(1) NOT NULL DEFAULT '1' AFTER `qr_token`");
+		}
+	}
+
 	public function ensureTableSessionFromQr($qr_token) {
 		$qr_token = trim((string)$qr_token);
 
 		if ($qr_token === '') {
 			return false;
 		}
+
+		$this->ensureTableOrderColumn();
 
 		$table_query = $this->db->query("SELECT *
 			FROM `" . DB_PREFIX . "restaurant_table`
@@ -19,6 +29,7 @@ class ModelCommonMenuOrder extends Model {
 			unset($this->session->data['menu_table_no']);
 			unset($this->session->data['menu_table_name']);
 			unset($this->session->data['table_session_token']);
+			unset($this->session->data['menu_table_qr_order_enabled']);
 			return false;
 		}
 
@@ -30,6 +41,11 @@ class ModelCommonMenuOrder extends Model {
 		$this->session->data['menu_table_no'] = (int)$table_query->row['table_no'];
 		$this->session->data['menu_table_name'] = $table_query->row['name'];
 		$this->session->data['table_session_token'] = $session_token;
+		$this->session->data['menu_table_qr_order_enabled'] = isset($table_query->row['qr_order_enabled']) ? (int)$table_query->row['qr_order_enabled'] : 1;
+
+		if ((int)$this->session->data['menu_table_qr_order_enabled'] !== 1) {
+			$this->clearCart();
+		}
 
 		return true;
 	}
@@ -48,6 +64,18 @@ class ModelCommonMenuOrder extends Model {
 			return false;
 		}
 
+		if (!$this->isCurrentTableQrOrderEnabled()) {
+			return false;
+		}
+
+		return $this->hasValidTableSession();
+	}
+
+	public function canTrackOrder() {
+		return $this->hasValidTableSession();
+	}
+
+	private function hasValidTableSession() {
 		if (
 			empty($this->session->data['menu_qr_token']) ||
 			empty($this->session->data['menu_table_id']) ||
@@ -73,6 +101,32 @@ class ModelCommonMenuOrder extends Model {
 			(string)$query->row['active_session_token'],
 			(string)$this->session->data['table_session_token']
 		);
+	}
+
+	private function isCurrentTableQrOrderEnabled() {
+		$table_id = !empty($this->session->data['menu_table_id'])
+			? (int)$this->session->data['menu_table_id']
+			: 0;
+
+		if (!$table_id) {
+			return false;
+		}
+
+		$this->ensureTableOrderColumn();
+
+		$query = $this->db->query("SELECT qr_order_enabled
+			FROM `" . DB_PREFIX . "restaurant_table`
+			WHERE table_id = '" . $table_id . "'
+			AND status = '1'
+			LIMIT 1");
+
+		if (!$query->num_rows) {
+			return false;
+		}
+
+		$this->session->data['menu_table_qr_order_enabled'] = (int)$query->row['qr_order_enabled'];
+
+		return ((int)$query->row['qr_order_enabled'] === 1);
 	}
 
 	private function getTableSessionToken($table_id) {
@@ -171,6 +225,10 @@ class ModelCommonMenuOrder extends Model {
 		$product_id = (int)$product_id;
 		$quantity   = (int)$quantity;
 
+		if (!$this->canOrder()) {
+			return false;
+		}
+
 		$cart = $this->getCart();
 
 		if (!isset($cart[$product_id])) {
@@ -191,6 +249,10 @@ class ModelCommonMenuOrder extends Model {
 	public function removeItem($product_id) {
 		$product_id = (int)$product_id;
 
+		if (!$this->canOrder()) {
+			return false;
+		}
+
 		$cart = $this->getCart();
 
 		if (isset($cart[$product_id])) {
@@ -202,6 +264,10 @@ class ModelCommonMenuOrder extends Model {
 	}
 
 	public function getCartSummary() {
+		if (!empty($this->session->data['menu_table_id']) && !$this->isCurrentTableQrOrderEnabled()) {
+			$this->clearCart();
+		}
+
 		$cart = $this->getCart();
 
 		$items = array();
@@ -231,6 +297,7 @@ class ModelCommonMenuOrder extends Model {
 
 		return array(
 			'can_order'  => $this->canOrder(),
+			'can_track_order' => $this->canTrackOrder(),
 			'table_id'   => !empty($this->session->data['menu_table_id']) ? (int)$this->session->data['menu_table_id'] : 0,
 			'table_no'   => !empty($this->session->data['menu_table_no']) ? (int)$this->session->data['menu_table_no'] : 0,
 			'table_name' => !empty($this->session->data['menu_table_name']) ? $this->session->data['menu_table_name'] : '',
@@ -368,7 +435,7 @@ class ModelCommonMenuOrder extends Model {
 		return true;
 	}
 public function requestWaiter() {
-	if (!$this->canOrder()) {
+	if (!$this->canTrackOrder()) {
 		return array(
 			'success' => false,
 			'message' => 'Garson çağırma özelliği sadece masadaki QR menü üzerinden kullanılabilir.'
@@ -596,7 +663,7 @@ public function requestWaiter() {
 	}
 
 	public function requestBill($note = '') {
-		if (!$this->canOrder()) {
+		if (!$this->canTrackOrder()) {
 			return array(
 				'success' => false,
 				'message' => 'QR masa doğrulaması bulunamadı.'
@@ -659,6 +726,8 @@ $this->db->query("UPDATE `" . DB_PREFIX . "restaurant_call`
 	}
 
 	return array(
+		'can_order'            => $this->canOrder(),
+		'can_track_order'      => $this->canTrackOrder(),
 		'has_open_orders'      => $this->hasOpenOrders(),
 		'active_orders'        => $active_orders,
 		'cart'                 => $this->getCartSummary(),

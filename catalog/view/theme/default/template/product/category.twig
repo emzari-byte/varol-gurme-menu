@@ -276,7 +276,7 @@
                   }
                });
                </script>
-{% if can_order %}
+{% if can_track_order %}
 <a href="javascript:void(0);"
    id="callWaiterBtn"
    class="floating-waiter-btn"
@@ -294,7 +294,7 @@
             </div>
          </div>
       </div>
-      {% if can_order %}
+      {% if can_track_order %}
 <div id="menuOrderBar" class="menu-order-bar" style="display:none;">
    <button type="button" class="menu-order-bar-btn" id="menuOrderBarBtn">
       <span class="menu-order-bar-text">
@@ -375,9 +375,10 @@ display:none;
 
 <div id="menuOrderToast" class="menu-order-toast" style="display:none;"></div>
 {% endif %}
-{% if can_order %}
+{% if can_track_order %}
 <script>
 (function() {
+   var canQrOrder = {{ can_order ? 'true' : 'false' }};
    var addEndpoint = '{{ menu_order_endpoint|e('js') }}';
 var updateEndpoint = 'index.php?route=common/menu_order/update';
 var summaryEndpoint = 'index.php?route=common/menu_order/summary';
@@ -701,6 +702,7 @@ function tickCustomerPrepCountdowns() {
    var modalTitle = document.querySelector('.menu-order-sheet-head h3');
    var submitBtn  = document.getElementById('menuOrderSubmit');
    var billBtn    = document.getElementById('menuRequestBill');
+   var canCreateOrder = !!(state.can_order || canQrOrder);
 
    if (state.has_open_orders && cartCount === 0) {
       if (modalTitle) {
@@ -754,11 +756,11 @@ function tickCustomerPrepCountdowns() {
       }
 
       if (noteWrap) {
-         noteWrap.style.display = '';
+         noteWrap.style.display = canCreateOrder ? '' : 'none';
       }
 
       if (submitBtn) {
-         submitBtn.style.display = '';
+         submitBtn.style.display = canCreateOrder ? '' : 'none';
       }
 
       var showBillButtonInCartMode = false;
@@ -781,7 +783,7 @@ function tickCustomerPrepCountdowns() {
       }
 
       if (footerWrap) {
-         footerWrap.style.display = (cartCount > 0 || showBillButtonInCartMode) ? 'flex' : 'none';
+         footerWrap.style.display = ((canCreateOrder && cartCount > 0) || showBillButtonInCartMode) ? 'flex' : 'none';
       }
 
       if (infoText) {

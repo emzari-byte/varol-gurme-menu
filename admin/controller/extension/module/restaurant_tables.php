@@ -83,6 +83,7 @@ class ControllerExtensionModuleRestaurantTables extends Controller {
 
 		$data['add'] = $this->url->link('extension/module/restaurant_tables/add', 'user_token=' . $this->session->data['user_token'], true);
 		$data['delete'] = $this->url->link('extension/module/restaurant_tables/delete', 'user_token=' . $this->session->data['user_token'], true);
+		$data['toggle_qr_order_url'] = $this->url->link('extension/module/restaurant_tables/toggleQrOrder', 'user_token=' . $this->session->data['user_token'], true);
 
 		$data['tables'] = array();
 		$data['unassigned_table_count'] = 0;
@@ -106,6 +107,7 @@ class ControllerExtensionModuleRestaurantTables extends Controller {
 		'area'        => $result['area'],
 		'sort_order'  => $result['sort_order'],
 		'status'      => $result['status'],
+		'qr_order_enabled' => isset($result['qr_order_enabled']) ? (int)$result['qr_order_enabled'] : 1,
 		'waiter_count' => (int)$result['waiter_count'],
 		'waiter_names' => $result['waiter_names'],
 
@@ -198,6 +200,7 @@ class ControllerExtensionModuleRestaurantTables extends Controller {
 			'capacity'   => 4,
 			'area'       => 'Salon',
 			'sort_order' => 0,
+			'qr_order_enabled' => 1,
 			'status'     => 1
 		);
 
@@ -218,6 +221,31 @@ class ControllerExtensionModuleRestaurantTables extends Controller {
 		$data['footer'] = $this->load->controller('common/footer');
 
 		$this->response->setOutput($this->load->view('extension/module/restaurant_tables_form', $data));
+	}
+
+	public function toggleQrOrder() {
+		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
+		$json = array('success' => false, 'message' => 'İşlem yapılamadı.');
+
+		if (!$this->user->hasPermission('modify', 'extension/module/restaurant_tables')) {
+			$json['message'] = 'Yetkiniz yok.';
+		} else {
+			$this->load->model('extension/module/restaurant_tables');
+
+			$table_id = isset($this->request->post['table_id']) ? (int)$this->request->post['table_id'] : 0;
+			$enabled = isset($this->request->post['enabled']) ? (int)$this->request->post['enabled'] : 0;
+
+			if ($table_id) {
+				$this->model_extension_module_restaurant_tables->setQrOrderEnabled($table_id, $enabled);
+				$json = array(
+					'success' => true,
+					'enabled' => $enabled ? 1 : 0,
+					'message' => $enabled ? 'QR sipariş açıldı.' : 'QR sipariş kapatıldı.'
+				);
+			}
+		}
+
+		$this->response->setOutput(json_encode($json, JSON_UNESCAPED_UNICODE));
 	}
 
 	protected function validateForm() {

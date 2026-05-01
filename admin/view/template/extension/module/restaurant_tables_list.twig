@@ -90,6 +90,17 @@
 						padding:5px 10px;
 						font-weight:800;
 					}
+                    .qr-order-toggle {
+                        display:inline-flex;
+                        align-items:center;
+                        gap:8px;
+                        border:0;
+                        border-radius:999px;
+                        padding:6px 12px;
+                        font-weight:800;
+                    }
+                    .qr-order-toggle.is-on { color:#1f6f43; background:#eaf7ee; }
+                    .qr-order-toggle.is-off { color:#8a5a00; background:#fff5db; }
 				</style>
 
 				<form action="{{ delete }}"
@@ -113,6 +124,7 @@
 									<td class="text-left">Kapasite</td>
 									<td class="text-left">Bölüm</td>
 									<td class="text-left">Atanan Garson</td>
+                                    <td class="text-left">QR Sipariş</td>
 									<td class="text-left">Sıralama</td>
 									<td class="text-left">Durum</td>
 									<td class="text-right">İşlem</td>
@@ -165,6 +177,16 @@
 										{% endif %}
 									</td>
 
+                                    <td class="text-left">
+                                        <button type="button"
+                                                class="qr-order-toggle {% if table.qr_order_enabled %}is-on{% else %}is-off{% endif %}"
+                                                data-table-id="{{ table.table_id }}"
+                                                data-enabled="{{ table.qr_order_enabled }}">
+                                            <i class="fa {% if table.qr_order_enabled %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                                            <span>{% if table.qr_order_enabled %}Sipariş Açık{% else %}Sadece Menü{% endif %}</span>
+                                        </button>
+                                    </td>
+
 									<td class="text-left">
 										{{ table.sort_order }}
 									</td>
@@ -203,7 +225,7 @@
 							{% else %}
 
 								<tr>
-									<td class="text-center" colspan="9">
+									<td class="text-center" colspan="10">
 										Kayıt bulunamadı.
 									</td>
 								</tr>
@@ -217,6 +239,37 @@
 					</div>
 
 				</form>
+
+                <script>
+                $('.qr-order-toggle').on('click', function() {
+                    var button = $(this);
+                    var next = button.data('enabled') ? 0 : 1;
+                    button.prop('disabled', true);
+
+                    $.post('{{ toggle_qr_order_url|replace({"&amp;":"&"}) }}', {
+                        table_id: button.data('table-id'),
+                        enabled: next
+                    }, function(json) {
+                        button.prop('disabled', false);
+
+                        if (!json || !json.success) {
+                            alert(json && json.message ? json.message : 'QR sipariş durumu değiştirilemedi.');
+                            return;
+                        }
+
+                        button.data('enabled', json.enabled ? 1 : 0)
+                            .toggleClass('is-on', !!json.enabled)
+                            .toggleClass('is-off', !json.enabled);
+                        button.find('i')
+                            .toggleClass('fa-toggle-on', !!json.enabled)
+                            .toggleClass('fa-toggle-off', !json.enabled);
+                        button.find('span').text(json.enabled ? 'Sipariş Açık' : 'Sadece Menü');
+                    }, 'json').fail(function() {
+                        button.prop('disabled', false);
+                        alert('QR sipariş durumu değiştirilemedi.');
+                    });
+                });
+                </script>
 
 			</div>
 		</div>
