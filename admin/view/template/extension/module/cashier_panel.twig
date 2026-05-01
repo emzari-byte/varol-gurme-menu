@@ -665,11 +665,37 @@
     return selectedTableId && currentDetail && currentDetail.payment_ready && currentDetail.items && currentDetail.items.length;
   }
 
+  function getRequestedPaymentMethod() {
+    var note = String(currentDetail && currentDetail.bill_payment_note ? currentDetail.bill_payment_note : '').toLowerCase();
+
+    if (note.indexOf('nakit') !== -1 || note.indexOf('cash') !== -1) {
+      return 'cash';
+    }
+
+    if (note.indexOf('kart') !== -1 || note.indexOf('card') !== -1 || note.indexOf('pos') !== -1 || note.indexOf('kredi') !== -1) {
+      return 'card';
+    }
+
+    return '';
+  }
+
   function openPayModal() {
     if (!canPay()) {
       alert('Ödeme için siparişin servis edilmiş olması gerekir.');
       return;
     }
+
+    if (currentDetail && currentDetail.bill_payment_note) {
+      var requestedMethod = getRequestedPaymentMethod();
+
+      if (requestedMethod) {
+        if (confirm('Masa ' + currentDetail.table.table_no + ' hesabı müşterinin seçtiği ödeme yöntemiyle kapatılsın mı?')) {
+          pay(requestedMethod, {autoClose:true});
+        }
+        return;
+      }
+    }
+
     fillPayModal();
     $('#payBackdrop,#payModal').show();
   }
@@ -706,12 +732,14 @@
     }
   }
 
-  function pay(method) {
+  function pay(method, options) {
+    options = options || {};
     if (!selectedTableId || !method) return;
-    var amount = parseAmount($('#payAmountInput').val());
-    var $method = $('.pay-method[data-method="' + method + '"]');
+    var amount = options.autoClose && currentDetail ? parseFloat(currentDetail.total_amount || 0) : parseAmount($('#payAmountInput').val());
+    var selectedItems = options.autoClose ? [] : selectedPayItems;
+    var $method = options.autoClose ? $('#payBtn') : $('.pay-method[data-method="' + method + '"]');
     setBusy($method, true);
-    $.post(payUrl, {table_id:selectedTableId, payment_method:method, amount:amount, selected_items:selectedPayItems, note:''}, function(json) {
+    $.post(payUrl, {table_id:selectedTableId, payment_method:method, amount:amount, selected_items:selectedItems, note:''}, function(json) {
       setBusy($method, false);
       if (!json || !json.success) {
         toast(json && json.message ? json.message : 'Ödeme alınamadı.', 'error');
