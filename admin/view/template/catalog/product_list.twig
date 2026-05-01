@@ -4,7 +4,7 @@
     <div class="container-fluid">
       <div class="pull-right">
         <button type="button" data-toggle="tooltip" title="{{ button_filter }}" onclick="$('#filter-product').toggleClass('hidden-sm hidden-xs');" class="btn btn-default hidden-md hidden-lg"><i class="fa fa-filter"></i></button>
-        <a href="{{ add }}" data-toggle="tooltip" title="{{ button_add }}" class="btn btn-primary"><i class="fa fa-plus"></i></a>
+        <a href="{{ add }}" id="button-open-quick-product" data-toggle="tooltip" title="Hızlı Ürün Ekle" class="btn btn-primary"><i class="fa fa-plus"></i></a>
         <button type="submit" form="form-product" formaction="{{ copy }}" data-toggle="tooltip" title="{{ button_copy }}" class="btn btn-default"><i class="fa fa-copy"></i></button>
         <button type="button" form="form-product" formaction="{{ delete }}" data-toggle="tooltip" title="{{ button_delete }}" class="btn btn-danger" onclick="confirm('{{ text_confirm }}') ? $('#form-product').submit() : false;"><i class="fa fa-trash-o"></i></button>
       </div>
@@ -213,6 +213,38 @@
               .quick-allergen-option:hover{background:#f7fbf8;border-color:#9dc2ad;}
               .quick-allergen-option input{margin:0;}
               .quick-allergen-option img{width:32px;height:32px;object-fit:contain;border:1px solid #e6eee8;border-radius:9px;padding:4px;background:#fff;}
+              .quick-product-modal .modal-dialog{width:min(1100px,calc(100% - 32px));}
+              .quick-product-modal .modal-content{border:0;border-radius:22px;overflow:hidden;box-shadow:0 28px 90px rgba(10,35,26,.28);}
+              .quick-product-shell{display:grid;grid-template-columns:320px 1fr;min-height:650px;background:#f7faf8;}
+              .quick-product-side{padding:28px;background:linear-gradient(155deg,#123629,#1d5b3f);color:#fff;position:relative;overflow:hidden;}
+              .quick-product-side:before{content:"";position:absolute;inset:auto -90px -100px auto;width:260px;height:260px;border-radius:50%;background:rgba(205,171,91,.25);}
+              .quick-product-side h2{position:relative;margin:0 0 8px;font-size:28px;line-height:1.1;font-weight:900;letter-spacing:0;}
+              .quick-product-side p{position:relative;margin:0 0 24px;color:rgba(255,255,255,.76);line-height:1.55;}
+              .quick-product-image{position:relative;margin-top:22px;}
+              .quick-product-image .img-thumbnail{display:block;width:220px;height:220px;margin:0 auto;border:1px solid rgba(255,255,255,.35);border-radius:28px;background:rgba(255,255,255,.12);padding:10px;box-shadow:0 18px 40px rgba(0,0,0,.18);}
+              .quick-product-image img{width:100%;height:100%;object-fit:cover;border-radius:20px;}
+              .quick-product-image span{display:block;margin-top:13px;text-align:center;color:rgba(255,255,255,.78);font-weight:700;}
+              .quick-product-main{padding:26px 28px;background:#fff;}
+              .quick-product-toolbar{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:22px;}
+              .quick-product-toolbar h3{margin:0 0 5px;color:#123629;font-size:21px;font-weight:900;}
+              .quick-product-toolbar p{margin:0;color:#728178;}
+              .quick-product-close{width:42px;height:42px;border:0;border-radius:50%;background:#eef4f0;color:#123629;font-size:22px;line-height:42px;}
+              .quick-product-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;}
+              .quick-product-field{margin-bottom:15px;}
+              .quick-product-field label{display:block;margin-bottom:8px;color:#203c31;font-weight:900;}
+              .quick-product-field .form-control{height:44px;border:1px solid #dce8e1;border-radius:12px;box-shadow:none;}
+              .quick-product-field textarea.form-control{height:110px;resize:vertical;}
+              .quick-product-field .form-control:focus{border-color:#78a887;box-shadow:0 0 0 4px rgba(120,168,135,.13);}
+              .quick-product-language{border:1px solid #e4ece7;border-radius:16px;padding:14px;background:#fbfdfc;margin-bottom:14px;}
+              .quick-product-language-title{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#123629;font-weight:900;}
+              .quick-product-category-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:240px;overflow:auto;padding-right:4px;}
+              .quick-product-category-list label{display:flex;align-items:center;gap:8px;margin:0;padding:10px;border:1px solid #e2ece6;border-radius:12px;background:#fff;color:#385145;font-weight:800;cursor:pointer;}
+              .quick-product-category-list label:hover{border-color:#9dc2ad;background:#f7fbf8;}
+              .quick-product-category-list input{margin:0;}
+              .quick-product-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:20px;padding-top:18px;border-top:1px solid #edf3ef;}
+              .quick-product-actions .btn{border-radius:12px;padding:11px 18px;font-weight:900;}
+              .quick-product-state{margin-right:auto;color:#d24a3a;font-weight:800;}
+              @media (max-width:991px){.quick-product-shell{grid-template-columns:1fr;}.quick-product-side{display:none;}.quick-product-grid{grid-template-columns:1fr;}.quick-product-modal .modal-dialog{width:calc(100% - 16px);margin:8px;}}
             </style>
             <form action="{{ delete }}" method="post" enctype="multipart/form-data" id="form-product">
               <div class="table-responsive">
@@ -327,6 +359,91 @@
       </div>
     </div>
   </div>
+  <div class="modal fade quick-product-modal" id="modal-quick-product" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <form id="form-quick-product">
+          <div class="quick-product-shell">
+            <aside class="quick-product-side">
+              <h2>Hızlı Ürün Ekle</h2>
+              <p>Menüye yeni ürünü birkaç temel bilgiyle ekleyin. Detay, alerjen ve galeri düzenlemeleri sonradan yapılabilir.</p>
+              <div class="quick-product-image">
+                <a href="" id="thumb-quick-product-image" data-toggle="image" class="img-thumbnail">
+                  <img src="{{ placeholder }}" alt="" title="" data-placeholder="{{ placeholder }}" />
+                </a>
+                <input type="hidden" name="image" value="" id="input-quick-product-image" />
+                <span>Ürün görseli seç</span>
+              </div>
+            </aside>
+            <section class="quick-product-main">
+              <div class="quick-product-toolbar">
+                <div>
+                  <h3>Yeni Menü Ürünü</h3>
+                  <p>Ürün adı, fiyat, kategori ve hazırlık süresi menüde hemen kullanılacak alanlardır.</p>
+                </div>
+                <button type="button" class="quick-product-close" data-dismiss="modal" aria-label="Close">&times;</button>
+              </div>
+              <div class="quick-product-grid">
+                <div>
+                  {% for language in quick_languages %}
+                    <div class="quick-product-language">
+                      <div class="quick-product-language-title"><img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}" /> {{ language.name }}</div>
+                      <div class="quick-product-field">
+                        <label>Ürün Adı</label>
+                        <input type="text" name="name[{{ language.language_id }}]" class="form-control quick-product-name" placeholder="Örn: Trüflü Dana Bonfile" />
+                      </div>
+                      <div class="quick-product-field">
+                        <label>Açıklama</label>
+                        <textarea name="description[{{ language.language_id }}]" class="form-control" placeholder="Kısa, iştah açıcı ürün açıklaması"></textarea>
+                      </div>
+                      <div class="quick-product-field">
+                        <label>Hazırlık Süresi</label>
+                        <input type="text" name="tag[{{ language.language_id }}]" class="form-control" placeholder="25 - 30 dk" />
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                <div>
+                  <div class="quick-product-field">
+                    <label>Ürün Kodu</label>
+                    <input type="text" name="model" class="form-control" placeholder="ST02006" />
+                  </div>
+                  <div class="quick-product-field">
+                    <label>Fiyat</label>
+                    <input type="text" name="price" class="form-control" placeholder="1200" />
+                  </div>
+                  <div class="quick-product-field">
+                    <label>Durum</label>
+                    <select name="status" class="form-control">
+                      <option value="1">Menüde aktif</option>
+                      <option value="0">Pasif</option>
+                    </select>
+                  </div>
+                  <div class="quick-product-field">
+                    <label>Sıralama</label>
+                    <input type="text" name="sort_order" class="form-control" value="0" />
+                  </div>
+                  <div class="quick-product-field">
+                    <label>Kategoriler</label>
+                    <div class="quick-product-category-list">
+                      {% for category in filter_categories %}
+                        <label><input type="checkbox" name="product_category[]" value="{{ category.category_id }}" /> <span>{{ category.name }}</span></label>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="quick-product-actions">
+                <span class="quick-product-state" id="quick-product-state"></span>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Vazgeç</button>
+                <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> Ürünü Ekle</button>
+              </div>
+            </section>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
   <div class="modal fade" id="modal-product-description" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
@@ -410,6 +527,47 @@
   <script type="text/javascript" src="view/javascript/summernote/summernote.min.js"></script>
   <script type="text/javascript" src="view/javascript/summernote/summernote-image-attributes.js"></script>
   <script type="text/javascript"><!--
+$('#button-open-quick-product').on('click', function(e) {
+	e.preventDefault();
+	$('#form-quick-product')[0].reset();
+	$('#input-quick-product-image').val('');
+	$('#thumb-quick-product-image img').attr('src', '{{ placeholder }}');
+	$('#quick-product-state').text('');
+	$('#modal-quick-product').modal('show');
+});
+
+$('#form-quick-product').on('submit', function(e) {
+	e.preventDefault();
+
+	var $form = $(this);
+	var $button = $form.find('button[type="submit"]');
+
+	$('#quick-product-state').text('Kaydediliyor...');
+	$button.prop('disabled', true);
+
+	$.ajax({
+		url: 'index.php?route=catalog/product/quickAdd&user_token={{ user_token }}',
+		type: 'post',
+		dataType: 'json',
+		data: $form.serialize(),
+		success: function(json) {
+			if (json.error) {
+				$('#quick-product-state').text(json.error);
+				return;
+			}
+
+			$('#quick-product-state').text('Ürün eklendi, liste yenileniyor...');
+			location.reload();
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			$('#quick-product-state').text(thrownError + ' - ' + xhr.statusText);
+		},
+		complete: function() {
+			$button.prop('disabled', false);
+		}
+	});
+});
+
 $('#button-filter').on('click', function() {
 	var url = '';
 

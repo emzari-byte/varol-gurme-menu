@@ -316,6 +316,119 @@ class ControllerCatalogProduct extends Controller {
 		$this->response->setOutput(json_encode($json));
 	}
 
+	public function quickAdd() {
+		$this->load->language('catalog/product');
+		$this->load->model('catalog/product');
+		$this->load->model('localisation/language');
+
+		$json = array();
+
+		if (!$this->user->hasPermission('modify', 'catalog/product')) {
+			$json['error'] = $this->language->get('error_permission');
+		} else {
+			$languages = $this->model_localisation_language->getLanguages();
+			$default_language_id = (int)$this->config->get('config_language_id');
+
+			$names = isset($this->request->post['name']) ? (array)$this->request->post['name'] : array();
+			$descriptions = isset($this->request->post['description']) ? (array)$this->request->post['description'] : array();
+			$tags = isset($this->request->post['tag']) ? (array)$this->request->post['tag'] : array();
+			$model = isset($this->request->post['model']) ? trim($this->request->post['model']) : '';
+			$price = isset($this->request->post['price']) ? str_replace(',', '.', trim($this->request->post['price'])) : '0';
+			$status = isset($this->request->post['status']) ? (int)$this->request->post['status'] : 1;
+			$sort_order = isset($this->request->post['sort_order']) ? (int)$this->request->post['sort_order'] : 0;
+			$image = isset($this->request->post['image']) ? trim($this->request->post['image']) : '';
+			$product_category = isset($this->request->post['product_category']) ? (array)$this->request->post['product_category'] : array();
+
+			$default_name = isset($names[$default_language_id]) ? trim($names[$default_language_id]) : '';
+
+			if ($default_name === '') {
+				foreach ($names as $name) {
+					if (trim($name) !== '') {
+						$default_name = trim($name);
+						break;
+					}
+				}
+			}
+
+			if ($default_name === '') {
+				$json['error'] = 'Ürün adı zorunludur.';
+			} elseif ($model === '') {
+				$json['error'] = 'Ürün kodu zorunludur.';
+			} elseif (!is_numeric($price) || (float)$price < 0) {
+				$json['error'] = 'Fiyat geçerli bir tutar olmalıdır.';
+			} else {
+				$clean_categories = array();
+
+				foreach ($product_category as $category_id) {
+					$category_id = (int)$category_id;
+
+					if ($category_id > 0) {
+						$clean_categories[] = $category_id;
+					}
+				}
+
+				$product_description = array();
+
+				foreach ($languages as $language) {
+					$language_id = (int)$language['language_id'];
+					$name = isset($names[$language_id]) && trim($names[$language_id]) !== '' ? trim($names[$language_id]) : $default_name;
+
+					$product_description[$language_id] = array(
+						'name'             => $name,
+						'description'      => isset($descriptions[$language_id]) ? $descriptions[$language_id] : '',
+						'meta_title'       => $name,
+						'meta_description' => '',
+						'meta_keyword'     => '',
+						'tag'              => isset($tags[$language_id]) ? trim($tags[$language_id]) : ''
+					);
+				}
+
+				$product_data = array(
+					'model'               => $model,
+					'sku'                 => '',
+					'upc'                 => '',
+					'ean'                 => '',
+					'jan'                 => '',
+					'isbn'                => '',
+					'mpn'                 => '',
+					'location'            => '',
+					'quantity'            => 10000,
+					'minimum'             => 1,
+					'subtract'            => 0,
+					'stock_status_id'     => (int)$this->config->get('config_stock_status_id'),
+					'date_available'      => date('Y-m-d'),
+					'manufacturer_id'     => 0,
+					'shipping'            => 0,
+					'price'               => (float)$price,
+					'points'              => 0,
+					'weight'              => 0,
+					'weight_class_id'     => (int)$this->config->get('config_weight_class_id'),
+					'length'              => 0,
+					'width'               => 0,
+					'height'              => 0,
+					'length_class_id'     => (int)$this->config->get('config_length_class_id'),
+					'status'              => $status ? 1 : 0,
+					'tax_class_id'        => 0,
+					'sort_order'          => $sort_order,
+					'image'               => $image,
+					'product_description' => $product_description,
+					'product_store'       => array(0),
+					'product_category'    => array_unique($clean_categories)
+				);
+
+				$product_id = $this->model_catalog_product->addProduct($product_data);
+
+				$json['success'] = true;
+				$json['product_id'] = (int)$product_id;
+				$json['message'] = 'Ürün eklendi.';
+				$json['edit'] = $this->url->link('catalog/product/edit', 'user_token=' . $this->session->data['user_token'] . '&product_id=' . (int)$product_id, true);
+			}
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
 	public function quickDescription() {
 		$this->load->language('catalog/product');
 		$this->load->model('catalog/product');
@@ -542,7 +655,21 @@ class ControllerCatalogProduct extends Controller {
 
 		$this->load->model('tool/image');
 		$this->load->model('catalog/category');
+		$this->load->model('localisation/language');
 		$data['filter_categories'] = $this->model_catalog_category->getCategories(array('sort' => 'name', 'order' => 'ASC'));
+		$data['placeholder'] = $this->model_tool_image->resize('no_image.png', 120, 120);
+		$data['quick_languages'] = $this->model_localisation_language->getLanguages();
+		usort($data['quick_languages'], function($a, $b) {
+			if ($a['code'] == 'tr-tr') {
+				return -1;
+			}
+
+			if ($b['code'] == 'tr-tr') {
+				return 1;
+			}
+
+			return strcmp($a['name'], $b['name']);
+		});
 		$category_path_map = $this->getCategoryPathMap($data['filter_categories']);
 
 		$product_total = $this->model_catalog_product->getTotalProducts($filter_data);
