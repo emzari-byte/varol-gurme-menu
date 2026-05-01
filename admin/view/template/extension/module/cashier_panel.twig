@@ -130,6 +130,8 @@
       .cancel-body{padding:22px;background:#fff;}
       .cancel-body h4{margin:0;font-size:24px;font-weight:900;color:#242424;}
       .cancel-body .cancel-product{margin:6px 0 22px;color:#5f6662;font-size:15px;font-weight:800;}
+      .cancel-summary{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 14px;border:1px solid #edf2ee;border-radius:12px;background:#f8faf9;margin-bottom:16px;color:#173126;font-weight:900;}
+      .cancel-summary small{display:block;margin-top:3px;color:#728278;font-weight:800;}
       .cancel-error{display:none;color:#c83e38;font-weight:900;margin-bottom:12px;}
       .cancel-reasons{border-top:2px solid #d3423c;padding-top:18px;margin-top:14px;}
       .cancel-option{display:flex;align-items:center;gap:12px;border-bottom:1px solid #edf2ee;padding:14px 0;font-size:18px;font-weight:900;color:#303030;cursor:pointer;}
@@ -195,12 +197,14 @@
   <div class="cancel-body">
     <h4>Ürün İptali</h4>
     <div class="cancel-product" id="cancelProductName">Ürünü iptal etmek üzeresiniz</div>
+    <div class="cancel-summary" id="cancelProductSummary"></div>
     <div class="cancel-error" id="cancelError">İptal sebebi seçiniz.</div>
     <strong style="color:#c83e38;">*İptal Sebebi Seçiniz</strong>
     <div class="cancel-reasons">
       <label class="cancel-option"><input type="radio" name="cancel_reason" value="waste" data-label="Ürün zayi oldu"> <span>Ürün zayi oldu</span></label>
       <label class="cancel-option"><input type="radio" name="cancel_reason" value="wrong_item" data-label="Yanlış ürün girildi"> <span>Yanlış ürün girildi</span></label>
       <label class="cancel-option"><input type="radio" name="cancel_reason" value="customer_cancel" data-label="Müşteri vazgeçti"> <span>Müşteri vazgeçti</span></label>
+      <label class="cancel-option"><input type="radio" name="cancel_reason" value="service_error" data-label="Servis / hazırlık hatası"> <span>Servis / hazırlık hatası</span></label>
       <label class="cancel-option"><input type="radio" name="cancel_reason" value="other" data-label="Diğer"> <span>Diğer</span></label>
     </div>
     <textarea class="cancel-note" id="cancelNote" placeholder="Not / açıklama (opsiyonel)"></textarea>
@@ -280,7 +284,7 @@
   var selectedCategory = categories.length ? parseInt(categories[0].category_id, 10) : 0;
   var currentDetail = null;
   var pendingCancelRowId = 0;
-  var pendingCancelName = '';
+  var pendingCancelItem = null;
   var searchTimer = null;
   var payAmount = '';
 
@@ -397,7 +401,7 @@
       detail.items.forEach(function(item) {
         html += '<div class="receipt-row" data-row-id="' + item.restaurant_order_product_id + '" data-qty="' + item.quantity + '">';
         html += '<div class="qty-badge">' + item.quantity + '</div>';
-        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet</div><div class="row-actions"><button type="button" class="qty-remove" data-product-name="' + escapeHtml(item.name) + '"><i class="fa fa-trash"></i></button></div></div>';
+        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet</div><div class="row-actions"><button type="button" class="qty-remove" data-row-id="' + item.restaurant_order_product_id + '"><i class="fa fa-trash"></i></button></div></div>';
         html += '<div class="receipt-total">' + money(item.total) + '</div>';
         html += '</div>';
       });
@@ -443,31 +447,34 @@
     });
   }
 
-  function updateRow(rowId, quantity) {
-    if (quantity <= 0) return removeRow(rowId);
-    $.post(updateProductUrl, {restaurant_order_product_id:rowId, quantity:quantity}, function(json) {
-      if (!json || !json.success) {
-        alert(json && json.message ? json.message : 'Ürün güncellenemedi.');
-        return;
+  function getDetailItem(rowId) {
+    rowId = parseInt(rowId || 0, 10);
+    var found = null;
+    (currentDetail && currentDetail.items ? currentDetail.items : []).forEach(function(item) {
+      if (parseInt(item.restaurant_order_product_id, 10) === rowId) {
+        found = item;
       }
-      renderDetail(json.detail);
-      refreshTables(false);
-    }, 'json');
+    });
+    return found;
   }
 
-  function openCancelModal(rowId, productName) {
+  function openCancelModal(rowId) {
     pendingCancelRowId = parseInt(rowId || 0, 10);
-    pendingCancelName = productName || '';
+    pendingCancelItem = getDetailItem(pendingCancelRowId);
     $('input[name="cancel_reason"]').prop('checked', false);
     $('#cancelNote').val('');
     $('#cancelError').hide();
-    $('#cancelProductName').text(pendingCancelName ? pendingCancelName + ' ürününü iptal etmek üzeresiniz' : 'Ürünü iptal etmek üzeresiniz');
+    $('#confirmCancelProduct').prop('disabled', false).html('Kaydet');
+    $('#cancelProductName').text(pendingCancelItem ? pendingCancelItem.name + ' ürününü iptal etmek üzeresiniz' : 'Ürünü iptal etmek üzeresiniz');
+    $('#cancelProductSummary').html(pendingCancelItem
+      ? '<span>' + escapeHtml(pendingCancelItem.quantity + ' x ' + pendingCancelItem.name) + '<small>' + money(pendingCancelItem.price) + ' / adet</small></span><strong>' + money(pendingCancelItem.total) + '</strong>'
+      : '');
     $('#payBackdrop,#cancelModal').show();
   }
 
   function closeCancelModal() {
     pendingCancelRowId = 0;
-    pendingCancelName = '';
+    pendingCancelItem = null;
     $('#cancelModal').hide();
     if (!$('#payModal').is(':visible') && !$('#quickPayModal').is(':visible')) {
       $('#payBackdrop').hide();
@@ -475,6 +482,7 @@
   }
 
   function removeRow(rowId, reasonCode, reasonText, note) {
+    $('#confirmCancelProduct').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Kaydediliyor');
     $.post(removeProductUrl, {
       restaurant_order_product_id: rowId,
       reason_code: reasonCode,
@@ -482,13 +490,17 @@
       note: note || ''
     }, function(json) {
       if (!json || !json.success) {
+        $('#confirmCancelProduct').prop('disabled', false).html('Kaydet');
         alert(json && json.message ? json.message : 'Ürün silinemedi.');
         return;
       }
       closeCancelModal();
       renderDetail(json.detail);
       refreshTables(false);
-    }, 'json');
+    }, 'json').fail(function() {
+      $('#confirmCancelProduct').prop('disabled', false).html('Kaydet');
+      alert('Ürün iptali kaydedilemedi. Sunucu cevabı alınamadı.');
+    });
   }
 
   function fillPayModal() {
@@ -609,12 +621,20 @@
       refreshTables(false);
     }, 'json');
   });
-  $(document).on('click', '.qty-remove', function(){ var row = $(this).closest('.receipt-row'); openCancelModal(row.data('row-id'), $(this).data('product-name') || row.find('.receipt-name').text()); });
-  $('#closeCancelModal').on('click', closeCancelModal);
-  $('#confirmCancelProduct').on('click', function(){
+  $(document).on('click', '.qty-remove', function(e){ e.preventDefault(); e.stopPropagation(); openCancelModal($(this).data('row-id') || $(this).closest('.receipt-row').data('row-id')); });
+  $(document).on('click', '#cancelModal', function(e){ e.stopPropagation(); });
+  $(document).on('click', '#closeCancelModal', function(e){ e.preventDefault(); closeCancelModal(); });
+  $(document).on('change', 'input[name="cancel_reason"]', function(){ $('#cancelError').hide(); });
+  $(document).on('click', '#confirmCancelProduct', function(e){
+    e.preventDefault();
+    e.stopPropagation();
     var reason = $('input[name="cancel_reason"]:checked');
     if (!pendingCancelRowId || !reason.length) {
-      $('#cancelError').show();
+      $('#cancelError').text('İptal sebebi seçiniz.').show();
+      return;
+    }
+    if (reason.val() === 'other' && $.trim($('#cancelNote').val()).length < 3) {
+      $('#cancelError').text('Diğer sebebi için kısa bir açıklama yazınız.').show();
       return;
     }
     removeRow(pendingCancelRowId, reason.val(), reason.data('label') || reason.closest('label').text(), $('#cancelNote').val());

@@ -337,6 +337,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			'waste' => 'Ürün zayi oldu',
 			'wrong_item' => 'Yanlış ürün girildi',
 			'customer_cancel' => 'Müşteri vazgeçti',
+			'service_error' => 'Servis / hazırlık hatası',
 			'other' => 'Diğer'
 		);
 
@@ -348,18 +349,33 @@ class ModelExtensionModuleCashierPanel extends Model {
 			$reason_text = $allowed_reasons[$reason_code];
 		}
 
-		$query = $this->db->query("SELECT rop.*, ro.table_id, ro.service_status
+		if ($reason_code === 'other' && utf8_strlen($note) < 3) {
+			return array('success' => false, 'message' => 'Diğer iptal sebebi için açıklama yazılmalıdır.');
+		}
+
+		$query = $this->db->query("SELECT rop.*, ro.table_id, ro.service_status, ro.payment_status, ro.locked,
+				COALESCE(pay.paid_amount, 0) AS paid_amount
 			FROM `" . DB_PREFIX . "restaurant_order_product` rop
 			LEFT JOIN `" . DB_PREFIX . "restaurant_order` ro ON (ro.restaurant_order_id = rop.restaurant_order_id)
+			LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows || $query->row['service_status'] !== 'served' || !empty($query->row['locked'])) {
+		if (!$query->num_rows || !in_array($query->row['service_status'], array('served', 'payment_pending'), true) || $query->row['payment_status'] === 'paid') {
 			return array('success' => false, 'message' => 'Ürün satırı silinemedi.');
+		}
+
+		if ((float)$query->row['paid_amount'] > 0.009) {
+			return array('success' => false, 'message' => 'Tahsilat başlamış adisyonda ürün iptali yapılamaz.');
 		}
 
 		$order_id = (int)$query->row['restaurant_order_id'];
 		$table_id = (int)$query->row['table_id'];
+		$old_status = $query->row['service_status'];
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_product_cancel`
 			SET restaurant_order_product_id = '" . $restaurant_order_product_id . "',
@@ -398,8 +414,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
 			SET restaurant_order_id = '" . $order_id . "',
-				old_status = 'served',
-				new_status = 'served',
+				old_status = '" . $this->db->escape($old_status) . "',
+				new_status = '" . $this->db->escape($old_status) . "',
 				user_id = '" . $user_id . "',
 				comment = '" . $this->db->escape('Kasa ürün iptali: ' . $query->row['name'] . ' - ' . $reason_text) . "',
 				date_added = NOW()");
