@@ -1067,6 +1067,7 @@ class ControllerCatalogProduct extends Controller {
 		$html = strip_tags($html, '<p><br><strong><b><em><i><u><span><div><ul><ol><li>');
 		$html = preg_replace('/\s+on[a-z]+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $html);
 		$html = preg_replace('/\s+(href|src)\s*=\s*("|\')?\s*javascript:[^"\'>\s]+("|\')?/i', '', $html);
+		$html = preg_replace('/\s+style\s*=\s*("|\')[^"\']*text-align\s*:\s*justify[^"\']*("|\')/i', '', $html);
 
 		return trim($html);
 	}
