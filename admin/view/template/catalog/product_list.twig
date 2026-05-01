@@ -237,10 +237,14 @@
               .quick-product-field .form-control:focus{border-color:#78a887;box-shadow:0 0 0 4px rgba(120,168,135,.13);}
               .quick-product-language{border:1px solid #e4ece7;border-radius:16px;padding:14px;background:#fbfdfc;margin-bottom:14px;}
               .quick-product-language-title{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#123629;font-weight:900;}
-              .quick-product-category-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:240px;overflow:auto;padding-right:4px;}
-              .quick-product-category-list label{display:flex;align-items:center;gap:8px;margin:0;padding:10px;border:1px solid #e2ece6;border-radius:12px;background:#fff;color:#385145;font-weight:800;cursor:pointer;}
-              .quick-product-category-list label:hover{border-color:#9dc2ad;background:#f7fbf8;}
-              .quick-product-category-list input{margin:0;}
+              .quick-product-category-search{position:relative;}
+              .quick-product-category-results{display:none;position:absolute;z-index:5;left:0;right:0;top:50px;max-height:260px;overflow:auto;border:1px solid #dce8e1;border-radius:14px;background:#fff;box-shadow:0 18px 45px rgba(18,54,41,.14);}
+              .quick-product-category-results button{display:block;width:100%;border:0;border-bottom:1px solid #edf3ef;background:#fff;padding:12px 14px;text-align:left;color:#203c31;font-weight:800;}
+              .quick-product-category-results button:hover{background:#f4faf6;}
+              .quick-product-category-selected{display:flex;flex-wrap:wrap;gap:8px;min-height:48px;margin-top:10px;padding:10px;border:1px dashed #cfe0d5;border-radius:14px;background:#f8fbf9;}
+              .quick-product-category-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:#e7f4ec;color:#123629;font-weight:900;}
+              .quick-product-category-chip button{border:0;background:transparent;color:#d24a3a;padding:0;line-height:1;}
+              .quick-product-category-empty{color:#85938b;font-weight:700;padding:4px 0;}
               .quick-product-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:20px;padding-top:18px;border-top:1px solid #edf3ef;}
               .quick-product-actions .btn{border-radius:12px;padding:11px 18px;font-weight:900;}
               .quick-product-state{margin-right:auto;color:#d24a3a;font-weight:800;}
@@ -397,10 +401,6 @@
                         <label>Açıklama</label>
                         <textarea name="description[{{ language.language_id }}]" class="form-control" placeholder="Kısa, iştah açıcı ürün açıklaması"></textarea>
                       </div>
-                      <div class="quick-product-field">
-                        <label>Hazırlık Süresi</label>
-                        <input type="text" name="tag[{{ language.language_id }}]" class="form-control" placeholder="25 - 30 dk" />
-                      </div>
                     </div>
                   {% endfor %}
                 </div>
@@ -425,12 +425,16 @@
                     <input type="text" name="sort_order" class="form-control" value="0" />
                   </div>
                   <div class="quick-product-field">
+                    <label>Hazırlık Süresi</label>
+                    <input type="text" name="prep_time" class="form-control" placeholder="15-20" />
+                  </div>
+                  <div class="quick-product-field">
                     <label>Kategoriler</label>
-                    <div class="quick-product-category-list">
-                      {% for category in filter_categories %}
-                        <label><input type="checkbox" name="product_category[]" value="{{ category.category_id }}" /> <span>{{ category.name }}</span></label>
-                      {% endfor %}
+                    <div class="quick-product-category-search">
+                      <input type="text" id="quick-product-category-search" class="form-control" placeholder="Kategori ara..." autocomplete="off" />
+                      <div id="quick-product-category-results" class="quick-product-category-results"></div>
                     </div>
+                    <div id="quick-product-category-selected" class="quick-product-category-selected"></div>
                   </div>
                 </div>
               </div>
@@ -528,12 +532,71 @@
   <script type="text/javascript" src="view/javascript/summernote/summernote.min.js"></script>
   <script type="text/javascript" src="view/javascript/summernote/summernote-image-attributes.js"></script>
   <script type="text/javascript"><!--
+var quickProductCategories = [
+{% for category in filter_categories %}
+	{category_id: {{ category.category_id }}, name: '{{ category.name|escape('js') }}'}{% if not loop.last %},{% endif %}
+{% endfor %}
+];
+var quickProductSelectedCategories = {};
+
+function renderQuickProductSelectedCategories() {
+	var html = '';
+	var hasSelected = false;
+
+	$.each(quickProductSelectedCategories, function(categoryId, categoryName) {
+		hasSelected = true;
+		html += '<span class="quick-product-category-chip" data-category-id="' + categoryId + '">';
+		html += $('<div/>').text(categoryName).html();
+		html += '<input type="hidden" name="product_category[]" value="' + categoryId + '" />';
+		html += '<button type="button" class="quick-product-category-remove" data-category-id="' + categoryId + '">&times;</button>';
+		html += '</span>';
+	});
+
+	if (!hasSelected) {
+		html = '<span class="quick-product-category-empty">Henüz kategori seçilmedi.</span>';
+	}
+
+	$('#quick-product-category-selected').html(html);
+}
+
+function renderQuickProductCategoryResults(query) {
+	query = $.trim(query || '').toLowerCase();
+
+	var html = '';
+	var count = 0;
+
+	if (query.length < 2) {
+		$('#quick-product-category-results').hide().html('');
+		return;
+	}
+
+	$.each(quickProductCategories, function(index, category) {
+		if (count >= 12 || quickProductSelectedCategories[category.category_id]) {
+			return;
+		}
+
+		if (category.name.toLowerCase().indexOf(query) !== -1) {
+			html += '<button type="button" class="quick-product-category-result" data-category-id="' + category.category_id + '">' + $('<div/>').text(category.name).html() + '</button>';
+			count++;
+		}
+	});
+
+	if (!html) {
+		html = '<button type="button" disabled="disabled">Sonuç bulunamadı</button>';
+	}
+
+	$('#quick-product-category-results').html(html).show();
+}
+
 function resetQuickProductForm(mode) {
 	$('#form-quick-product')[0].reset();
 	$('#quick-product-id').val('');
 	$('#input-quick-product-image').val('');
 	$('#thumb-quick-product-image img').attr('src', '{{ placeholder }}');
-	$('.quick-product-category-list input[type="checkbox"]').prop('checked', false);
+	quickProductSelectedCategories = {};
+	renderQuickProductSelectedCategories();
+	$('#quick-product-category-search').val('');
+	$('#quick-product-category-results').hide().html('');
 	$('#quick-product-state').text('');
 
 	if (mode == 'edit') {
@@ -557,24 +620,59 @@ function fillQuickProductForm(product) {
 	$('input[name="price"]').val(product.price);
 	$('select[name="status"]').val(product.status);
 	$('input[name="sort_order"]').val(product.sort_order);
+	$('input[name="prep_time"]').val(product.prep_time || '');
 	$('#input-quick-product-image').val(product.image);
 	$('#thumb-quick-product-image img').attr('src', product.thumb || '{{ placeholder }}');
 
 	$.each(product.descriptions || {}, function(languageId, description) {
 		$('input[name="name[' + languageId + ']"]').val(description.name || '');
 		$('textarea[name="description[' + languageId + ']"]').val(description.description || '');
-		$('input[name="tag[' + languageId + ']"]').val(description.tag || '');
 	});
 
 	$.each(product.categories || [], function(index, categoryId) {
-		$('.quick-product-category-list input[value="' + categoryId + '"]').prop('checked', true);
+		$.each(quickProductCategories, function(categoryIndex, category) {
+			if (parseInt(category.category_id, 10) == parseInt(categoryId, 10)) {
+				quickProductSelectedCategories[category.category_id] = category.name;
+			}
+		});
 	});
+
+	renderQuickProductSelectedCategories();
 }
 
 $('#button-open-quick-product').on('click', function(e) {
 	e.preventDefault();
 	resetQuickProductForm('add');
 	$('#modal-quick-product').modal('show');
+});
+
+$('#quick-product-category-search').on('input focus', function() {
+	renderQuickProductCategoryResults($(this).val());
+});
+
+$(document).on('click', '.quick-product-category-result', function() {
+	var categoryId = $(this).data('category-id');
+
+	$.each(quickProductCategories, function(index, category) {
+		if (parseInt(category.category_id, 10) == parseInt(categoryId, 10)) {
+			quickProductSelectedCategories[category.category_id] = category.name;
+		}
+	});
+
+	$('#quick-product-category-search').val('');
+	$('#quick-product-category-results').hide().html('');
+	renderQuickProductSelectedCategories();
+});
+
+$(document).on('click', '.quick-product-category-remove', function() {
+	delete quickProductSelectedCategories[$(this).data('category-id')];
+	renderQuickProductSelectedCategories();
+});
+
+$(document).on('click', function(e) {
+	if (!$(e.target).closest('.quick-product-category-search').length) {
+		$('#quick-product-category-results').hide();
+	}
 });
 
 $(document).on('click', '.quick-product-edit', function(e) {

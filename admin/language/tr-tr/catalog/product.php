@@ -100,7 +100,7 @@ $_['help_category']          = '(Otomatik Tamamlama)';
 $_['help_filter']            = '(Otomatik Tamamlama)';
 $_['help_download']          = '(Otomatik Tamamlama)';
 $_['help_related']           = '(Otomatik Tamamlama)';
-$_['help_tag']               = 'Örnek: 25 - 30 dk';
+$_['help_tag']               = 'Örnek: 15-20';
 
 // Error
 $_['error_warning']          = 'Uyarı: Oluşan hatalar için lütfen formu dikkatli kontrol ediniz!';

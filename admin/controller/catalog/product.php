@@ -337,6 +337,8 @@ class ControllerCatalogProduct extends Controller {
 				$image = !empty($product_info['image']) && is_file(DIR_IMAGE . $product_info['image']) ? $product_info['image'] : 'no_image.png';
 
 				$json['success'] = true;
+				$descriptions = $this->model_catalog_product->getProductDescriptions($product_id);
+
 				$json['product'] = array(
 					'product_id' => (int)$product_id,
 					'model' => $product_info['model'],
@@ -345,7 +347,8 @@ class ControllerCatalogProduct extends Controller {
 					'sort_order' => (int)$product_info['sort_order'],
 					'image' => $product_info['image'],
 					'thumb' => $this->model_tool_image->resize($image, 120, 120),
-					'descriptions' => $this->model_catalog_product->getProductDescriptions($product_id),
+					'prep_time' => $this->getQuickProductPrepTime($descriptions),
+					'descriptions' => $descriptions,
 					'categories' => $this->model_catalog_product->getProductCategories($product_id)
 				);
 			}
@@ -371,7 +374,7 @@ class ControllerCatalogProduct extends Controller {
 			$product_id = isset($this->request->post['product_id']) ? (int)$this->request->post['product_id'] : 0;
 			$names = isset($this->request->post['name']) ? (array)$this->request->post['name'] : array();
 			$descriptions = isset($this->request->post['description']) ? (array)$this->request->post['description'] : array();
-			$tags = isset($this->request->post['tag']) ? (array)$this->request->post['tag'] : array();
+			$prep_time = isset($this->request->post['prep_time']) ? $this->normalizePreparationTime($this->request->post['prep_time']) : '';
 			$model = isset($this->request->post['model']) ? trim($this->request->post['model']) : '';
 			$price = isset($this->request->post['price']) ? str_replace(',', '.', trim($this->request->post['price'])) : '0';
 			$status = isset($this->request->post['status']) ? (int)$this->request->post['status'] : 1;
@@ -419,7 +422,7 @@ class ControllerCatalogProduct extends Controller {
 						'meta_title'       => $name,
 						'meta_description' => '',
 						'meta_keyword'     => '',
-						'tag'              => isset($tags[$language_id]) ? trim($tags[$language_id]) : ''
+						'tag'              => $prep_time
 					);
 				}
 
@@ -972,12 +975,23 @@ class ControllerCatalogProduct extends Controller {
 			return;
 		}
 
+		$prep_time = '';
+
+		foreach ($this->request->post['product_description'] as $description) {
+			if (!empty($description['tag'])) {
+				$prep_time = $this->normalizePreparationTime($description['tag']);
+				break;
+			}
+		}
+
 		foreach ($this->request->post['product_description'] as $language_id => $description) {
 			$name = isset($description['name']) ? trim((string)$description['name']) : '';
 
 			if ($name !== '') {
 				$this->request->post['product_description'][$language_id]['meta_title'] = $name;
 			}
+
+			$this->request->post['product_description'][$language_id]['tag'] = $prep_time;
 		}
 
 		if (!isset($this->request->post['minimum']) || (int)$this->request->post['minimum'] < 1) {
@@ -989,6 +1003,32 @@ class ControllerCatalogProduct extends Controller {
 		}
 
 		$this->request->post['subtract'] = 0;
+	}
+
+	private function normalizePreparationTime($value) {
+		$value = html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8');
+		$value = str_replace(array('–', '—'), '-', $value);
+		$value = preg_replace('/[^0-9\-]/', '', $value);
+		$value = preg_replace('/-+/', '-', $value);
+		$value = trim($value, '-');
+
+		return $value !== null ? $value : '';
+	}
+
+	private function getQuickProductPrepTime($descriptions) {
+		$default_language_id = (int)$this->config->get('config_language_id');
+
+		if (isset($descriptions[$default_language_id]['tag']) && trim($descriptions[$default_language_id]['tag']) !== '') {
+			return $this->normalizePreparationTime($descriptions[$default_language_id]['tag']);
+		}
+
+		foreach ($descriptions as $description) {
+			if (!empty($description['tag'])) {
+				return $this->normalizePreparationTime($description['tag']);
+			}
+		}
+
+		return '';
 	}
 
 	private function getAkinsoftProductSyncMap($products) {

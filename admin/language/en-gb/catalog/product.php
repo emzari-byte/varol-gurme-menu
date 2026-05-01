@@ -98,7 +98,7 @@ $_['help_category']          = '(Autocomplete)';
 $_['help_filter']            = '(Autocomplete)';
 $_['help_download']          = '(Autocomplete)';
 $_['help_related']           = '(Autocomplete)';
-$_['help_tag']               = 'Example: 25 - 30 min';
+$_['help_tag']               = 'Example: 15-20';
 
 // Error
 $_['error_warning']          = 'Warning: Please check the form carefully for errors!';

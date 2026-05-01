@@ -78,6 +78,16 @@ class ModelCommonRestaurantSettings extends Model {
 
 	public function adjustPreparationTag($tag, $extra_minutes = null) {
 		$tag = (string)$tag;
+		$tag = trim($tag);
+
+		if ($tag === '') {
+			return $tag;
+		}
+
+		$tag = html_entity_decode($tag, ENT_QUOTES, 'UTF-8');
+		$tag = str_replace(array('–', '—'), '-', $tag);
+		$tag = preg_replace('/\b(dakika|minute|min|dk)\b\.?/iu', '', $tag);
+		$tag = trim(preg_replace('/\s+/', '', $tag));
 
 		if ($tag === '') {
 			return $tag;
@@ -89,15 +99,17 @@ class ModelCommonRestaurantSettings extends Model {
 
 		$extra_minutes = max(0, (int)$extra_minutes);
 
-		if ($extra_minutes <= 0) {
-			return $tag;
+		if ($extra_minutes > 0) {
+			$adjusted = preg_replace_callback('/\d+/', function($matches) use ($extra_minutes) {
+				return (string)((int)$matches[0] + $extra_minutes);
+			}, $tag);
+
+			$tag = $adjusted !== null ? $adjusted : $tag;
 		}
 
-		$adjusted = preg_replace_callback('/\d+/', function($matches) use ($extra_minutes) {
-			return (string)((int)$matches[0] + $extra_minutes);
-		}, $tag);
+		$suffix = $this->config->get('config_language') == 'tr-tr' ? ' Dakika' : ' min';
 
-		return $adjusted !== null ? $adjusted : $tag;
+		return $tag . $suffix;
 	}
 
 	private function tableExists($table) {
