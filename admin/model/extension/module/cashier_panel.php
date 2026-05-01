@@ -14,6 +14,11 @@ class ModelExtensionModuleCashierPanel extends Model {
 			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'locked', "TINYINT(1) NOT NULL DEFAULT '0'");
 		}
 
+		if ($this->tableExists(DB_PREFIX . 'restaurant_table_status')) {
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_table_status', 'waiter_name', "VARCHAR(128) NOT NULL DEFAULT ''");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_table_status', 'note', "TEXT NULL");
+		}
+
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_payment` (
 			`payment_id` int(11) NOT NULL AUTO_INCREMENT,
 			`restaurant_order_id` int(11) NOT NULL,
@@ -97,6 +102,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 				COALESCE(active.last_activity, '') AS last_activity,
 				COALESCE(active.order_ids, '') AS order_ids,
 				COALESCE(rts.service_status, 'empty') AS service_status,
+				COALESCE(rts.waiter_name, '') AS waiter_name,
+				COALESCE(rts.note, '') AS note,
 				MAX(CASE WHEN rc.call_id IS NOT NULL THEN 1 ELSE 0 END) AS bill_request_pending
 			FROM `" . DB_PREFIX . "restaurant_table` rt
 			LEFT JOIN (
@@ -194,7 +201,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 			'subtotal_amount' => $subtotal,
 			'paid_amount' => $paid_total,
 			'total_amount' => max(0, $subtotal - $paid_total),
-			'is_occupied' => ($subtotal - $paid_total) > 0
+			'is_occupied' => ($subtotal - $paid_total) > 0,
+			'service_status' => $this->getTableServiceStatus($table_id)
 		);
 	}
 
@@ -546,7 +554,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			}
 		}
 
-		$open = $this->db->query("SELECT COUNT(*) AS count_total, COALESCE(SUM(GREATEST(ro.total_amount - COALESCE(pay.paid_amount, 0), 0)), 0) AS amount_total
+		$open = $this->db->query("SELECT COUNT(DISTINCT ro.table_id) AS count_total, COALESCE(SUM(GREATEST(ro.total_amount - COALESCE(pay.paid_amount, 0), 0)), 0) AS amount_total
 			FROM `" . DB_PREFIX . "restaurant_order` ro
 			LEFT JOIN (
 				SELECT restaurant_order_id, SUM(amount) AS paid_amount
@@ -1046,6 +1054,14 @@ class ModelExtensionModuleCashierPanel extends Model {
 					total_amount = '" . $total . "',
 					date_modified = NOW()");
 		}
+	}
+
+	private function getTableServiceStatus($table_id) {
+		$query = $this->db->query("SELECT service_status FROM `" . DB_PREFIX . "restaurant_table_status`
+			WHERE table_id = '" . (int)$table_id . "'
+			LIMIT 1");
+
+		return $query->num_rows ? $query->row['service_status'] : 'empty';
 	}
 
 	private function getTurkishLanguageId() {

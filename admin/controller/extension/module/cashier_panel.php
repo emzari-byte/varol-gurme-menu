@@ -29,15 +29,16 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 		$data['tables'] = $this->model_extension_module_cashier_panel->getOpenTables();
 		$data['categories'] = $this->model_extension_module_cashier_panel->getCategories();
 		$data['products'] = $this->model_extension_module_cashier_panel->getProducts();
+		$data['summary'] = $this->model_extension_module_cashier_panel->getSummary();
 		$data['tables_json'] = json_encode($data['tables']);
 		$data['categories_json'] = json_encode($data['categories']);
 		$data['products_json'] = json_encode($data['products']);
+		$data['summary_json'] = json_encode($data['summary']);
 		$data['refresh_url'] = $this->url->link('extension/module/cashier_panel/refresh', 'user_token=' . $this->session->data['user_token'], true);
 		$data['pay_url'] = $this->url->link('extension/module/cashier_panel/pay', 'user_token=' . $this->session->data['user_token'], true);
 		$data['detail_url'] = $this->url->link('extension/module/cashier_panel/tableDetail', 'user_token=' . $this->session->data['user_token'], true);
 		$data['products_url'] = $this->url->link('extension/module/cashier_panel/products', 'user_token=' . $this->session->data['user_token'], true);
 		$data['add_product_url'] = $this->url->link('extension/module/cashier_panel/addProduct', 'user_token=' . $this->session->data['user_token'], true);
-		$data['update_product_url'] = $this->url->link('extension/module/cashier_panel/updateProduct', 'user_token=' . $this->session->data['user_token'], true);
 		$data['remove_product_url'] = $this->url->link('extension/module/cashier_panel/removeProduct', 'user_token=' . $this->session->data['user_token'], true);
 		$data['mark_payment_pending_url'] = $this->url->link('extension/module/cashier_panel/markPaymentPending', 'user_token=' . $this->session->data['user_token'], true);
 		$data['print_receipt_url'] = $this->url->link('extension/module/cashier_panel/printReceipt', 'user_token=' . $this->session->data['user_token'], true);
@@ -63,6 +64,7 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 			$this->load->model('extension/module/cashier_panel');
 			$json['success'] = true;
 			$json['tables'] = $this->model_extension_module_cashier_panel->getOpenTables();
+			$json['summary'] = $this->model_extension_module_cashier_panel->getSummary();
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

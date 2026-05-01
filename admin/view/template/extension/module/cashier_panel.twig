@@ -39,6 +39,12 @@
       .cashier-nav button,.cashier-nav a{height:62px;min-width:62px;border:0;border-right:1px solid #edf2ee;background:transparent;color:#173126;font-size:19px;display:flex;align-items:center;justify-content:center;text-decoration:none;}
       .cashier-nav strong{height:62px;min-width:210px;padding:0 18px;display:flex;align-items:center;border-right:1px solid #edf2ee;font-size:20px;font-weight:900;letter-spacing:0;}
       .cashier-user{display:flex;align-items:center;gap:10px;padding:0 18px;font-weight:800;color:#607168;}
+      .cashier-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:14px 18px 0;background:#eef3f1;}
+      .summary-card{background:#fff;border:1px solid #dfe9e4;border-radius:14px;padding:13px 14px;box-shadow:0 10px 22px rgba(23,49,38,.05);}
+      .summary-card span{display:block;color:#708179;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.02em;}
+      .summary-card strong{display:block;margin-top:6px;color:#173126;font-size:20px;font-weight:900;white-space:nowrap;}
+      .summary-card.warning strong{color:#bf7c16;}
+      .summary-card.danger strong{color:#c83e38;}
       .view{display:none;}
       .view.active{display:block;}
       .tables-view{padding:18px;}
@@ -46,16 +52,22 @@
       .area-tabs{display:flex;gap:8px;flex-wrap:wrap;}
       .area-tab{border:1px solid #dce7e1;background:#fff;color:#54675d;border-radius:999px;padding:9px 14px;font-weight:900;}
       .area-tab.active{background:#173126;color:#fff;border-color:#173126;}
-      .table-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;background:#f8faf9;border:1px solid #dfe9e4;border-top:0;border-radius:0 0 14px 14px;padding:14px;min-height:calc(100vh - 145px);align-content:start;}
-      .pos-table{height:126px;border:1px solid #cfe8d8;background:#f4fbf6;border-radius:14px;padding:13px;text-align:left;box-shadow:0 8px 18px rgba(23,49,38,.05);transition:.15s ease;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;}
+      .table-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;background:#f8faf9;border:1px solid #dfe9e4;border-top:0;border-radius:0 0 14px 14px;padding:14px;min-height:calc(100vh - 145px);align-content:start;}
+      .pos-table{height:132px;border:1px solid #cfe8d8;background:linear-gradient(180deg,#f8fffa 0%,#eef9f2 100%);border-radius:14px;padding:13px;text-align:left;box-shadow:0 8px 18px rgba(23,49,38,.05);transition:.15s ease;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
       .pos-table:hover{transform:translateY(-2px);box-shadow:0 14px 26px rgba(23,49,38,.1);}
-      .pos-table.occupied{border-color:#efc2bf;background:#fff4f3;}
+      .pos-table.occupied{border-color:#efc2bf;background:linear-gradient(180deg,#fff7f6 0%,#fff0ee 100%);}
+      .pos-table.pending{border-color:#d9b06a;background:linear-gradient(180deg,#fffaf0 0%,#fff3dd 100%);}
+      .pos-table.bill{box-shadow:inset 0 0 0 2px rgba(200,62,56,.12),0 10px 22px rgba(23,49,38,.07);}
       .pos-table .table-no{font-size:20px;font-weight:900;color:#173126;line-height:1;}
       .pos-table .table-area{margin-top:5px;color:#708179;font-size:12px;font-weight:800;}
+      .pos-table .waiter-line{margin-top:5px;color:#42564b;font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
       .pos-table .table-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;}
       .pos-table .state{font-size:12px;font-weight:900;border-radius:999px;padding:5px 9px;background:#dff4e7;color:#2f6f49;}
       .pos-table.occupied .state{background:#f3d4d2;color:#a43f3b;}
+      .pos-table.pending .state{background:#f7e2bb;color:#8a5a08;}
       .pos-table .amount{font-size:17px;font-weight:900;color:#173126;white-space:nowrap;}
+      .pos-table .mini-meta{position:absolute;right:10px;top:10px;display:flex;gap:5px;}
+      .pos-table .mini-meta span{width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;color:#c83e38;}
       .empty-state{grid-column:1 / -1;min-height:160px;display:flex;align-items:center;justify-content:center;color:#728278;font-weight:900;}
       .order-view{height:calc(100vh - 62px);display:none;grid-template-columns:390px 1fr;background:#f4f6f5;}
       .order-view.active{display:grid;}
@@ -86,6 +98,7 @@
       .product-search-box i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#7f8c85;}
       .product-search-box input{width:100%;height:46px;border:1px solid #dce7e1;border-radius:12px;padding:0 14px 0 40px;font-size:15px;font-weight:800;outline:none;background:#fbfdfb;}
       .product-search-box input:focus{border-color:#2f6f49;background:#fff;box-shadow:0 0 0 3px rgba(47,111,73,.1);}
+      .search-hint{font-size:12px;color:#728278;font-weight:800;margin-top:5px;padding-left:4px;}
       .category-strip{display:flex;gap:8px;overflow:auto;background:#fff;border-bottom:1px solid #e0e7e3;padding:0 12px 12px;}
       .category-btn{white-space:nowrap;border:1px solid #dce7e1;background:#fff;color:#4f6158;border-radius:999px;padding:9px 14px;font-weight:900;}
       .category-btn.active{color:#fff;background:#173126;border-color:#173126;}
@@ -112,6 +125,8 @@
       .pay-summary-row{display:flex;align-items:center;justify-content:space-between;font-weight:900;color:#5f7067;}
       .pay-summary-row strong{color:#173126;font-size:18px;}
       .pay-summary-row.remaining strong{color:#c83e38;font-size:22px;}
+      .pay-history{margin-top:10px;border-top:1px solid #edf2ee;padding-top:8px;}
+      .pay-history-title{color:#708179;font-size:12px;font-weight:900;text-transform:uppercase;margin-bottom:4px;}
       .pay-entry{display:grid;gap:10px;margin-bottom:12px;}
       .pay-entry label{margin:0;color:#5f7067;font-weight:900;}
       .pay-entry input{height:54px;border:1px solid #dce7e1;border-radius:12px;padding:0 14px;text-align:right;font-size:24px;font-weight:900;color:#173126;outline:none;}
@@ -124,6 +139,12 @@
       .pay-method{height:102px;border:1px solid #e1e7e3;background:#fff;border-radius:14px;font-weight:900;color:#173126;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;}
       .pay-method i{font-size:28px;color:#2f6f49;}
       .pay-method:hover{border-color:#2f6f49;background:#f3fbf6;}
+      .pay-method.is-busy{pointer-events:none;opacity:.65;}
+      .amount-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px;}
+      .amount-shortcuts button{height:38px;border:1px solid #dfe7e3;border-radius:10px;background:#fff;color:#173126;font-weight:900;}
+      .cashier-toast{display:none;position:fixed;right:18px;bottom:18px;z-index:80;max-width:360px;background:#173126;color:#fff;border-radius:14px;padding:13px 15px;font-weight:900;box-shadow:0 18px 48px rgba(0,0,0,.24);}
+      .cashier-toast.error{background:#c83e38;}
+      .cashier-toast.success{background:#2f6f49;}
       .quick-pay-modal .pay-method-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;background:#f7faf8;}
       .quick-sub{padding:14px 18px 0;color:#728278;font-weight:800;background:#f7faf8;}
       .cancel-modal{width:min(620px,calc(100vw - 36px));}
@@ -140,7 +161,7 @@
       .cancel-actions{display:flex;justify-content:flex-end;align-items:center;gap:14px;padding:16px 22px;background:#fff;}
       .cancel-actions .btn-link{color:#c83e38;font-weight:900;text-decoration:none;}
       .cancel-actions .btn-danger{height:48px;min-width:110px;border-radius:7px;font-weight:900;background:#c83e38;border-color:#c83e38;box-shadow:0 8px 18px rgba(200,62,56,.24);}
-      @media(max-width:1180px){.order-view{grid-template-columns:360px 1fr;}.pay-body{grid-template-columns:1fr;}.cashier-pay-modal{width:calc(100vw - 28px);max-height:calc(100vh - 30px);overflow:auto;}}
+      @media(max-width:1180px){.order-view{grid-template-columns:360px 1fr;}.pay-body{grid-template-columns:1fr;}.cashier-pay-modal{width:calc(100vw - 28px);max-height:calc(100vh - 30px);overflow:auto;}.cashier-summary{grid-template-columns:repeat(2,minmax(0,1fr));}}
       @media(max-width:780px){.order-view.active{display:block;height:auto;}.receipt-pane{min-height:420px;}.table-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.product-tools{grid-template-columns:1fr;}.cashier-nav strong{min-width:140px;}.receipt-actions.has-pay{grid-template-columns:1fr 1fr;}.tag-btn{display:none;}}
     </style>
 
@@ -153,6 +174,10 @@
       <div class="cashier-user"><span>{{ cashier_username }}</span><a href="{{ logout_url }}"><i class="fa fa-sign-out"></i></a></div>
       {% endif %}
     </div>
+
+    {% if not cashier_fullscreen %}
+    <div class="cashier-summary" id="cashierSummary"></div>
+    {% endif %}
 
     <div class="view tables-view active" id="tablesView">
       <div class="table-toolbar">
@@ -182,7 +207,7 @@
 
       <section class="product-pane">
         <div class="product-tools">
-          <div class="product-search-box"><i class="fa fa-search"></i><input type="text" id="productSearch" placeholder="Ürün adı, stok kodu veya barkod ile ara"></div>
+          <div class="product-search-box"><i class="fa fa-search"></i><input type="text" id="productSearch" placeholder="Ürün adı, stok kodu veya barkod ile ara"><div class="search-hint">Arama tüm menüde yapılır; boşken seçili kategori listelenir.</div></div>
           <button type="button" class="btn btn-default" id="clearProductSearch"><i class="fa fa-times"></i> Temizle</button>
         </div>
         <div class="category-strip" id="categoryStrip"></div>
@@ -235,6 +260,11 @@
         <label for="payAmountInput">Kasaya girilen tutar</label>
         <input type="text" id="payAmountInput" inputmode="decimal" value="">
       </div>
+      <div class="amount-shortcuts">
+        <button type="button" data-pay-shortcut="all">Kalanı Gir</button>
+        <button type="button" data-pay-shortcut="half">Yarısı</button>
+        <button type="button" data-pay-shortcut="clear">Temizle</button>
+      </div>
       <div class="keypad">
         <button>7</button><button>8</button><button>9</button><button class="action">Tüm</button>
         <button>4</button><button>5</button><button>6</button><button class="action">1/n</button>
@@ -248,6 +278,7 @@
         <button type="button" class="pay-method" data-method="cash"><i class="fa fa-money"></i>Nakit</button>
         <button type="button" class="pay-method" data-method="card"><i class="fa fa-credit-card"></i>Kredi Kartı</button>
       </div>
+      <div class="pay-history" id="payHistory"></div>
     </div>
   </div>
 </div>
@@ -264,6 +295,8 @@
   </div>
 </div>
 
+<div class="cashier-toast" id="cashierToast"></div>
+
 <script>
 (function($){
   var refreshUrl = '{{ refresh_url|replace({"&amp;":"&"}) }}';
@@ -271,7 +304,6 @@
   var detailUrl = '{{ detail_url|replace({"&amp;":"&"}) }}';
   var productsUrl = '{{ products_url|replace({"&amp;":"&"}) }}';
   var addProductUrl = '{{ add_product_url|replace({"&amp;":"&"}) }}';
-  var updateProductUrl = '{{ update_product_url|replace({"&amp;":"&"}) }}';
   var removeProductUrl = '{{ remove_product_url|replace({"&amp;":"&"}) }}';
   var markPaymentPendingUrl = '{{ mark_payment_pending_url|replace({"&amp;":"&"}) }}';
   var printReceiptUrl = '{{ print_receipt_url|replace({"&amp;":"&"}) }}';
@@ -279,6 +311,7 @@
   var tables = {{ tables_json|raw }};
   var categories = {{ categories_json|raw }};
   var products = {{ products_json|raw }};
+  var summary = {{ summary_json|raw }};
   var selectedTableId = 0;
   var selectedArea = '';
   var selectedCategory = categories.length ? parseInt(categories[0].category_id, 10) : 0;
@@ -304,8 +337,26 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
+  function toast(message, type) {
+    var $toast = $('#cashierToast');
+    $toast.removeClass('error success').addClass(type || '').text(message).stop(true, true).fadeIn(120);
+    clearTimeout($toast.data('timer'));
+    $toast.data('timer', setTimeout(function(){ $toast.fadeOut(160); }, 2600));
+  }
+
   function isOccupied(table) {
     return parseFloat(table.total_amount || 0) > 0;
+  }
+
+  function renderSummary() {
+    if (!$('#cashierSummary').length) return;
+    var html = '';
+    html += '<div class="summary-card"><span>Açık Masa</span><strong>' + (summary.open_count || 0) + '</strong></div>';
+    html += '<div class="summary-card"><span>Açık Tutar</span><strong>' + money(summary.open_total || 0) + '</strong></div>';
+    html += '<div class="summary-card"><span>Bugün Nakit</span><strong>' + money(summary.cash_total || 0) + '</strong></div>';
+    html += '<div class="summary-card"><span>Bugün Kart</span><strong>' + money(summary.card_total || 0) + '</strong></div>';
+    html += '<div class="summary-card warning"><span>Tahsilat Adedi</span><strong>' + (summary.payment_count || 0) + '</strong></div>';
+    $('#cashierSummary').html(html);
   }
 
   function showTables() {
@@ -328,16 +379,19 @@
   function renderAreas() {
     var areas = {};
     tables.forEach(function(table){ areas[table.area || 'Salon'] = true; });
-    var html = '<button type="button" class="area-tab ' + (selectedArea === '__open' ? 'active' : '') + '" data-area="__open">Açık Masalar</button>';
-    html += '<button type="button" class="area-tab ' + (selectedArea === '' ? 'active' : '') + '" data-area="">Tümü</button>';
+    var openCount = tables.filter(isOccupied).length;
+    var html = '<button type="button" class="area-tab ' + (selectedArea === '__open' ? 'active' : '') + '" data-area="__open">Açık Masalar <span>(' + openCount + ')</span></button>';
+    html += '<button type="button" class="area-tab ' + (selectedArea === '' ? 'active' : '') + '" data-area="">Tümü <span>(' + tables.length + ')</span></button>';
     Object.keys(areas).forEach(function(area) {
-      html += '<button type="button" class="area-tab ' + (selectedArea === area ? 'active' : '') + '" data-area="' + escapeHtml(area) + '">' + escapeHtml(area) + '</button>';
+      var areaCount = tables.filter(function(table){ return (table.area || 'Salon') === area; }).length;
+      html += '<button type="button" class="area-tab ' + (selectedArea === area ? 'active' : '') + '" data-area="' + escapeHtml(area) + '">' + escapeHtml(area) + ' <span>(' + areaCount + ')</span></button>';
     });
     $('#areaTabs').html(html);
   }
 
   function renderTables() {
     renderAreas();
+    renderSummary();
     var filtered = tables.filter(function(table){
       if (selectedArea === '__open') return isOccupied(table);
       return !selectedArea || (table.area || 'Salon') === selectedArea;
@@ -345,9 +399,12 @@
     var html = '';
     filtered.forEach(function(table) {
       var occupied = isOccupied(table);
-      var stateLabel = table.service_status === 'payment_pending' ? 'Hesap' : (occupied ? 'Dolu' : 'Boş');
-      html += '<button type="button" class="pos-table ' + (occupied ? 'occupied' : '') + '" data-table-id="' + table.table_id + '">';
-      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div></div>';
+      var pending = table.service_status === 'payment_pending';
+      var stateLabel = pending ? 'Hesap' : (occupied ? 'Dolu' : 'Boş');
+      var classes = (occupied ? 'occupied ' : '') + (pending ? 'pending ' : '') + (parseInt(table.bill_request_pending || 0, 10) ? 'bill' : '');
+      html += '<button type="button" class="pos-table ' + classes + '" data-table-id="' + table.table_id + '">';
+      html += '<div class="mini-meta">' + (parseInt(table.bill_request_pending || 0, 10) ? '<span title="Hesap talebi"><i class="fa fa-bell"></i></span>' : '') + '</div>';
+      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div><div class="waiter-line">' + escapeHtml(table.waiter_name || 'Kasadan yönetiliyor') + '</div></div>';
       html += '<div class="table-bottom"><span class="state">' + stateLabel + '</span><span class="amount">' + (occupied ? money(table.total_amount) : '') + '</span></div>';
       html += '</button>';
     });
@@ -409,10 +466,14 @@
     }
 
     var hasItems = detail.items && detail.items.length;
+    var isPending = (detail.service_status === 'payment_pending') || (firstOrder && firstOrder.service_status === 'payment_pending');
+    var pendingButton = isPending
+      ? '<button type="button" class="btn btn-default" disabled><i class="fa fa-lock"></i> Hesap Alındı</button>'
+      : '<button type="button" class="btn btn-default" id="markPendingBtn"><i class="fa fa-lock"></i> Hesap Al</button>';
     $('#receiptActions')
       .toggleClass('has-pay', !!hasItems)
       .html(hasItems
-        ? '<button type="button" class="btn btn-default" id="markPendingBtn"><i class="fa fa-lock"></i> Hesap Al</button><button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
+        ? pendingButton + '<button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
         : '<button type="button" class="btn tag-btn"><i class="fa fa-tag"></i></button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>');
   }
 
@@ -424,14 +485,27 @@
         renderDetail(json.detail);
         renderCategories();
         loadProducts();
+      } else {
+        toast(json && json.message ? json.message : 'Masa detayı alınamadı.', 'error');
       }
-    });
+    }).fail(function(){ toast('Masa detayı alınamadı. Bağlantıyı kontrol edin.', 'error'); });
+  }
+
+  function setBusy($el, busy) {
+    if (!$el || !$el.length) return;
+    $el.prop('disabled', !!busy).toggleClass('is-busy', !!busy);
+    if (busy && !$el.data('old-html')) {
+      $el.data('old-html', $el.html()).html('<i class="fa fa-spinner fa-spin"></i>');
+    } else if (!busy && $el.data('old-html')) {
+      $el.html($el.data('old-html')).removeData('old-html');
+    }
   }
 
   function refreshTables(keepDetail) {
     $.getJSON(refreshUrl, function(json) {
       if (!json || !json.success) return;
       tables = json.tables || [];
+      summary = json.summary || summary || {};
       renderTables();
       if (keepDetail && selectedTableId) loadDetail(selectedTableId);
     });
@@ -441,10 +515,13 @@
     var search = $.trim($('#productSearch').val());
     var categoryId = search ? 0 : selectedCategory;
     $.getJSON(productsUrl + '&category_id=' + categoryId + '&search=' + encodeURIComponent(search), function(json) {
-      if (!json || !json.success) return;
+      if (!json || !json.success) {
+        toast(json && json.message ? json.message : 'Ürünler alınamadı.', 'error');
+        return;
+      }
       products = json.products || [];
       renderProducts();
-    });
+    }).fail(function(){ toast('Ürünler alınamadı. Bağlantıyı kontrol edin.', 'error'); });
   }
 
   function getDetailItem(rowId) {
@@ -513,6 +590,7 @@
     $('#paySubtotal').text(money(subtotal));
     $('#payPaid').text(money(paid));
     $('#payRemaining').text(money(total));
+    $('#payHistory').html(paid > 0 ? '<div class="pay-history-title">Alınan Tahsilat</div><div class="pay-row"><span>Ödenen</span><strong>' + money(paid) + '</strong></div>' : '<div class="pay-history-title">Parçalı ödeme için tutarı girip ödeme tipini seçin.</div>');
     payAmount = '';
     $('#payAmountInput').val('');
     $('#quickPayTitle').text('Hızlı Öde');
@@ -572,11 +650,15 @@
   function pay(method) {
     if (!selectedTableId || !method) return;
     var amount = parseAmount($('#payAmountInput').val());
+    var $method = $('.pay-method[data-method="' + method + '"]');
+    setBusy($method, true);
     $.post(payUrl, {table_id:selectedTableId, payment_method:method, amount:amount, note:''}, function(json) {
+      setBusy($method, false);
       if (!json || !json.success) {
-        alert(json && json.message ? json.message : 'Ödeme alınamadı.');
+        toast(json && json.message ? json.message : 'Ödeme alınamadı.', 'error');
         return;
       }
+      toast(json.message || 'Tahsilat alındı.', 'success');
       if (json.closed) {
         closePayModal();
         showTables();
@@ -587,19 +669,29 @@
         fillPayModal();
       }
       refreshTables(false);
-    }, 'json');
+    }, 'json').fail(function(){
+      setBusy($method, false);
+      toast('Ödeme alınamadı. Sunucu cevabı alınamadı.', 'error');
+    });
   }
 
   function markPaymentPending() {
     if (!selectedTableId) return;
+    var $button = $('#markPendingBtn');
+    setBusy($button, true);
     $.post(markPaymentPendingUrl, {table_id:selectedTableId}, function(json) {
+      setBusy($button, false);
       if (!json || !json.success) {
-        alert(json && json.message ? json.message : 'Hesap alınamadı.');
+        toast(json && json.message ? json.message : 'Hesap alınamadı.', 'error');
         return;
       }
+      toast(json.message || 'Hesap alındı.', 'success');
       if (json.detail) renderDetail(json.detail);
       refreshTables(false);
-    }, 'json');
+    }, 'json').fail(function(){
+      setBusy($button, false);
+      toast('Hesap alınamadı. Sunucu cevabı alınamadı.', 'error');
+    });
   }
 
   function printReceipt() {
@@ -612,14 +704,21 @@
   $(document).on('click', '.category-btn', function(){ selectedCategory = parseInt($(this).data('id') || 0, 10); renderCategories(); loadProducts(); });
   $(document).on('click', '.product-card', function(){
     if (!selectedTableId) return;
-    $.post(addProductUrl, {table_id:selectedTableId, product_id:$(this).data('product-id'), quantity:1}, function(json) {
+    var $card = $(this);
+    setBusy($card, true);
+    $.post(addProductUrl, {table_id:selectedTableId, product_id:$card.data('product-id'), quantity:1}, function(json) {
+      setBusy($card, false);
       if (!json || !json.success) {
-        alert(json && json.message ? json.message : 'Ürün eklenemedi.');
+        toast(json && json.message ? json.message : 'Ürün eklenemedi.', 'error');
         return;
       }
+      toast('Ürün adisyona eklendi.', 'success');
       renderDetail(json.detail);
       refreshTables(false);
-    }, 'json');
+    }, 'json').fail(function(){
+      setBusy($card, false);
+      toast('Ürün eklenemedi. Sunucu cevabı alınamadı.', 'error');
+    });
   });
   $(document).on('click', '.qty-remove', function(e){ e.preventDefault(); e.stopPropagation(); openCancelModal($(this).data('row-id') || $(this).closest('.receipt-row').data('row-id')); });
   $(document).on('click', '#cancelModal', function(e){ e.stopPropagation(); });
@@ -642,6 +741,7 @@
   $('#productSearch').on('input', function(){ clearTimeout(searchTimer); searchTimer = setTimeout(loadProducts, 220); });
   $('#clearProductSearch').on('click', function(){ $('#productSearch').val(''); loadProducts(); });
   $('#payAmountInput').on('input', function(){ payAmount = $(this).val(); });
+  $(document).on('click', '[data-pay-shortcut]', function(){ appendPayKey($(this).data('pay-shortcut')); });
   $(document).on('click', '.keypad button', function(){
     var text = $.trim($(this).text());
     if (text === 'Tüm') return appendPayKey('all');
