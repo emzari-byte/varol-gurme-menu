@@ -41,7 +41,6 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 		$data['remove_product_url'] = $this->url->link('extension/module/cashier_panel/removeProduct', 'user_token=' . $this->session->data['user_token'], true);
 		$data['mark_payment_pending_url'] = $this->url->link('extension/module/cashier_panel/markPaymentPending', 'user_token=' . $this->session->data['user_token'], true);
 		$data['print_receipt_url'] = $this->url->link('extension/module/cashier_panel/printReceipt', 'user_token=' . $this->session->data['user_token'], true);
-		$data['daily_report_url'] = $this->url->link('extension/module/cashier_panel/dailyReport', 'user_token=' . $this->session->data['user_token'], true);
 		$data['logout_url'] = $this->url->link('common/logout', 'user_token=' . $this->session->data['user_token'], true);
 		$data['image_base'] = (!empty($this->request->server['HTTPS']) && $this->request->server['HTTPS'] !== 'off' ? HTTPS_CATALOG : HTTP_CATALOG) . 'image/';
 		$data['cashier_fullscreen'] = $this->isCashierOnlyUser() ? 1 : 0;

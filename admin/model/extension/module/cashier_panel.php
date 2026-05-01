@@ -66,6 +66,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 	public function getOpenTables() {
 		$this->install();
+		$this->cleanupClosedOrEmptyOrders();
 
 		return $this->db->query("SELECT rt.table_id, rt.table_no, rt.name, rt.area, rt.capacity,
 				COALESCE(active.order_count, 0) AS order_count,
@@ -89,6 +90,11 @@ class ModelExtensionModuleCashierPanel extends Model {
 				) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 				WHERE ro.service_status IN ('served','payment_pending')
 				AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+				AND ro.total_amount > COALESCE(pay.paid_amount, 0)
+				AND EXISTS (
+					SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+					WHERE rop.restaurant_order_id = ro.restaurant_order_id
+				)
 				GROUP BY ro.table_id
 			) active ON (active.table_id = rt.table_id)
 			LEFT JOIN `" . DB_PREFIX . "restaurant_table_status` rts ON (rts.table_id = rt.table_id)
@@ -100,6 +106,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 	public function getTableDetail($table_id) {
 		$this->install();
+		$this->cleanupClosedOrEmptyOrders();
 		$table_id = (int)$table_id;
 
 		$table = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_table` WHERE table_id = '" . $table_id . "' AND status = '1' LIMIT 1")->row;
@@ -108,10 +115,20 @@ class ModelExtensionModuleCashierPanel extends Model {
 			return array();
 		}
 
-		$orders = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_order`
-			WHERE table_id = '" . $table_id . "'
-			AND service_status IN ('served','payment_pending')
-			AND (payment_status IS NULL OR payment_status != 'paid')
+		$orders = $this->db->query("SELECT ro.* FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+			WHERE ro.table_id = '" . $table_id . "'
+			AND ro.service_status IN ('served','payment_pending')
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)
 			ORDER BY restaurant_order_id ASC")->rows;
 
 		$items = array();
@@ -341,11 +358,15 @@ class ModelExtensionModuleCashierPanel extends Model {
 			return array('success' => false, 'message' => 'Masa bulunamadı.');
 		}
 
-		$orders = $this->db->query("SELECT restaurant_order_id, service_status
-			FROM `" . DB_PREFIX . "restaurant_order`
-			WHERE table_id = '" . $table_id . "'
-			AND service_status = 'served'
-			AND (payment_status IS NULL OR payment_status != 'paid')
+		$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.service_status
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			WHERE ro.table_id = '" . $table_id . "'
+			AND ro.service_status = 'served'
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)
 			ORDER BY restaurant_order_id ASC")->rows;
 
 		if (!$orders) {
@@ -398,6 +419,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 	public function getSummary() {
 		$this->install();
+		$this->cleanupClosedOrEmptyOrders();
 
 		$summary = array(
 			'today_total' => 0,
@@ -431,10 +453,20 @@ class ModelExtensionModuleCashierPanel extends Model {
 			}
 		}
 
-		$open = $this->db->query("SELECT COUNT(*) AS count_total, COALESCE(SUM(total_amount), 0) AS amount_total
-			FROM `" . DB_PREFIX . "restaurant_order`
-			WHERE service_status IN ('served','payment_pending')
-			AND (payment_status IS NULL OR payment_status != 'paid')")->row;
+		$open = $this->db->query("SELECT COUNT(*) AS count_total, COALESCE(SUM(GREATEST(ro.total_amount - COALESCE(pay.paid_amount, 0), 0)), 0) AS amount_total
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+			WHERE ro.service_status IN ('served','payment_pending')
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)")->row;
 
 		$summary['open_count'] = (int)$open['count_total'];
 		$summary['open_total'] = (float)$open['amount_total'];
@@ -457,6 +489,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 	public function payTablePartial($table_id, $payment_method, $user_id = 0, $note = '', $amount = 0) {
 		$this->install();
+		$this->cleanupClosedOrEmptyOrders();
 
 		$table_id = (int)$table_id;
 		$user_id = (int)$user_id;
@@ -468,11 +501,21 @@ class ModelExtensionModuleCashierPanel extends Model {
 			return array('success' => false, 'message' => 'Geçersiz ödeme bilgisi.');
 		}
 
-		$orders = $this->db->query("SELECT restaurant_order_id, table_id, service_status, total_amount
-			FROM `" . DB_PREFIX . "restaurant_order`
-			WHERE table_id = '" . $table_id . "'
-			AND service_status IN ('served','payment_pending')
-			AND (payment_status IS NULL OR payment_status != 'paid')
+		$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.table_id, ro.service_status, ro.total_amount
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+			WHERE ro.table_id = '" . $table_id . "'
+			AND ro.service_status IN ('served','payment_pending')
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)
 			ORDER BY restaurant_order_id ASC")->rows;
 
 		if (!$orders) {
@@ -812,6 +855,50 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE restaurant_order_id = '" . (int)$order_id . "'");
 	}
 
+	private function cleanupClosedOrEmptyOrders() {
+		$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.table_id, ro.service_status, ro.total_amount,
+				COALESCE(pay.paid_amount, 0) AS paid_amount,
+				COALESCE(products.product_count, 0) AS product_count
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+			LEFT JOIN (
+				SELECT restaurant_order_id, COUNT(*) AS product_count
+				FROM `" . DB_PREFIX . "restaurant_order_product`
+				GROUP BY restaurant_order_id
+			) products ON (products.restaurant_order_id = ro.restaurant_order_id)
+			WHERE ro.service_status IN ('served','payment_pending')
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND (COALESCE(products.product_count, 0) = 0 OR ro.total_amount <= COALESCE(pay.paid_amount, 0))")->rows;
+
+		foreach ($orders as $order) {
+			$order_id = (int)$order['restaurant_order_id'];
+			$table_id = (int)$order['table_id'];
+			$new_status = ((float)$order['total_amount'] > 0 && (float)$order['paid_amount'] >= (float)$order['total_amount']) ? 'paid' : 'cancelled';
+			$payment_status = ($new_status == 'paid') ? 'paid' : 'unpaid';
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+				SET service_status = '" . $this->db->escape($new_status) . "',
+					payment_status = '" . $this->db->escape($payment_status) . "',
+					locked = '1',
+					date_modified = NOW()
+				WHERE restaurant_order_id = '" . $order_id . "'");
+
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
+				SET restaurant_order_id = '" . $order_id . "',
+					old_status = '" . $this->db->escape($order['service_status']) . "',
+					new_status = '" . $this->db->escape($new_status) . "',
+					user_id = '0',
+					comment = 'Kasa paneli eski/boş adisyonu otomatik temizledi.',
+					date_added = NOW()");
+
+			$this->syncTableStatus($table_id);
+		}
+	}
+
 	private function syncTableStatus($table_id) {
 		$table_id = (int)$table_id;
 		$active = $this->db->query("SELECT COUNT(*) AS active_order_count,
@@ -824,14 +911,29 @@ class ModelExtensionModuleCashierPanel extends Model {
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 			WHERE ro.table_id = '" . $table_id . "'
 			AND ro.service_status IN ('served','payment_pending')
-			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')")->row;
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)")->row;
 
 		$count = (int)$active['active_order_count'];
 		$total = (float)$active['total_amount'];
-		$pending = $this->db->query("SELECT restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order`
-			WHERE table_id = '" . $table_id . "'
-			AND service_status = 'payment_pending'
-			AND (payment_status IS NULL OR payment_status != 'paid')
+		$pending = $this->db->query("SELECT ro.restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+			WHERE ro.table_id = '" . $table_id . "'
+			AND ro.service_status = 'payment_pending'
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)
 			LIMIT 1");
 		$status = ($count > 0 && $total > 0.009) ? ($pending->num_rows ? 'payment_pending' : 'served') : 'empty';
 		$check = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table_status` WHERE table_id = '" . $table_id . "' LIMIT 1");

@@ -2,7 +2,7 @@
 <div id="content">
   <div class="page-header">
     <div class="container-fluid">
-      <div class="pull-right"><a href="{{ add }}" data-toggle="tooltip" title="{{ button_add }}" class="btn btn-primary"><i class="fa fa-plus"></i></a> <a href="{{ repair }}" data-toggle="tooltip" title="{{ button_rebuild }}" class="btn btn-default"><i class="fa fa-refresh"></i></a>
+      <div class="pull-right"><a href="{{ add }}" data-toggle="tooltip" title="{{ button_add }}" class="btn btn-primary"><i class="fa fa-plus"></i></a>
         <button type="button" data-toggle="tooltip" title="{{ button_delete }}" class="btn btn-danger" onclick="confirm('{{ text_confirm }}') ? $('#form-category').submit() : false;"><i class="fa fa-trash-o"></i></button>
       </div>
       <h1>{{ heading_title }}</h1>
@@ -24,14 +24,38 @@
       <button type="button" class="close" data-dismiss="alert">&times;</button>
     </div>
     {% endif %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title"><i class="fa fa-list"></i> {{ text_list }}</h3>
+    <style>
+      .menu-category-shell{background:#f7faf8;border:1px solid #dfe9e4;border-radius:12px;overflow:hidden;box-shadow:0 18px 45px rgba(23,49,38,.06);}
+      .menu-category-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;background:linear-gradient(135deg,#173126 0%,#254b3a 100%);color:#fff;}
+      .menu-category-head h3{margin:0 0 6px;font-size:22px;font-weight:800;letter-spacing:0;}
+      .menu-category-head p{margin:0;color:#c9d9cf;font-size:13px;}
+      .menu-category-stats{display:flex;gap:10px;flex-wrap:wrap;}
+      .menu-category-stat{min-width:110px;padding:10px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.08);text-align:center;}
+      .menu-category-stat strong{display:block;font-size:22px;line-height:1;color:#fff;}
+      .menu-category-stat span{display:block;margin-top:4px;color:#c9d9cf;font-size:11px;text-transform:uppercase;}
+      .menu-category-body{padding:18px 20px 20px;background:#fff;}
+      .menu-category-table{border:0;margin:0;}
+      .menu-category-table thead td{background:#f4f7f5;border-color:#e5eee8;color:#53665b;font-size:12px;text-transform:uppercase;font-weight:800;}
+      .menu-category-table tbody td{vertical-align:middle;border-color:#edf2ee;}
+      .menu-category-name{font-size:15px;font-weight:800;color:#173126;}
+      .menu-category-sort{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:30px;border-radius:999px;background:#eef7f1;color:#1f6f43;font-weight:800;}
+      .menu-category-actions .btn{border-radius:8px;}
+      @media(max-width:767px){.menu-category-head{display:block}.menu-category-stats{margin-top:14px}.menu-category-stat{flex:1;}}
+    </style>
+    <div class="menu-category-shell">
+      <div class="menu-category-head">
+        <div>
+          <h3>Menü Kategorileri</h3>
+          <p>QR menüde görünen ürün gruplarını ve ekrandaki sırasını buradan yönetin.</p>
+        </div>
+        <div class="menu-category-stats">
+          <div class="menu-category-stat"><strong>{{ categories|length }}</strong><span>Bu Sayfa</span></div>
+        </div>
       </div>
-      <div class="panel-body">
+      <div class="menu-category-body">
         <form action="{{ delete }}" method="post" enctype="multipart/form-data" id="form-category">
           <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+            <table class="table table-hover menu-category-table">
               <thead>
                 <tr>
                   <td style="width: 1px;" class="text-center"><input type="checkbox" onclick="$('input[name*=\'selected\']').prop('checked', this.checked);" /></td>
@@ -57,9 +81,9 @@
                     {% else %}
                     <input type="checkbox" name="selected[]" value="{{ category.category_id }}" />
                     {% endif %}</td>
-                  <td class="text-left">{{ category.name }}</td>
-                  <td class="text-right">{{ category.sort_order }}</td>
-                  <td class="text-right"><a href="{{ category.edit }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary"><i class="fa fa-pencil"></i></a></td>
+                  <td class="text-left"><span class="menu-category-name">{{ category.name }}</span></td>
+                  <td class="text-right"><span class="menu-category-sort">{{ category.sort_order }}</span></td>
+                  <td class="text-right menu-category-actions"><a href="{{ category.edit }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary"><i class="fa fa-pencil"></i></a></td>
                 </tr>
                 {% endfor %}
                 {% else %}

@@ -443,10 +443,16 @@ class ControllerCatalogProduct extends Controller {
 			$filter_status = '';
 		}
 
+		if (isset($this->request->get['filter_category_id'])) {
+			$filter_category_id = (int)$this->request->get['filter_category_id'];
+		} else {
+			$filter_category_id = 0;
+		}
+
 		if (isset($this->request->get['sort'])) {
 			$sort = $this->request->get['sort'];
 		} else {
-			$sort = 'pd.name';
+			$sort = 'category_name';
 		}
 
 		if (isset($this->request->get['order'])) {
@@ -483,6 +489,10 @@ class ControllerCatalogProduct extends Controller {
 			$url .= '&filter_status=' . $this->request->get['filter_status'];
 		}
 
+		if (isset($this->request->get['filter_category_id'])) {
+			$url .= '&filter_category_id=' . (int)$this->request->get['filter_category_id'];
+		}
+
 		if (isset($this->request->get['order'])) {
 			$url .= '&order=' . $this->request->get['order'];
 		}
@@ -515,6 +525,7 @@ class ControllerCatalogProduct extends Controller {
 			'filter_price'	  => $filter_price,
 			'filter_quantity' => $filter_quantity,
 			'filter_status'   => $filter_status,
+			'filter_category_id' => $filter_category_id,
 			'sort'            => $sort,
 			'order'           => $order,
 			'start'           => ($page - 1) * $this->config->get('config_limit_admin'),
@@ -523,6 +534,7 @@ class ControllerCatalogProduct extends Controller {
 
 		$this->load->model('tool/image');
 		$this->load->model('catalog/category');
+		$data['filter_categories'] = $this->model_catalog_category->getCategories(array('sort' => 'name', 'order' => 'ASC'));
 
 		$product_total = $this->model_catalog_product->getTotalProducts($filter_data);
 
@@ -628,6 +640,10 @@ class ControllerCatalogProduct extends Controller {
 			$url .= '&filter_status=' . $this->request->get['filter_status'];
 		}
 
+		if (isset($this->request->get['filter_category_id'])) {
+			$url .= '&filter_category_id=' . (int)$this->request->get['filter_category_id'];
+		}
+
 		if ($order == 'ASC') {
 			$url .= '&order=DESC';
 		} else {
@@ -639,6 +655,7 @@ class ControllerCatalogProduct extends Controller {
 		}
 
 		$data['sort_name'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'] . '&sort=pd.name' . $url, true);
+		$data['sort_category'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'] . '&sort=category_name' . $url, true);
 		$data['sort_model'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'] . '&sort=p.model' . $url, true);
 		$data['sort_price'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'] . '&sort=p.price' . $url, true);
 		$data['sort_quantity'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'] . '&sort=p.quantity' . $url, true);
@@ -667,6 +684,10 @@ class ControllerCatalogProduct extends Controller {
 			$url .= '&filter_status=' . $this->request->get['filter_status'];
 		}
 
+		if (isset($this->request->get['filter_category_id'])) {
+			$url .= '&filter_category_id=' . (int)$this->request->get['filter_category_id'];
+		}
+
 		if (isset($this->request->get['sort'])) {
 			$url .= '&sort=' . $this->request->get['sort'];
 		}
@@ -690,6 +711,7 @@ class ControllerCatalogProduct extends Controller {
 		$data['filter_price'] = $filter_price;
 		$data['filter_quantity'] = $filter_quantity;
 		$data['filter_status'] = $filter_status;
+		$data['filter_category_id'] = $filter_category_id;
 
 		$data['sort'] = $sort;
 		$data['order'] = $order;
