@@ -317,6 +317,7 @@
   var detailUrl = '{{ detail_url|replace({"&amp;":"&"}) }}';
   var productsUrl = '{{ products_url|replace({"&amp;":"&"}) }}';
   var addProductUrl = '{{ add_product_url|replace({"&amp;":"&"}) }}';
+  var saveOrderUrl = '{{ save_order_url|replace({"&amp;":"&"}) }}';
   var removeProductUrl = '{{ remove_product_url|replace({"&amp;":"&"}) }}';
   var printReceiptUrl = '{{ print_receipt_url|replace({"&amp;":"&"}) }}';
   var imageBase = '{{ image_base|replace({"&amp;":"&"}) }}';
@@ -491,6 +492,7 @@
     $('#receiptNo').text('Adisyon: ' + (firstOrder ? firstOrder.restaurant_order_id : '0'));
     var statusText = 'Hazırlanıyor';
     if (detail.service_status === 'payment_pending') statusText = 'Ödeme bekliyor';
+    else if (detail.service_status === 'cashier_draft') statusText = 'Kasada taslak';
     else if (detail.service_status === 'served') statusText = 'Servis edildi';
     else if (detail.service_status === 'ready_for_service' || detail.service_status === 'out_for_service') statusText = 'Servise hazır';
     else if (detail.service_status === 'in_kitchen') statusText = 'Mutfakta';
@@ -512,12 +514,13 @@
     }
 
     var hasItems = detail.items && detail.items.length;
-    var paymentReady = !!detail.payment_ready || !!detail.bill_payment_note;
+    var hasDraft = detail.service_status === 'cashier_draft' || (detail.orders || []).some(function(order){ return order.service_status === 'cashier_draft'; });
+    var paymentReady = (!!detail.payment_ready || !!detail.bill_payment_note) && !hasDraft;
     var payLabel = detail.bill_payment_note ? 'Hesabı Kapat' : 'Öde';
     $('#receiptActions')
       .toggleClass('has-pay', !!hasItems)
       .html(hasItems
-        ? '<button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn" ' + (paymentReady ? '' : 'disabled title="Sipariş servis edilmeden ödeme alınamaz"') + '><i class="fa fa-credit-card"></i> ' + payLabel + '</button><button type="button" class="btn btn-warning" id="quickPayBtn" ' + (paymentReady ? '' : 'disabled title="Sipariş servis edilmeden hızlı ödeme alınamaz"') + '><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
+        ? '<button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn" ' + (paymentReady ? '' : 'disabled title="Taslak sipariş kaydedilmeden veya servis edilmeden ödeme alınamaz"') + '><i class="fa fa-credit-card"></i> ' + payLabel + '</button><button type="button" class="btn btn-warning" id="quickPayBtn" ' + (paymentReady ? '' : 'disabled title="Taslak sipariş kaydedilmeden veya servis edilmeden hızlı ödeme alınamaz"') + '><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">' + (hasDraft ? '<i class="fa fa-paper-plane"></i> Mutfağa Gönder' : 'Kaydet') + '</button>'
         : '<button type="button" class="btn tag-btn"><i class="fa fa-tag"></i></button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>');
   }
 
@@ -662,7 +665,8 @@
   }
 
   function canPay() {
-    return selectedTableId && currentDetail && (currentDetail.payment_ready || currentDetail.bill_payment_note) && currentDetail.items && currentDetail.items.length;
+    var hasDraft = currentDetail && (currentDetail.service_status === 'cashier_draft' || (currentDetail.orders || []).some(function(order){ return order.service_status === 'cashier_draft'; }));
+    return selectedTableId && currentDetail && !hasDraft && (currentDetail.payment_ready || currentDetail.bill_payment_note) && currentDetail.items && currentDetail.items.length;
   }
 
   function getRequestedPaymentMethod() {
@@ -688,10 +692,12 @@
     if (currentDetail && currentDetail.bill_payment_note) {
       var requestedMethod = getRequestedPaymentMethod();
 
+      if (!requestedMethod) {
+        requestedMethod = 'card';
+      }
+
       if (requestedMethod) {
-        if (confirm('Masa ' + currentDetail.table.table_no + ' hesabı müşterinin seçtiği ödeme yöntemiyle kapatılsın mı?')) {
-          pay(requestedMethod, {autoClose:true});
-        }
+        pay(requestedMethod, {autoClose:true});
         return;
       }
     }
@@ -764,7 +770,45 @@
 
   function printReceipt() {
     if (!selectedTableId) return;
-    window.open(printReceiptUrl + '&table_id=' + selectedTableId, '_blank', 'width=420,height=720');
+    var receiptWindow = window.open(printReceiptUrl + '&table_id=' + selectedTableId, '_blank', 'width=420,height=720');
+    if (receiptWindow) {
+      setTimeout(function() {
+        try {
+          receiptWindow.focus();
+          receiptWindow.print();
+        } catch (e) {}
+      }, 900);
+    }
+  }
+
+  function saveTableOrder() {
+    if (!selectedTableId) {
+      showTables();
+      return;
+    }
+
+    var $btn = $('#saveTableBtn');
+    setBusy($btn, true);
+
+    $.post(saveOrderUrl, {table_id:selectedTableId}, function(json) {
+      setBusy($btn, false);
+      if (!json || !json.success) {
+        toast(json && json.message ? json.message : 'Sipariş kaydedilemedi.', 'error');
+        return;
+      }
+
+      toast(json.message || 'Sipariş mutfağa gönderildi.', 'success');
+
+      if (json.detail) {
+        renderDetail(json.detail);
+      }
+
+      refreshTables(false);
+      showTables();
+    }, 'json').fail(function() {
+      setBusy($btn, false);
+      toast('Sipariş kaydedilemedi. Sunucu cevabı alınamadı.', 'error');
+    });
   }
 
   $(document).on('click', '.pos-table', function(){ loadDetail($(this).data('table-id')); });
@@ -844,7 +888,7 @@
   });
   $('#refreshTables').on('click', function(){ refreshTables(false); });
   $('#backToTables').on('click', showTables);
-  $(document).on('click', '#saveTableBtn', showTables);
+  $(document).on('click', '#saveTableBtn', saveTableOrder);
   $(document).on('click', '#payBtn', openPayModal);
   $(document).on('click', '#quickPayBtn', openQuickPayModal);
   $(document).on('click', '#printReceiptBtn', printReceipt);

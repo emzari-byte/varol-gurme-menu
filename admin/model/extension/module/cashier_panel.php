@@ -144,7 +144,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 					COUNT(*) AS order_count,
 					SUM(GREATEST(ro.total_amount - COALESCE(pay.paid_amount, 0), 0)) AS total_amount,
 					MAX(ro.date_modified) AS last_activity,
-					SUBSTRING_INDEX(GROUP_CONCAT(ro.service_status ORDER BY FIELD(ro.service_status, 'payment_pending', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served') SEPARATOR ','), ',', 1) AS service_status,
+					SUBSTRING_INDEX(GROUP_CONCAT(ro.service_status ORDER BY FIELD(ro.service_status, 'payment_pending', 'cashier_draft', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served') SEPARATOR ','), ',', 1) AS service_status,
 					GROUP_CONCAT(ro.restaurant_order_id ORDER BY ro.restaurant_order_id ASC SEPARATOR ',') AS order_ids
 				FROM `" . DB_PREFIX . "restaurant_order` ro
 				LEFT JOIN (
@@ -152,7 +152,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 					FROM `" . DB_PREFIX . "restaurant_payment`
 					GROUP BY restaurant_order_id
 				) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
-				WHERE ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
+				WHERE ro.service_status IN ('cashier_draft','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 				AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 				AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 				AND EXISTS (
@@ -186,7 +186,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				GROUP BY restaurant_order_id
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 			WHERE ro.table_id = '" . $table_id . "'
-			AND ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
+			AND ro.service_status IN ('cashier_draft','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 			AND EXISTS (
@@ -202,10 +202,11 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$detail_status = 'empty';
 		$status_priority = array(
 			'payment_pending' => 1,
-			'in_kitchen' => 2,
-			'ready_for_service' => 3,
-			'out_for_service' => 4,
-			'served' => 5
+			'cashier_draft' => 2,
+			'in_kitchen' => 3,
+			'ready_for_service' => 4,
+			'out_for_service' => 5,
+			'served' => 6
 		);
 
 		foreach ($orders as $order) {
@@ -374,7 +375,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows || !in_array($query->row['service_status'], array('in_kitchen', 'ready_for_service', 'out_for_service', 'served'), true) || !empty($query->row['locked'])) {
+		if (!$query->num_rows || !in_array($query->row['service_status'], array('cashier_draft', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served'), true) || !empty($query->row['locked'])) {
 			return array('success' => false, 'message' => 'Ürün satırı güncellenemedi.');
 		}
 
@@ -442,7 +443,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows || !in_array($query->row['service_status'], array('in_kitchen', 'ready_for_service', 'out_for_service', 'served', 'payment_pending'), true) || $query->row['payment_status'] === 'paid') {
+		if (!$query->num_rows || !in_array($query->row['service_status'], array('cashier_draft', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served', 'payment_pending'), true) || $query->row['payment_status'] === 'paid') {
 			return array('success' => false, 'message' => 'Ürün satırı silinemedi.');
 		}
 
@@ -630,7 +631,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				FROM `" . DB_PREFIX . "restaurant_payment`
 				GROUP BY restaurant_order_id
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
-			WHERE ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
+			WHERE ro.service_status IN ('cashier_draft','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 			AND EXISTS (
@@ -946,7 +947,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.service_status
 			FROM `" . DB_PREFIX . "restaurant_order` ro
 			WHERE ro.table_id = '" . $table_id . "'
-			AND ro.service_status IN ('served','payment_pending')
+			AND ro.service_status IN (" . $payable_status_sql . ")
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			ORDER BY ro.restaurant_order_id ASC")->rows;
 
@@ -1223,8 +1224,9 @@ class ModelExtensionModuleCashierPanel extends Model {
 		};
 
 		$html = '<!doctype html><html><head><meta charset="utf-8"><title>Fiş</title>';
-		$html .= '<style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;color:#111;font-size:12px}.center{text-align:center}.line{border-top:1px dashed #111;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.item{margin:5px 0}.total{font-weight:bold;font-size:14px}</style>';
+		$html .= '<style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;color:#111;font-size:12px}.print-actions{position:sticky;top:0;margin:0 -4px 8px;padding:8px;background:#fff;border-bottom:1px solid #ddd;text-align:center}.print-actions button{width:100%;height:36px;border:0;border-radius:6px;background:#143629;color:#fff;font-weight:bold}.center{text-align:center}.line{border-top:1px dashed #111;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.item{margin:5px 0}.total{font-weight:bold;font-size:14px}@media print{.print-actions{display:none}body{width:72mm}}</style>';
 		$html .= '</head><body>';
+		$html .= '<div class="print-actions"><button type="button" onclick="window.print()">Yazdır</button></div>';
 		$html .= '<div class="center"><h3>Varol Veranda</h3><div>Afiyet olsun</div></div><div class="line"></div>';
 		$html .= '<div>Masa: ' . $escape($detail['table']['table_no']) . '</div>';
 		$html .= '<div>Alan: ' . $escape($detail['table']['area']) . '</div>';
@@ -1237,16 +1239,67 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$html .= '<div class="line"></div>';
 		$html .= '<div class="row total"><span>Toplam</span><strong>' . number_format((float)$detail['subtotal_amount'], 2, ',', '.') . ' TL</strong></div>';
 		$html .= '<div class="line"></div><div class="center">Teşekkür ederiz</div>';
-		$html .= '<script>window.onload=function(){setTimeout(function(){window.print();},250);};</script>';
+		$html .= '<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},350);};</script>';
 		$html .= '</body></html>';
 
 		return $html;
 	}
 
+	public function publishDraftOrders($table_id, $user_id = 0) {
+		$this->install();
+		$table_id = (int)$table_id;
+		$user_id = (int)$user_id;
+
+		if (!$table_id) {
+			return array('success' => false, 'message' => 'Masa bulunamadı.');
+		}
+
+		$orders = $this->db->query("SELECT ro.restaurant_order_id
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			WHERE ro.table_id = '" . $table_id . "'
+			AND ro.service_status = 'cashier_draft'
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)
+			ORDER BY ro.restaurant_order_id ASC")->rows;
+
+		if (!$orders) {
+			return array('success' => true, 'message' => 'Kaydedilecek taslak sipariş yok.', 'detail' => $this->getTableDetail($table_id));
+		}
+
+		foreach ($orders as $order) {
+			$order_id = (int)$order['restaurant_order_id'];
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+				SET service_status = 'in_kitchen',
+					date_modified = NOW()
+				WHERE restaurant_order_id = '" . $order_id . "'
+				AND service_status = 'cashier_draft'");
+
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
+				SET restaurant_order_id = '" . $order_id . "',
+					old_status = 'cashier_draft',
+					new_status = 'in_kitchen',
+					user_id = '" . $user_id . "',
+					comment = 'Kasa taslak siparişi mutfağa gönderdi.',
+					date_added = NOW()");
+		}
+
+		$this->syncTableStatus($table_id);
+
+		return array(
+			'success' => true,
+			'message' => 'Sipariş mutfağa gönderildi.',
+			'detail' => $this->getTableDetail($table_id)
+		);
+	}
+
 	private function getOrCreateCashierOrder($table_id, $user_id = 0) {
 		$query = $this->db->query("SELECT restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE table_id = '" . (int)$table_id . "'
-			AND service_status = 'in_kitchen'
+			AND service_status = 'cashier_draft'
 			AND (payment_status IS NULL OR payment_status != 'paid')
 			AND (locked IS NULL OR locked = '0')
 			ORDER BY restaurant_order_id DESC
@@ -1259,8 +1312,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order`
 			SET table_id = '" . (int)$table_id . "',
 				waiter_user_id = '" . (int)$user_id . "',
-				service_status = 'in_kitchen',
-				customer_note = 'Kasa manuel sipariş',
+				service_status = 'cashier_draft',
+				customer_note = 'Kasa taslak sipariş',
 				total_amount = '0.0000',
 				is_paid = '0',
 				date_added = NOW(),
@@ -1271,9 +1324,9 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
 			SET restaurant_order_id = '" . $order_id . "',
 				old_status = NULL,
-				new_status = 'in_kitchen',
+				new_status = 'cashier_draft',
 				user_id = '" . (int)$user_id . "',
-				comment = 'Kasa panelinden manuel sipariş mutfağa gönderildi.',
+				comment = 'Kasa panelinden taslak sipariş oluşturuldu.',
 				date_added = NOW()");
 
 		return $order_id;
@@ -1317,7 +1370,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				FROM `" . DB_PREFIX . "restaurant_order_product`
 				GROUP BY restaurant_order_id
 			) products ON (products.restaurant_order_id = ro.restaurant_order_id)
-			WHERE ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
+			WHERE ro.service_status IN ('cashier_draft','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND (COALESCE(products.product_count, 0) = 0 OR ro.total_amount <= COALESCE(pay.paid_amount, 0))")->rows;
 
@@ -1357,7 +1410,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				GROUP BY restaurant_order_id
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 			WHERE ro.table_id = '" . $table_id . "'
-			AND ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
+			AND ro.service_status IN ('cashier_draft','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 			AND EXISTS (
@@ -1396,14 +1449,14 @@ class ModelExtensionModuleCashierPanel extends Model {
 						GROUP BY restaurant_order_id
 					) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 					WHERE ro.table_id = '" . $table_id . "'
-					AND ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served')
+					AND ro.service_status IN ('cashier_draft','in_kitchen','ready_for_service','out_for_service','served')
 					AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 					AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 					AND EXISTS (
 						SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
 						WHERE rop.restaurant_order_id = ro.restaurant_order_id
 					)
-					ORDER BY FIELD(ro.service_status, 'in_kitchen', 'ready_for_service', 'out_for_service', 'served')
+					ORDER BY FIELD(ro.service_status, 'cashier_draft', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served')
 					LIMIT 1");
 				$status = $priority->num_rows ? $priority->row['service_status'] : 'served';
 			}

@@ -39,6 +39,7 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 		$data['detail_url'] = $this->url->link('extension/module/cashier_panel/tableDetail', 'user_token=' . $this->session->data['user_token'], true);
 		$data['products_url'] = $this->url->link('extension/module/cashier_panel/products', 'user_token=' . $this->session->data['user_token'], true);
 		$data['add_product_url'] = $this->url->link('extension/module/cashier_panel/addProduct', 'user_token=' . $this->session->data['user_token'], true);
+		$data['save_order_url'] = $this->url->link('extension/module/cashier_panel/saveOrder', 'user_token=' . $this->session->data['user_token'], true);
 		$data['remove_product_url'] = $this->url->link('extension/module/cashier_panel/removeProduct', 'user_token=' . $this->session->data['user_token'], true);
 		$data['print_receipt_url'] = $this->url->link('extension/module/cashier_panel/printReceipt', 'user_token=' . $this->session->data['user_token'], true);
 		$data['logout_url'] = $this->url->link('common/logout', 'user_token=' . $this->session->data['user_token'], true);
@@ -118,6 +119,22 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 			$product_id = isset($this->request->post['product_id']) ? (int)$this->request->post['product_id'] : 0;
 			$quantity = isset($this->request->post['quantity']) ? (int)$this->request->post['quantity'] : 1;
 			$json = $this->model_extension_module_cashier_panel->addProductToTable($table_id, $product_id, $quantity, (int)$this->user->getId());
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function saveOrder() {
+		$json = array();
+
+		if (!$this->user->hasPermission('modify', 'extension/module/cashier_panel') || !$this->isCashierPanelEnabled()) {
+			$json['success'] = false;
+			$json['message'] = 'Yetkiniz yok.';
+		} else {
+			$this->load->model('extension/module/cashier_panel');
+			$table_id = isset($this->request->post['table_id']) ? (int)$this->request->post['table_id'] : 0;
+			$json = $this->model_extension_module_cashier_panel->publishDraftOrders($table_id, (int)$this->user->getId());
 		}
 
 		$this->response->addHeader('Content-Type: application/json');
