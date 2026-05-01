@@ -122,7 +122,7 @@ class ModelCommonRestaurantSettings extends Model {
 	public function cleanProductDescriptionHtml($html) {
 		$html = (string)$html;
 
-		for ($i = 0; $i < 5; $i++) {
+		for ($i = 0; $i < 12; $i++) {
 			$decoded = html_entity_decode($html, ENT_QUOTES, 'UTF-8');
 
 			if ($decoded === $html) {

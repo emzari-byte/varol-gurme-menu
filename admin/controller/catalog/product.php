@@ -262,6 +262,10 @@ class ControllerCatalogProduct extends Controller {
 							$json['error'] = 'Ürün adı boş bırakılamaz.';
 							break;
 						}
+
+						if ($field == 'description' && isset($description['description'])) {
+							$product_description[$language_id]['description'] = $this->cleanProductDescriptionHtml($description['description']);
+						}
 					}
 
 					if (empty($json['error'])) {
@@ -992,6 +996,10 @@ class ControllerCatalogProduct extends Controller {
 				$this->request->post['product_description'][$language_id]['meta_title'] = $name;
 			}
 
+			if (isset($description['description'])) {
+				$this->request->post['product_description'][$language_id]['description'] = $this->cleanProductDescriptionHtml($description['description']);
+			}
+
 			$this->request->post['product_description'][$language_id]['tag'] = $prep_time;
 		}
 
@@ -1045,7 +1053,7 @@ class ControllerCatalogProduct extends Controller {
 	private function cleanProductDescriptionHtml($html) {
 		$html = (string)$html;
 
-		for ($i = 0; $i < 5; $i++) {
+		for ($i = 0; $i < 12; $i++) {
 			$decoded = html_entity_decode($html, ENT_QUOTES, 'UTF-8');
 
 			if ($decoded === $html) {
