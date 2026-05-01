@@ -671,6 +671,11 @@ class ModelExtensionModuleCashierPanel extends Model {
 			return array('success' => false, 'message' => 'Geçersiz ödeme bilgisi.');
 		}
 
+		$has_bill_request = ($this->getLatestBillRequestNote($table_id) !== '');
+		$payable_status_sql = $has_bill_request
+			? "'in_kitchen','ready_for_service','out_for_service','served','payment_pending'"
+			: "'served','payment_pending'";
+
 		$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.table_id, ro.service_status, ro.total_amount
 			FROM `" . DB_PREFIX . "restaurant_order` ro
 			LEFT JOIN (
@@ -782,6 +787,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 				AND call_type IN ('bill_request','waiter_call')
 				AND status IN ('new','seen')");
 
+			$this->createReviewInvite($table_id, $orders);
+
 			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
 				SET service_status = 'empty',
 					active_order_count = '0',
@@ -831,6 +838,10 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 	private function paySelectedItems($table_id, $payment_method, $user_id = 0, $note = '', $amount = 0, $selected_items = array()) {
 		$selected_ids = array();
+		$has_bill_request = ($this->getLatestBillRequestNote($table_id) !== '');
+		$payable_status_sql = $has_bill_request
+			? "'in_kitchen','ready_for_service','out_for_service','served','payment_pending'"
+			: "'served','payment_pending'";
 
 		foreach ((array)$selected_items as $selected_item_id) {
 			$selected_item_id = (int)$selected_item_id;
@@ -855,7 +866,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			) paid_item ON (paid_item.restaurant_order_product_id = rop.restaurant_order_product_id)
 			WHERE rop.restaurant_order_product_id IN (" . implode(',', $selected_ids) . ")
 			AND ro.table_id = '" . (int)$table_id . "'
-			AND ro.service_status IN ('served','payment_pending')
+			AND ro.service_status IN (" . $payable_status_sql . ")
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			ORDER BY rop.restaurant_order_id ASC, rop.restaurant_order_product_id ASC")->rows;
 

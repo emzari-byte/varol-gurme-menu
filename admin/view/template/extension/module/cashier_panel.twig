@@ -512,7 +512,7 @@
     }
 
     var hasItems = detail.items && detail.items.length;
-    var paymentReady = !!detail.payment_ready;
+    var paymentReady = !!detail.payment_ready || !!detail.bill_payment_note;
     var payLabel = detail.bill_payment_note ? 'Hesabı Kapat' : 'Öde';
     $('#receiptActions')
       .toggleClass('has-pay', !!hasItems)
@@ -662,7 +662,7 @@
   }
 
   function canPay() {
-    return selectedTableId && currentDetail && currentDetail.payment_ready && currentDetail.items && currentDetail.items.length;
+    return selectedTableId && currentDetail && (currentDetail.payment_ready || currentDetail.bill_payment_note) && currentDetail.items && currentDetail.items.length;
   }
 
   function getRequestedPaymentMethod() {
