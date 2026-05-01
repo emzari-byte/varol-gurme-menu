@@ -87,6 +87,60 @@
     padding: 10px;
     margin-bottom: 10px;
   }
+  #header .container-fluid {
+    position: relative;
+  }
+  .restaurant-density-bar {
+    position: absolute;
+    left: 50%;
+    top: 9px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    background: #f7faf8;
+    border: 1px solid #e4ece7;
+    border-radius: 999px;
+    box-shadow: 0 8px 22px rgba(20, 54, 41, .08);
+    white-space: nowrap;
+  }
+  .restaurant-density-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 0 13px;
+    border-radius: 999px;
+    color: #78857d;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .restaurant-density-pill i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .restaurant-density-pill.calm { color: #268150; }
+  .restaurant-density-pill.medium { color: #c77715; }
+  .restaurant-density-pill.high { color: #c83e38; }
+  .restaurant-density-pill.active {
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(20, 54, 41, .16);
+  }
+  .restaurant-density-pill.active.calm { background: #268150; }
+  .restaurant-density-pill.active.medium { background: #d88722; }
+  .restaurant-density-pill.active.high { background: #c83e38; }
+  .restaurant-density-meta {
+    padding: 0 10px 0 2px;
+    color: #647169;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  @media (max-width: 1100px) {
+    .restaurant-density-bar { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -95,6 +149,12 @@
   <div class="container-fluid">
     <div id="header-logo" class="navbar-header"><a href="{{ home }}" class="navbar-brand"><img src="{{ admin_brand_logo }}" alt="Varol Gurme" title="Varol Gurme" /></a></div>
     {% if logged %}<a href="#" id="button-menu" class="hidden-md hidden-lg"><span class="fa fa-bars"></span></a>
+    <div class="restaurant-density-bar" title="Açık masa oranı: {{ restaurant_occupancy.open_count }}/{{ restaurant_occupancy.total_count }} (%{{ restaurant_occupancy.percent }})">
+      <span class="restaurant-density-pill calm{% if restaurant_occupancy.level == 'calm' %} active{% endif %}"><i></i>Sakin</span>
+      <span class="restaurant-density-pill medium{% if restaurant_occupancy.level == 'medium' %} active{% endif %}"><i></i>Orta Yoğun</span>
+      <span class="restaurant-density-pill high{% if restaurant_occupancy.level == 'high' %} active{% endif %}"><i></i>Yoğun</span>
+      <span class="restaurant-density-meta">{{ restaurant_occupancy.open_count }}/{{ restaurant_occupancy.total_count }} masa</span>
+    </div>
     <ul class="nav navbar-nav navbar-right">
       <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><img src="{{ image }}" alt="{{ firstname }} {{ lastname }}" title="{{ username }}" id="user-profile" class="img-circle" />{{ firstname }} {{ lastname }} <i class="fa fa-caret-down fa-fw"></i></a>
         <ul class="dropdown-menu dropdown-menu-right">

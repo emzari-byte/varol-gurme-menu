@@ -16,6 +16,14 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 				$this->request->post['restaurant_bill_request_reset_minutes'] = max(1, min(60, (int)$this->request->post['restaurant_bill_request_reset_minutes']));
 			}
 
+			if (isset($this->request->post['restaurant_medium_density_prep_extra_minutes'])) {
+				$this->request->post['restaurant_medium_density_prep_extra_minutes'] = max(0, min(120, (int)$this->request->post['restaurant_medium_density_prep_extra_minutes']));
+			}
+
+			if (isset($this->request->post['restaurant_high_density_prep_extra_minutes'])) {
+				$this->request->post['restaurant_high_density_prep_extra_minutes'] = max(0, min(120, (int)$this->request->post['restaurant_high_density_prep_extra_minutes']));
+			}
+
 			if (isset($this->request->post['restaurant_whatsapp_phone'])) {
 				$this->request->post['restaurant_whatsapp_phone'] = preg_replace('/[^0-9]/', '', (string)$this->request->post['restaurant_whatsapp_phone']);
 			}

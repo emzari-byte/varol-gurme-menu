@@ -32,9 +32,17 @@ class ControllerCommonHeader extends Controller {
 		$data['waiter_panel_pwa'] = (isset($this->request->get['route']) && $this->request->get['route'] === 'extension/module/waiter_panel');
 		$data['admin_brand_logo'] = 'view/image/logo.png';
 		$data['pwa_icon'] = '/menu/image/catalog/veranda-logo2.png';
+		$data['restaurant_occupancy'] = array(
+			'level' => 'calm',
+			'label' => 'Sakin',
+			'percent' => 0,
+			'open_count' => 0,
+			'total_count' => 0
+		);
 
 		$this->load->model('extension/module/restaurant_settings');
 		$restaurant_settings = $this->model_extension_module_restaurant_settings->getSettings();
+		$data['restaurant_occupancy'] = $this->getRestaurantOccupancy();
 		$admin_logo = !empty($restaurant_settings['restaurant_admin_logo']) ? (string)$restaurant_settings['restaurant_admin_logo'] : '';
 		$menu_logo = !empty($restaurant_settings['restaurant_menu_logo']) ? (string)$restaurant_settings['restaurant_menu_logo'] : (!empty($restaurant_settings['restaurant_brand_logo']) ? (string)$restaurant_settings['restaurant_brand_logo'] : '');
 
@@ -112,5 +120,61 @@ class ControllerCommonHeader extends Controller {
 		}
 
 		return $this->load->view('common/header', $data);
+	}
+
+	private function getRestaurantOccupancy() {
+		$table = DB_PREFIX . 'restaurant_table';
+		$status_table = DB_PREFIX . 'restaurant_table_status';
+		$order_table = DB_PREFIX . 'restaurant_order';
+
+		if (!$this->tableExists($table) || !$this->tableExists($status_table)) {
+			return array('level' => 'calm', 'label' => 'Sakin', 'percent' => 0, 'open_count' => 0, 'total_count' => 0);
+		}
+
+		$total = $this->db->query("SELECT COUNT(*) AS total FROM `" . $table . "` WHERE status = '1'")->row;
+		$order_join = $this->tableExists($order_table)
+			? "LEFT JOIN `" . $order_table . "` ro ON (ro.table_id = rt.table_id
+				AND ro.service_status IN ('waiting_order','in_kitchen','ready_for_service','out_for_service','served','payment_pending','cashier_draft')
+				AND (ro.payment_status IS NULL OR ro.payment_status != 'paid'))"
+			: "";
+		$order_condition = $this->tableExists($order_table) ? " OR ro.restaurant_order_id IS NOT NULL" : "";
+
+		$open = $this->db->query("SELECT COUNT(DISTINCT rt.table_id) AS total
+			FROM `" . $table . "` rt
+			LEFT JOIN `" . $status_table . "` rts ON (rts.table_id = rt.table_id)
+			" . $order_join . "
+			WHERE rt.status = '1'
+			AND (
+				COALESCE(rts.active_order_count, 0) > 0
+				OR COALESCE(rts.service_status, 'empty') NOT IN ('', 'empty', 'paid', 'completed', 'cancelled')
+				" . $order_condition . "
+			)")->row;
+
+		$total_count = max(0, (int)$total['total']);
+		$open_count = max(0, (int)$open['total']);
+		$percent = $total_count > 0 ? round(($open_count / $total_count) * 100, 1) : 0;
+		$level = 'calm';
+		$label = 'Sakin';
+
+		if ($percent > 60) {
+			$level = 'high';
+			$label = 'Yoğun';
+		} elseif ($percent > 30) {
+			$level = 'medium';
+			$label = 'Orta Yoğun';
+		}
+
+		return array(
+			'level' => $level,
+			'label' => $label,
+			'percent' => $percent,
+			'open_count' => $open_count,
+			'total_count' => $total_count
+		);
+	}
+
+	private function tableExists($table) {
+		$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+		return $query->num_rows > 0;
 	}
 }

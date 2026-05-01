@@ -22,6 +22,7 @@ class ControllerCommonMenu extends Controller {
 		$menu_theme = (string)$this->model_common_restaurant_settings->get('restaurant_menu_theme', 'default');
 		$data['restaurant_menu_theme'] = in_array($menu_theme, array('default', 'v1', 'v2', 'v3', 'v4', 'v5'), true) ? $menu_theme : 'default';
 		$data['restaurant_analytics_code'] = (string)$this->model_common_restaurant_settings->get('restaurant_analytics_code', '');
+		$prep_extra_minutes = $this->model_common_restaurant_settings->getPreparationExtraMinutes();
 
 		$date = date('Y-m-d');
 		$timestamp = strtotime($date);
@@ -146,10 +147,10 @@ class ControllerCommonMenu extends Controller {
 		$popular_section = $this->model_common_restaurant_home_products->getSection('popular', $active_language_id);
 
 		$data['yoreselname'] = $regional_section['name'];
-		$data['yoreselpro'] = $this->buildHomeProducts($regional_section['products'], $gun, $active_language_id, $show_prices, 750, 550, false);
+		$data['yoreselpro'] = $this->buildHomeProducts($regional_section['products'], $gun, $active_language_id, $show_prices, 750, 550, false, $prep_extra_minutes);
 
 		$data['encoktercihname'] = $popular_section['name'];
-		$data['encoktercihpro'] = $this->buildHomeProducts($popular_section['products'], $gun, $active_language_id, $show_prices, 150, 110, true);
+		$data['encoktercihpro'] = $this->buildHomeProducts($popular_section['products'], $gun, $active_language_id, $show_prices, 150, 110, true, $prep_extra_minutes);
 
 		$data['home'] = $this->url->link('common/home', $qr_param, true);
 		$data['serv'] = HTTPS_SERVER;
@@ -158,7 +159,7 @@ class ControllerCommonMenu extends Controller {
 		$this->response->setOutput($this->load->view('common/menu', $data));
 	}
 
-	private function buildHomeProducts($product_ids, $day, $language_id, $show_prices, $width, $height, $use_original_image) {
+	private function buildHomeProducts($product_ids, $day, $language_id, $show_prices, $width, $height, $use_original_image, $prep_extra_minutes = 0) {
 		$products = array();
 
 		foreach ($product_ids as $product_id) {
@@ -233,7 +234,7 @@ class ControllerCommonMenu extends Controller {
 				'description' => html_entity_decode(strip_tags($product_info['description']), ENT_QUOTES, 'UTF-8'),
 				'thumb'       => $image,
 				'options'     => $options,
-				'tag'         => $product_info['tag'],
+				'tag'         => $this->model_common_restaurant_settings->adjustPreparationTag($product_info['tag'], $prep_extra_minutes),
 				'price'       => $price,
 				'special'     => $special,
 				'sku'         => $product_info['sku'],

@@ -31,10 +31,15 @@ END ASC,
 					ro.restaurant_order_id ASC";
 
 		$orders = $this->db->query($sql)->rows;
+		$prep_extra_minutes = $this->getPreparationExtraMinutes();
 
 		foreach ($orders as $key => $order) {
 			$products = $this->getOrderProducts((int)$order['restaurant_order_id']);
 			$prep_minutes = $this->getOrderPrepMinutes($products);
+
+			if ($prep_minutes > 0 && $prep_extra_minutes > 0) {
+				$prep_minutes += $prep_extra_minutes;
+			}
 
 			$orders[$key]['products'] = $products;
 			$orders[$key]['categories'] = $this->getOrderCategories($products);
@@ -279,6 +284,43 @@ END ASC,
 		}
 
 		return $minutes;
+	}
+
+	protected function getPreparationExtraMinutes() {
+		$total = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_table` WHERE status = '1'")->row;
+		$open = $this->db->query("SELECT COUNT(DISTINCT rt.table_id) AS total
+			FROM `" . DB_PREFIX . "restaurant_table` rt
+			LEFT JOIN `" . DB_PREFIX . "restaurant_table_status` rts ON (rts.table_id = rt.table_id)
+			LEFT JOIN `" . DB_PREFIX . "restaurant_order` ro ON (ro.table_id = rt.table_id
+				AND ro.service_status IN ('waiting_order','in_kitchen','ready_for_service','out_for_service','served','payment_pending','cashier_draft')
+				AND (ro.payment_status IS NULL OR ro.payment_status != 'paid'))
+			WHERE rt.status = '1'
+			AND (
+				COALESCE(rts.active_order_count, 0) > 0
+				OR COALESCE(rts.service_status, 'empty') NOT IN ('', 'empty', 'paid', 'completed', 'cancelled')
+				OR ro.restaurant_order_id IS NOT NULL
+			)")->row;
+
+		$total_count = max(0, (int)$total['total']);
+		$open_count = max(0, (int)$open['total']);
+
+		if ($total_count <= 0) {
+			return 0;
+		}
+
+		$percent = ($open_count / $total_count) * 100;
+		$this->load->model('extension/module/restaurant_settings');
+		$settings = $this->model_extension_module_restaurant_settings->getSettings();
+
+		if ($percent > 60) {
+			return max(0, (int)$settings['restaurant_high_density_prep_extra_minutes']);
+		}
+
+		if ($percent > 30) {
+			return max(0, (int)$settings['restaurant_medium_density_prep_extra_minutes']);
+		}
+
+		return 0;
 	}
 
 	protected function parsePrepMinutes($text) {

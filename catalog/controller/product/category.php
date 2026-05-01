@@ -27,6 +27,7 @@ class ControllerProductCategory extends Controller {
 		$menu_theme = (string)$this->model_common_restaurant_settings->get('restaurant_menu_theme', 'default');
 		$data['restaurant_menu_theme'] = in_array($menu_theme, array('default', 'v1', 'v2', 'v3', 'v4', 'v5'), true) ? $menu_theme : 'default';
 		$data['restaurant_analytics_code'] = (string)$this->model_common_restaurant_settings->get('restaurant_analytics_code', '');
+		$prep_extra_minutes = $this->model_common_restaurant_settings->getPreparationExtraMinutes();
 
         $this->load->model('common/menu_order');
 
@@ -396,7 +397,7 @@ class ControllerProductCategory extends Controller {
                 'price'       => $price,
                 'special'     => $special,
                 'sku'         => $result['sku'],
-                'tag'         => $result['tag'],
+                'tag'         => $this->model_common_restaurant_settings->adjustPreparationTag($result['tag'], $prep_extra_minutes),
                 'upc'         => $result['upc'],
                 'ean'         => $result['ean'],
                 'jan'         => $result['jan'],

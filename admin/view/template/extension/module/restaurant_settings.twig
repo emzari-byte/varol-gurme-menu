@@ -285,7 +285,7 @@
 
               <div class="settings-section-title">
                 <h3>Tekrar Süreleri</h3>
-                <span>Müşteri butonlarının yeniden aktif olma süresi</span>
+                <span>Müşteri butonları ve yoğunluk bazlı hazırlık süreleri</span>
               </div>
 
               <div class="form-group">
@@ -352,6 +352,28 @@
                     <span class="input-group-addon">dk</span>
                   </div>
                   <p class="help-block">Garson hesap talebini gördükten sonra müşterinin tekrar hesap isteyebileceği süre. Önerilen değer 5 dakikadır.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Orta Yoğun Hazırlık Ek Süresi</label>
+                <div class="col-sm-9">
+                  <div class="input-group" style="max-width:220px;">
+                    <input type="number" name="restaurant_medium_density_prep_extra_minutes" value="{{ restaurant_medium_density_prep_extra_minutes }}" min="0" max="120" class="form-control">
+                    <span class="input-group-addon">dk</span>
+                  </div>
+                  <p class="help-block">Masaların %30-%60 arası dolu olduğu durumda ürün tag hazırlık sürelerine eklenecek süre.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-sm-3 control-label">Yoğun Hazırlık Ek Süresi</label>
+                <div class="col-sm-9">
+                  <div class="input-group" style="max-width:220px;">
+                    <input type="number" name="restaurant_high_density_prep_extra_minutes" value="{{ restaurant_high_density_prep_extra_minutes }}" min="0" max="120" class="form-control">
+                    <span class="input-group-addon">dk</span>
+                  </div>
+                  <p class="help-block">Masaların %60 üzeri dolu olduğu durumda ürün tag hazırlık sürelerine eklenecek süre.</p>
                 </div>
               </div>
             </div>
