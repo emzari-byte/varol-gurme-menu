@@ -535,6 +535,7 @@ class ControllerCatalogProduct extends Controller {
 		$this->load->model('tool/image');
 		$this->load->model('catalog/category');
 		$data['filter_categories'] = $this->model_catalog_category->getCategories(array('sort' => 'name', 'order' => 'ASC'));
+		$category_path_map = $this->getCategoryPathMap($data['filter_categories']);
 
 		$product_total = $this->model_catalog_product->getTotalProducts($filter_data);
 
@@ -564,10 +565,8 @@ class ControllerCatalogProduct extends Controller {
 			$product_categories = $this->model_catalog_product->getProductCategories($result['product_id']);
 
 			foreach ($product_categories as $category_id) {
-				$category_info = $this->model_catalog_category->getCategory($category_id);
-
-				if ($category_info) {
-					$category_names[] = $category_info['name'];
+				if (isset($category_path_map[$category_id])) {
+					$category_names[] = $category_path_map[$category_id];
 				}
 			}
 
@@ -577,7 +576,7 @@ class ControllerCatalogProduct extends Controller {
 				'product_id' => $result['product_id'],
 				'image'      => $image,
 				'image_path' => $result['image'],
-				'category'   => $category_names ? implode(' > ', $category_names) : '-',
+				'category'   => $category_names ? implode(', ', array_unique($category_names)) : '-',
 				'name'       => $result['name'],
 				'allergens'  => $product_allergens,
 				'model'      => $result['model'],
@@ -721,6 +720,23 @@ class ControllerCatalogProduct extends Controller {
 		$data['footer'] = $this->load->controller('common/footer');
 
 		$this->response->setOutput($this->load->view('catalog/product_list', $data));
+	}
+
+	private function getCategoryPathMap($categories) {
+		$map = array();
+
+		foreach ($categories as $category) {
+			$name = isset($category['name']) ? html_entity_decode($category['name'], ENT_QUOTES, 'UTF-8') : '';
+			$name = preg_replace('/\s+/', ' ', strip_tags($name));
+			$name = preg_replace('/\s*>\s*/', ' > ', $name);
+			$name = trim($name);
+
+			if ($name !== '') {
+				$map[(int)$category['category_id']] = $name;
+			}
+		}
+
+		return $map;
 	}
 
 	private function getProductAllergenBadges($product_id) {
