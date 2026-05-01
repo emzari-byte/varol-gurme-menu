@@ -788,6 +788,11 @@ function getOrdersByStatus(statuses) {
 	});
 }
 
+function isCardBillRequest() {
+	var note = String($('#billPaymentNote').text() || '').toLowerCase();
+	return note.indexOf('kart') !== -1 || note.indexOf('card') !== -1 || note.indexOf('pos') !== -1 || note.indexOf('kredi') !== -1;
+}
+
 function getMainAction() {
 	var hasItems = Object.keys(manualOrderItems).length > 0;
 
@@ -797,6 +802,10 @@ function getMainAction() {
 
 	if (currentBillRequestPending && currentBillRequestStatus !== 'seen') {
 		return {type:'ack_bill', label:'Hesapla İlgileniyorum', className:'btn-warning'};
+	}
+
+	if (cashierPanelEnabled && currentBillRequestPending && currentBillRequestStatus === 'seen' && isCardBillRequest() && getOrdersByStatus(['served']).length) {
+		return {type:'pay_orders', label:'Kart Ödemesi Alındı', className:'btn-warning'};
 	}
 
 	if (!cashierPanelEnabled && currentBillRequestPending && currentBillRequestStatus === 'seen' && getOrdersByStatus(['served']).length) {

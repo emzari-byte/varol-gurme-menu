@@ -70,6 +70,7 @@
       .pos-table .mini-meta span{width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;color:#c83e38;}
       .bill-label{display:none;margin-top:8px;padding:6px 8px;border-radius:9px;background:#c83e38;color:#fff;font-size:11px;font-weight:900;}
       .pos-table.bill .bill-label{display:inline-flex;align-items:center;gap:5px;}
+      .bill-method{display:inline-flex;margin-top:6px;padding:5px 8px;border-radius:999px;background:#fff;color:#173126;border:1px solid #efd2ce;font-size:11px;font-weight:900;}
       .pos-table.bill.new-bill{animation:cashierPulse 1.2s ease-in-out infinite;}
       @keyframes cashierPulse{0%,100%{box-shadow:inset 0 0 0 2px rgba(200,62,56,.12),0 10px 22px rgba(23,49,38,.07);}50%{box-shadow:inset 0 0 0 3px rgba(200,62,56,.28),0 14px 34px rgba(200,62,56,.2);}}
       .empty-state{grid-column:1 / -1;min-height:160px;display:flex;align-items:center;justify-content:center;color:#728278;font-weight:900;}
@@ -81,12 +82,17 @@
       .receipt-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;color:#6f7f76;font-size:12px;font-weight:800;}
       .receipt-items{padding:10px;overflow:auto;min-height:0;flex:1;}
       .receipt-row{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;border:1px solid #edf2ee;border-radius:12px;padding:10px;margin-bottom:9px;background:#fff;box-shadow:0 6px 16px rgba(23,49,38,.04);}
+      .receipt-row.is-paid{opacity:.55;background:#f5f7f6;}
+      .receipt-row.pay-selected{border-color:#2f6f49;box-shadow:0 0 0 2px rgba(47,111,73,.16),0 6px 16px rgba(23,49,38,.05);}
       .qty-badge{width:42px;height:42px;border-radius:12px;background:#f3f7f5;color:#173126;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;}
       .receipt-name{font-weight:900;color:#173126;line-height:1.25;}
       .receipt-sub{font-size:12px;color:#8a968f;margin-top:4px;font-weight:800;}
       .receipt-total{font-weight:900;color:#173126;white-space:nowrap;text-align:right;}
       .row-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:8px;}
       .row-actions button{width:32px;height:30px;border:0;border-radius:8px;background:#f5f7f6;color:#c83e38;}
+      .pay-select{color:#2f6f49!important;}
+      .pay-select.is-selected{background:#2f6f49!important;color:#fff!important;}
+      .paid-chip{display:inline-flex;margin-top:5px;padding:3px 7px;border-radius:999px;background:#e8f3ed;color:#2f6f49;font-size:11px;font-weight:900;}
       .receipt-empty{height:100%;min-height:240px;display:flex;align-items:center;justify-content:center;text-align:center;color:#728278;font-weight:900;padding:20px;}
       .receipt-footer{border-top:1px solid #edf2ee;padding:12px;background:#fff;}
       .receipt-grand{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:900;color:#173126;}
@@ -125,6 +131,9 @@
       .pay-box{background:#fff;border:1px solid #e2e9e5;border-radius:14px;min-height:360px;padding:14px;box-shadow:0 10px 24px rgba(23,49,38,.06);}
       .pay-box h4{margin:0 0 12px;font-size:15px;font-weight:900;color:#173126;}
       .pay-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf2ee;padding:10px 0;font-weight:800;color:#173126;}
+      .pay-row.selectable{cursor:pointer;border:1px solid #edf2ee;border-radius:10px;padding:10px;margin-bottom:8px;background:#fff;}
+      .pay-row.selectable.is-selected{border-color:#2f6f49;background:#f1faf5;box-shadow:0 0 0 2px rgba(47,111,73,.12);}
+      .pay-row.selectable.is-paid{opacity:.5;text-decoration:line-through;cursor:not-allowed;}
       .pay-summary{margin-top:14px;border-top:1px solid #edf2ee;padding-top:12px;display:grid;gap:8px;}
       .pay-summary-row{display:flex;align-items:center;justify-content:space-between;font-weight:900;color:#5f7067;}
       .pay-summary-row strong{color:#173126;font-size:18px;}
@@ -321,6 +330,7 @@
   var currentDetail = null;
   var pendingCancelRowId = 0;
   var pendingCancelItem = null;
+  var selectedPayItems = [];
   var searchTimer = null;
   var payAmount = '';
   var previousBillRequests = [];
@@ -434,7 +444,7 @@
       var classes = (occupied ? 'occupied ' : '') + (pending ? 'pending ' : '') + (inKitchen ? 'in-kitchen ' : '') + (ready ? 'ready ' : '') + (served ? 'served ' : '') + (billPending ? 'bill ' : '') + (billNew ? 'new-bill' : '');
       html += '<button type="button" class="pos-table ' + classes + '" data-table-id="' + table.table_id + '">';
       html += '<div class="mini-meta">' + (billPending ? '<span title="Hesap talebi"><i class="fa fa-bell"></i></span>' : '') + '</div>';
-      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div><div class="waiter-line">' + escapeHtml(table.waiter_name || 'Kasadan yönetiliyor') + '</div><div class="bill-label"><i class="fa fa-bell"></i> Müşteri hesap istiyor</div></div>';
+      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div><div class="waiter-line">' + escapeHtml(table.waiter_name || 'Kasadan yönetiliyor') + '</div><div class="bill-label"><i class="fa fa-bell"></i> Müşteri hesap istiyor</div>' + (table.bill_payment_note ? '<div class="bill-method">' + escapeHtml(table.bill_payment_note) + '</div>' : '') + '</div>';
       html += '<div class="table-bottom"><span class="state">' + stateLabel + '</span><span class="amount">' + (occupied ? money(table.total_amount) : '') + '</span></div>';
       html += '</button>';
     });
@@ -472,6 +482,7 @@
 
   function renderDetail(detail) {
     currentDetail = detail || null;
+    selectedPayItems = [];
     if (!detail || !detail.table) return;
 
     $('#topTitle').text('Masa ' + detail.table.table_no);
@@ -483,7 +494,7 @@
     else if (detail.service_status === 'served') statusText = 'Servis edildi';
     else if (detail.service_status === 'ready_for_service' || detail.service_status === 'out_for_service') statusText = 'Servise hazır';
     else if (detail.service_status === 'in_kitchen') statusText = 'Mutfakta';
-    $('.receipt-meta b').text(statusText);
+    $('.receipt-meta b').text(statusText + (detail.bill_payment_note ? ' - ' + detail.bill_payment_note : ''));
     $('#receiptTotal,#receiptTotalTop').text(money(detail.total_amount));
 
     if (!detail.items || !detail.items.length) {
@@ -491,10 +502,10 @@
     } else {
       var html = '';
       detail.items.forEach(function(item) {
-        html += '<div class="receipt-row" data-row-id="' + item.restaurant_order_product_id + '" data-qty="' + item.quantity + '">';
-        html += '<div class="qty-badge">' + item.quantity + '</div>';
-        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet</div><div class="row-actions"><button type="button" class="qty-remove" data-row-id="' + item.restaurant_order_product_id + '"><i class="fa fa-trash"></i></button></div></div>';
-        html += '<div class="receipt-total">' + money(item.total) + '</div>';
+        html += '<div class="receipt-row ' + (item.is_paid ? 'is-paid' : '') + '" data-row-id="' + item.restaurant_order_product_id + '" data-qty="' + item.quantity + '">';
+        html += '<div class="qty-badge">' + (item.remaining_quantity || item.quantity) + '</div>';
+        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet' + (item.paid_amount > 0 ? ' - ödenen ' + money(item.paid_amount) : '') + '</div>' + (item.is_paid ? '<div class="paid-chip">Ödendi</div>' : '') + '<div class="row-actions">' + (!item.is_paid ? '<button type="button" class="pay-select" data-row-id="' + item.restaurant_order_product_id + '" title="Parçalı ödeme için seç"><i class="fa fa-check"></i></button><button type="button" class="qty-remove" data-row-id="' + item.restaurant_order_product_id + '"><i class="fa fa-trash"></i></button>' : '') + '</div></div>';
+        html += '<div class="receipt-total">' + money(item.remaining_total || item.total) + '</div>';
         html += '</div>';
       });
       $('#receiptItems').html(html);
@@ -630,9 +641,23 @@
     $('#quickPayTotal').text('Masa ' + tableNo + ' - ' + money(total));
     var html = '';
     (currentDetail && currentDetail.items ? currentDetail.items : []).forEach(function(item) {
-      html += '<div class="pay-row"><span>' + item.quantity + ' x ' + escapeHtml(item.name) + '</span><strong>' + money(item.total) + '</strong></div>';
+      var rowId = parseInt(item.restaurant_order_product_id || 0, 10);
+      var selected = selectedPayItems.indexOf(rowId) !== -1;
+      html += '<div class="pay-row selectable ' + (selected ? 'is-selected ' : '') + (item.is_paid ? 'is-paid' : '') + '" data-pay-row-id="' + rowId + '" data-pay-amount="' + (item.remaining_total || item.total || 0) + '"><span>' + (item.remaining_quantity || item.quantity) + ' x ' + escapeHtml(item.name) + (item.paid_amount > 0 ? '<br><small>Ödenen: ' + money(item.paid_amount) + '</small>' : '') + '</span><strong>' + money(item.remaining_total || item.total) + '</strong></div>';
     });
     $('#payItemList').html(html);
+    updateSelectedPayAmount();
+  }
+
+  function updateSelectedPayAmount() {
+    var selectedTotal = 0;
+    $('#payItemList .pay-row.is-selected').each(function() {
+      selectedTotal += parseFloat($(this).data('pay-amount') || 0);
+    });
+
+    if (selectedTotal > 0) {
+      setPayAmount(selectedTotal.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    }
   }
 
   function canPay() {
@@ -685,7 +710,7 @@
     var amount = parseAmount($('#payAmountInput').val());
     var $method = $('.pay-method[data-method="' + method + '"]');
     setBusy($method, true);
-    $.post(payUrl, {table_id:selectedTableId, payment_method:method, amount:amount, note:''}, function(json) {
+    $.post(payUrl, {table_id:selectedTableId, payment_method:method, amount:amount, selected_items:selectedPayItems, note:''}, function(json) {
       setBusy($method, false);
       if (!json || !json.success) {
         toast(json && json.message ? json.message : 'Ödeme alınamadı.', 'error');
@@ -735,6 +760,30 @@
     });
   });
   $(document).on('click', '.qty-remove', function(e){ e.preventDefault(); e.stopPropagation(); openCancelModal($(this).data('row-id') || $(this).closest('.receipt-row').data('row-id')); });
+  $(document).on('click', '.pay-select', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    var rowId = parseInt($(this).data('row-id') || 0, 10);
+    var index = selectedPayItems.indexOf(rowId);
+    if (index === -1) {
+      selectedPayItems.push(rowId);
+    } else {
+      selectedPayItems.splice(index, 1);
+    }
+    $(this).toggleClass('is-selected', index === -1);
+    $(this).closest('.receipt-row').toggleClass('pay-selected', index === -1);
+    fillPayModal();
+  });
+  $(document).on('click', '#payItemList .pay-row.selectable:not(.is-paid)', function(){
+    var rowId = parseInt($(this).data('pay-row-id') || 0, 10);
+    var index = selectedPayItems.indexOf(rowId);
+    if (index === -1) {
+      selectedPayItems.push(rowId);
+    } else {
+      selectedPayItems.splice(index, 1);
+    }
+    fillPayModal();
+  });
   $(document).on('click', '#cancelModal', function(e){ e.stopPropagation(); });
   $(document).on('click', '#closeCancelModal', function(e){ e.preventDefault(); closeCancelModal(); });
   $(document).on('change', 'input[name="cancel_reason"]', function(){ $('#cancelError').hide(); });

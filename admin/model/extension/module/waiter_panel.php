@@ -804,6 +804,8 @@ class ModelExtensionModuleWaiterPanel extends Model {
 		}
 
 		if ($service_status === 'paid') {
+			$this->insertWaiterCardPayment($restaurant_order_id, $table_id, $user_id);
+
 			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_call`
 				SET status = 'closed', date_modified = NOW()
 				WHERE table_id = '" . $table_id . "'
@@ -826,6 +828,76 @@ class ModelExtensionModuleWaiterPanel extends Model {
 		$this->syncTableStatus($table_id);
 
 		return true;
+	}
+
+	public function canWaiterCloseCardPayment($restaurant_order_id) {
+		$order = $this->db->query("SELECT table_id
+			FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE restaurant_order_id = '" . (int)$restaurant_order_id . "'
+			LIMIT 1");
+
+		if (!$order->num_rows) {
+			return false;
+		}
+
+		$note = $this->getLatestBillRequestNote((int)$order->row['table_id']);
+		$note = function_exists('mb_strtolower') ? mb_strtolower($note, 'UTF-8') : strtolower($note);
+
+		return (strpos($note, 'kart') !== false || strpos($note, 'card') !== false || strpos($note, 'pos') !== false || strpos($note, 'kredi') !== false);
+	}
+
+	private function getLatestBillRequestNote($table_id) {
+		$query = $this->db->query("SELECT note
+			FROM `" . DB_PREFIX . "restaurant_call`
+			WHERE table_id = '" . (int)$table_id . "'
+			AND call_type = 'bill_request'
+			AND status IN ('new','seen')
+			ORDER BY call_id DESC
+			LIMIT 1");
+
+		return $query->num_rows ? trim((string)$query->row['note']) : '';
+	}
+
+	private function insertWaiterCardPayment($restaurant_order_id, $table_id, $user_id) {
+		if (!$this->canWaiterCloseCardPayment($restaurant_order_id)) {
+			return;
+		}
+
+		$existing = $this->db->query("SELECT COUNT(*) AS total
+			FROM `" . DB_PREFIX . "restaurant_payment`
+			WHERE restaurant_order_id = '" . (int)$restaurant_order_id . "'");
+
+		if ((int)$existing->row['total'] > 0) {
+			return;
+		}
+
+		$order = $this->db->query("SELECT total_amount
+			FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE restaurant_order_id = '" . (int)$restaurant_order_id . "'
+			LIMIT 1");
+
+		if (!$order->num_rows || (float)$order->row['total_amount'] <= 0) {
+			return;
+		}
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_payment`
+			SET restaurant_order_id = '" . (int)$restaurant_order_id . "',
+				table_id = '" . (int)$table_id . "',
+				amount = '" . (float)$order->row['total_amount'] . "',
+				payment_method = 'card',
+				source = 'waiter_panel',
+				user_id = '" . (int)$user_id . "',
+				note = 'Garson POS tahsilatı',
+				date_added = NOW()");
+
+		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+			SET payment_status = 'paid',
+				payment_type = 'card',
+				payment_total = total_amount,
+				paid_at = NOW(),
+				cashier_user_id = '" . (int)$user_id . "',
+				locked = '1'
+			WHERE restaurant_order_id = '" . (int)$restaurant_order_id . "'");
 	}
 
 	private function isAllowedStatusTransition($old_status, $new_status) {

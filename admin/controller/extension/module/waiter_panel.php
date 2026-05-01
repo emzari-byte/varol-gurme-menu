@@ -246,17 +246,23 @@ true
 			) {
 				$json['success'] = false;
 				$json['message'] = 'Mutfak paneli kapalı.';
-			} elseif (
-				$service_status === 'paid'
-				&& $this->isRestaurantSettingEnabled('restaurant_cashier_panel', 1)
-				&& !$this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)
-			) {
-				$json['success'] = false;
-				$json['message'] = 'Kasa paneli aktif. Odeme islemi kasa panelinden yapilmali.';
 			} elseif ($restaurant_order_id && in_array($service_status, $allowed)) {
 				$this->load->model('extension/module/waiter_panel');
 
 				$current_user_id = (int)$this->user->getId();
+
+				if (
+					$service_status === 'paid'
+					&& $this->isRestaurantSettingEnabled('restaurant_cashier_panel', 1)
+					&& !$this->isRestaurantSettingEnabled('restaurant_akinsoft_enabled', 0)
+					&& !$this->model_extension_module_waiter_panel->canWaiterCloseCardPayment($restaurant_order_id)
+				) {
+					$json['success'] = false;
+					$json['message'] = 'Kasa paneli aktif. Nakit hesaplar kasadan kapatılmalı; garson sadece kredi kartı tahsilatını kapatabilir.';
+					$this->response->addHeader('Content-Type: application/json');
+					$this->response->setOutput(json_encode($json));
+					return;
+				}
 
 				$table_id = $this->model_extension_module_waiter_panel->getOrderTableId($restaurant_order_id);
 

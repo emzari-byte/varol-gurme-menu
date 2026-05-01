@@ -177,8 +177,24 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 				: $amount_raw;
 			$amount = (float)preg_replace('/[^0-9.]/', '', $amount_clean);
 			$note = isset($this->request->post['note']) ? trim((string)$this->request->post['note']) : '';
+			$selected_items = array();
 
-			$json = $this->model_extension_module_cashier_panel->payTablePartial($table_id, $payment_method, (int)$this->user->getId(), $note, $amount);
+			if (isset($this->request->post['selected_items'])) {
+				$raw_items = $this->request->post['selected_items'];
+
+				if (is_string($raw_items)) {
+					$decoded = json_decode($raw_items, true);
+					$raw_items = is_array($decoded) ? $decoded : array();
+				}
+
+				if (is_array($raw_items)) {
+					foreach ($raw_items as $selected_item_id) {
+						$selected_items[] = (int)$selected_item_id;
+					}
+				}
+			}
+
+			$json = $this->model_extension_module_cashier_panel->payTablePartial($table_id, $payment_method, (int)$this->user->getId(), $note, $amount, $selected_items);
 		}
 
 		$this->response->addHeader('Content-Type: application/json');
