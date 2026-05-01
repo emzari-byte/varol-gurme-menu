@@ -104,6 +104,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 				COALESCE(rts.service_status, 'empty') AS service_status,
 				COALESCE(rts.waiter_name, '') AS waiter_name,
 				COALESCE(rts.note, '') AS note,
+				MAX(CASE WHEN rc.call_id IS NOT NULL AND rc.status = 'new' THEN 1 ELSE 0 END) AS bill_request_new,
+				MAX(CASE WHEN rc.call_id IS NOT NULL THEN rc.call_id ELSE 0 END) AS bill_request_id,
 				MAX(CASE WHEN rc.call_id IS NOT NULL THEN 1 ELSE 0 END) AS bill_request_pending
 			FROM `" . DB_PREFIX . "restaurant_table` rt
 			LEFT JOIN (
@@ -902,9 +904,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 		}
 
 		$html .= '<div class="line"></div>';
-		$html .= '<div class="row"><span>Ara Toplam</span><strong>' . number_format((float)$detail['subtotal_amount'], 2, ',', '.') . ' TL</strong></div>';
-		$html .= '<div class="row"><span>Alınan</span><strong>' . number_format((float)$detail['paid_amount'], 2, ',', '.') . ' TL</strong></div>';
-		$html .= '<div class="row total"><span>Kalan</span><strong>' . number_format((float)$detail['total_amount'], 2, ',', '.') . ' TL</strong></div>';
+		$html .= '<div class="row total"><span>Toplam</span><strong>' . number_format((float)$detail['subtotal_amount'], 2, ',', '.') . ' TL</strong></div>';
 		$html .= '<div class="line"></div><div class="center">Teşekkür ederiz</div>';
 		$html .= '</body></html>';
 

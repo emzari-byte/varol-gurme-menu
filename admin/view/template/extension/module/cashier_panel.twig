@@ -68,6 +68,10 @@
       .pos-table .amount{font-size:17px;font-weight:900;color:#173126;white-space:nowrap;}
       .pos-table .mini-meta{position:absolute;right:10px;top:10px;display:flex;gap:5px;}
       .pos-table .mini-meta span{width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;color:#c83e38;}
+      .bill-label{display:none;margin-top:8px;padding:6px 8px;border-radius:9px;background:#c83e38;color:#fff;font-size:11px;font-weight:900;}
+      .pos-table.bill .bill-label{display:inline-flex;align-items:center;gap:5px;}
+      .pos-table.bill.new-bill{animation:cashierPulse 1.2s ease-in-out infinite;}
+      @keyframes cashierPulse{0%,100%{box-shadow:inset 0 0 0 2px rgba(200,62,56,.12),0 10px 22px rgba(23,49,38,.07);}50%{box-shadow:inset 0 0 0 3px rgba(200,62,56,.28),0 14px 34px rgba(200,62,56,.2);}}
       .empty-state{grid-column:1 / -1;min-height:160px;display:flex;align-items:center;justify-content:center;color:#728278;font-weight:900;}
       .order-view{height:calc(100vh - 62px);display:none;grid-template-columns:390px 1fr;background:#f4f6f5;}
       .order-view.active{display:grid;}
@@ -305,7 +309,6 @@
   var productsUrl = '{{ products_url|replace({"&amp;":"&"}) }}';
   var addProductUrl = '{{ add_product_url|replace({"&amp;":"&"}) }}';
   var removeProductUrl = '{{ remove_product_url|replace({"&amp;":"&"}) }}';
-  var markPaymentPendingUrl = '{{ mark_payment_pending_url|replace({"&amp;":"&"}) }}';
   var printReceiptUrl = '{{ print_receipt_url|replace({"&amp;":"&"}) }}';
   var imageBase = '{{ image_base|replace({"&amp;":"&"}) }}';
   var tables = {{ tables_json|raw }};
@@ -320,6 +323,7 @@
   var pendingCancelItem = null;
   var searchTimer = null;
   var payAmount = '';
+  var previousBillRequests = [];
 
   function money(value) {
     value = parseFloat(value || 0);
@@ -346,6 +350,27 @@
 
   function isOccupied(table) {
     return parseFloat(table.total_amount || 0) > 0;
+  }
+
+  function getBillRequestKeys(sourceTables) {
+    var keys = [];
+    (sourceTables || []).forEach(function(table) {
+      if (parseInt(table.bill_request_pending || 0, 10)) {
+        keys.push(String(table.bill_request_id || table.table_id));
+      }
+    });
+    return keys;
+  }
+
+  function notifyNewBillRequests(sourceTables) {
+    var keys = getBillRequestKeys(sourceTables);
+    (sourceTables || []).forEach(function(table) {
+      var key = String(table.bill_request_id || table.table_id);
+      if (parseInt(table.bill_request_pending || 0, 10) && previousBillRequests.indexOf(key) === -1) {
+        toast('Masa ' + table.table_no + ' hesap istiyor. Fiş hazırla.', 'error');
+      }
+    });
+    previousBillRequests = keys;
   }
 
   function renderSummary() {
@@ -400,11 +425,13 @@
     filtered.forEach(function(table) {
       var occupied = isOccupied(table);
       var pending = table.service_status === 'payment_pending';
-      var stateLabel = pending ? 'Hesap' : (occupied ? 'Dolu' : 'Boş');
-      var classes = (occupied ? 'occupied ' : '') + (pending ? 'pending ' : '') + (parseInt(table.bill_request_pending || 0, 10) ? 'bill' : '');
+      var billPending = parseInt(table.bill_request_pending || 0, 10);
+      var billNew = parseInt(table.bill_request_new || 0, 10);
+      var stateLabel = billPending ? 'Hesap İstiyor' : (pending ? 'Ödeme' : (occupied ? 'Dolu' : 'Boş'));
+      var classes = (occupied ? 'occupied ' : '') + (pending ? 'pending ' : '') + (billPending ? 'bill ' : '') + (billNew ? 'new-bill' : '');
       html += '<button type="button" class="pos-table ' + classes + '" data-table-id="' + table.table_id + '">';
-      html += '<div class="mini-meta">' + (parseInt(table.bill_request_pending || 0, 10) ? '<span title="Hesap talebi"><i class="fa fa-bell"></i></span>' : '') + '</div>';
-      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div><div class="waiter-line">' + escapeHtml(table.waiter_name || 'Kasadan yönetiliyor') + '</div></div>';
+      html += '<div class="mini-meta">' + (billPending ? '<span title="Hesap talebi"><i class="fa fa-bell"></i></span>' : '') + '</div>';
+      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div><div class="waiter-line">' + escapeHtml(table.waiter_name || 'Kasadan yönetiliyor') + '</div><div class="bill-label"><i class="fa fa-bell"></i> Müşteri hesap istiyor</div></div>';
       html += '<div class="table-bottom"><span class="state">' + stateLabel + '</span><span class="amount">' + (occupied ? money(table.total_amount) : '') + '</span></div>';
       html += '</button>';
     });
@@ -466,14 +493,10 @@
     }
 
     var hasItems = detail.items && detail.items.length;
-    var isPending = (detail.service_status === 'payment_pending') || (firstOrder && firstOrder.service_status === 'payment_pending');
-    var pendingButton = isPending
-      ? '<button type="button" class="btn btn-default" disabled><i class="fa fa-lock"></i> Hesap Alındı</button>'
-      : '<button type="button" class="btn btn-default" id="markPendingBtn"><i class="fa fa-lock"></i> Hesap Al</button>';
     $('#receiptActions')
       .toggleClass('has-pay', !!hasItems)
       .html(hasItems
-        ? pendingButton + '<button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
+        ? '<button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
         : '<button type="button" class="btn tag-btn"><i class="fa fa-tag"></i></button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>');
   }
 
@@ -506,6 +529,7 @@
       if (!json || !json.success) return;
       tables = json.tables || [];
       summary = json.summary || summary || {};
+      notifyNewBillRequests(tables);
       renderTables();
       if (keepDetail && selectedTableId) loadDetail(selectedTableId);
     });
@@ -675,25 +699,6 @@
     });
   }
 
-  function markPaymentPending() {
-    if (!selectedTableId) return;
-    var $button = $('#markPendingBtn');
-    setBusy($button, true);
-    $.post(markPaymentPendingUrl, {table_id:selectedTableId}, function(json) {
-      setBusy($button, false);
-      if (!json || !json.success) {
-        toast(json && json.message ? json.message : 'Hesap alınamadı.', 'error');
-        return;
-      }
-      toast(json.message || 'Hesap alındı.', 'success');
-      if (json.detail) renderDetail(json.detail);
-      refreshTables(false);
-    }, 'json').fail(function(){
-      setBusy($button, false);
-      toast('Hesap alınamadı. Sunucu cevabı alınamadı.', 'error');
-    });
-  }
-
   function printReceipt() {
     if (!selectedTableId) return;
     window.open(printReceiptUrl + '&table_id=' + selectedTableId, '_blank', 'width=420,height=720');
@@ -755,7 +760,6 @@
   $(document).on('click', '#saveTableBtn', showTables);
   $(document).on('click', '#payBtn', openPayModal);
   $(document).on('click', '#quickPayBtn', openQuickPayModal);
-  $(document).on('click', '#markPendingBtn', markPaymentPending);
   $(document).on('click', '#printReceiptBtn', printReceipt);
   $('#closePayModal,#closeQuickPayModal,#payBackdrop').on('click', closePayModal);
   $(document).on('click', '.pay-method', function(){ pay($(this).data('method')); });
@@ -763,6 +767,7 @@
   renderTables();
   renderCategories();
   renderProducts();
+  previousBillRequests = getBillRequestKeys(tables);
   setInterval(function(){ if ($('#tablesView').hasClass('active')) refreshTables(false); }, 10000);
 })(jQuery);
 </script>

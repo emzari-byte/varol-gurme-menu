@@ -92,6 +92,7 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 		$data['product_url'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'], true);
 		$data['category_url'] = $this->url->link('catalog/category', 'user_token=' . $this->session->data['user_token'], true);
 		$data['activities'] = $this->model_extension_module_restaurant_activity->getActivities(100);
+		$data['restaurant_orders'] = $this->model_extension_module_restaurant_activity->getOrders(150);
 		$data['production_checks'] = $this->model_extension_module_restaurant_settings->getProductionChecks();
 		$data['akinsoft_test_url'] = $this->url->link('extension/module/restaurant_settings/testAkinsoftConnection', 'user_token=' . $this->session->data['user_token'], true);
 		$data['akinsoft_sync_tables_url'] = $this->url->link('extension/module/restaurant_settings/syncAkinsoftTables', 'user_token=' . $this->session->data['user_token'], true);
