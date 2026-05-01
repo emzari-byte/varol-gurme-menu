@@ -101,7 +101,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				COALESCE(active.total_amount, 0) AS total_amount,
 				COALESCE(active.last_activity, '') AS last_activity,
 				COALESCE(active.order_ids, '') AS order_ids,
-				COALESCE(rts.service_status, 'empty') AS service_status,
+				COALESCE(active.service_status, rts.service_status, 'empty') AS service_status,
 				COALESCE(rts.waiter_name, '') AS waiter_name,
 				COALESCE(rts.note, '') AS note,
 				MAX(CASE WHEN rc.call_id IS NOT NULL AND rc.status = 'new' THEN 1 ELSE 0 END) AS bill_request_new,
@@ -113,6 +113,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 					COUNT(*) AS order_count,
 					SUM(GREATEST(ro.total_amount - COALESCE(pay.paid_amount, 0), 0)) AS total_amount,
 					MAX(ro.date_modified) AS last_activity,
+					SUBSTRING_INDEX(GROUP_CONCAT(ro.service_status ORDER BY FIELD(ro.service_status, 'payment_pending', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served') SEPARATOR ','), ',', 1) AS service_status,
 					GROUP_CONCAT(ro.restaurant_order_id ORDER BY ro.restaurant_order_id ASC SEPARATOR ',') AS order_ids
 				FROM `" . DB_PREFIX . "restaurant_order` ro
 				LEFT JOIN (
@@ -120,7 +121,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 					FROM `" . DB_PREFIX . "restaurant_payment`
 					GROUP BY restaurant_order_id
 				) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
-				WHERE ro.service_status IN ('served','payment_pending')
+				WHERE ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 				AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 				AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 				AND EXISTS (
@@ -154,7 +155,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				GROUP BY restaurant_order_id
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 			WHERE ro.table_id = '" . $table_id . "'
-			AND ro.service_status IN ('served','payment_pending')
+			AND ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 			AND EXISTS (
@@ -166,8 +167,25 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$items = array();
 		$subtotal = 0.0;
 		$paid_total = 0.0;
+		$payment_ready = true;
+		$detail_status = 'empty';
+		$status_priority = array(
+			'payment_pending' => 1,
+			'in_kitchen' => 2,
+			'ready_for_service' => 3,
+			'out_for_service' => 4,
+			'served' => 5
+		);
 
 		foreach ($orders as $order) {
+			if (isset($status_priority[$order['service_status']]) && ($detail_status === 'empty' || $status_priority[$order['service_status']] < $status_priority[$detail_status])) {
+				$detail_status = $order['service_status'];
+			}
+
+			if (!in_array($order['service_status'], array('served', 'payment_pending'), true)) {
+				$payment_ready = false;
+			}
+
 			$subtotal += (float)$order['total_amount'];
 			$paid = $this->db->query("SELECT COALESCE(SUM(amount), 0) AS paid_amount
 				FROM `" . DB_PREFIX . "restaurant_payment`
@@ -204,7 +222,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 			'paid_amount' => $paid_total,
 			'total_amount' => max(0, $subtotal - $paid_total),
 			'is_occupied' => ($subtotal - $paid_total) > 0,
-			'service_status' => $this->getTableServiceStatus($table_id)
+			'payment_ready' => $payment_ready && !empty($orders),
+			'service_status' => $detail_status !== 'empty' ? $detail_status : $this->getTableServiceStatus($table_id)
 		);
 	}
 
@@ -307,7 +326,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows || $query->row['service_status'] !== 'served' || !empty($query->row['locked'])) {
+		if (!$query->num_rows || !in_array($query->row['service_status'], array('in_kitchen', 'ready_for_service', 'out_for_service', 'served'), true) || !empty($query->row['locked'])) {
 			return array('success' => false, 'message' => 'Ürün satırı güncellenemedi.');
 		}
 
@@ -325,8 +344,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
 			SET restaurant_order_id = '" . $order_id . "',
-				old_status = 'served',
-				new_status = 'served',
+				old_status = '" . $this->db->escape($query->row['service_status']) . "',
+				new_status = '" . $this->db->escape($query->row['service_status']) . "',
 				user_id = '" . $user_id . "',
 				comment = '" . $this->db->escape('Kasa ürün adedini güncelledi: ' . $query->row['name'] . ' x ' . $quantity) . "',
 				date_added = NOW()");
@@ -375,7 +394,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows || !in_array($query->row['service_status'], array('served', 'payment_pending'), true) || $query->row['payment_status'] === 'paid') {
+		if (!$query->num_rows || !in_array($query->row['service_status'], array('in_kitchen', 'ready_for_service', 'out_for_service', 'served', 'payment_pending'), true) || $query->row['payment_status'] === 'paid') {
 			return array('success' => false, 'message' => 'Ürün satırı silinemedi.');
 		}
 
@@ -563,7 +582,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				FROM `" . DB_PREFIX . "restaurant_payment`
 				GROUP BY restaurant_order_id
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
-			WHERE ro.service_status IN ('served','payment_pending')
+			WHERE ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 			AND EXISTS (
@@ -914,7 +933,9 @@ class ModelExtensionModuleCashierPanel extends Model {
 	private function getOrCreateCashierOrder($table_id, $user_id = 0) {
 		$query = $this->db->query("SELECT restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE table_id = '" . (int)$table_id . "'
-			AND service_status = 'served'
+			AND service_status = 'in_kitchen'
+			AND (payment_status IS NULL OR payment_status != 'paid')
+			AND (locked IS NULL OR locked = '0')
 			ORDER BY restaurant_order_id DESC
 			LIMIT 1");
 
@@ -925,8 +946,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order`
 			SET table_id = '" . (int)$table_id . "',
 				waiter_user_id = '" . (int)$user_id . "',
-				service_status = 'served',
-				customer_note = 'Kasa manuel adisyon',
+				service_status = 'in_kitchen',
+				customer_note = 'Kasa manuel sipariş',
 				total_amount = '0.0000',
 				is_paid = '0',
 				date_added = NOW(),
@@ -937,9 +958,9 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
 			SET restaurant_order_id = '" . $order_id . "',
 				old_status = NULL,
-				new_status = 'served',
+				new_status = 'in_kitchen',
 				user_id = '" . (int)$user_id . "',
-				comment = 'Kasa panelinden manuel adisyon açıldı.',
+				comment = 'Kasa panelinden manuel sipariş mutfağa gönderildi.',
 				date_added = NOW()");
 
 		return $order_id;
@@ -971,7 +992,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				FROM `" . DB_PREFIX . "restaurant_order_product`
 				GROUP BY restaurant_order_id
 			) products ON (products.restaurant_order_id = ro.restaurant_order_id)
-			WHERE ro.service_status IN ('served','payment_pending')
+			WHERE ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND (COALESCE(products.product_count, 0) = 0 OR ro.total_amount <= COALESCE(pay.paid_amount, 0))")->rows;
 
@@ -1011,7 +1032,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 				GROUP BY restaurant_order_id
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 			WHERE ro.table_id = '" . $table_id . "'
-			AND ro.service_status IN ('served','payment_pending')
+			AND ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 			AND ro.total_amount > COALESCE(pay.paid_amount, 0)
 			AND EXISTS (
@@ -1036,7 +1057,32 @@ class ModelExtensionModuleCashierPanel extends Model {
 				WHERE rop.restaurant_order_id = ro.restaurant_order_id
 			)
 			LIMIT 1");
-		$status = ($count > 0 && $total > 0.009) ? ($pending->num_rows ? 'payment_pending' : 'served') : 'empty';
+		$status = 'empty';
+
+		if ($count > 0 && $total > 0.009) {
+			if ($pending->num_rows) {
+				$status = 'payment_pending';
+			} else {
+				$priority = $this->db->query("SELECT service_status
+					FROM `" . DB_PREFIX . "restaurant_order` ro
+					LEFT JOIN (
+						SELECT restaurant_order_id, SUM(amount) AS paid_amount
+						FROM `" . DB_PREFIX . "restaurant_payment`
+						GROUP BY restaurant_order_id
+					) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
+					WHERE ro.table_id = '" . $table_id . "'
+					AND ro.service_status IN ('in_kitchen','ready_for_service','out_for_service','served')
+					AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
+					AND ro.total_amount > COALESCE(pay.paid_amount, 0)
+					AND EXISTS (
+						SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+						WHERE rop.restaurant_order_id = ro.restaurant_order_id
+					)
+					ORDER BY FIELD(ro.service_status, 'in_kitchen', 'ready_for_service', 'out_for_service', 'served')
+					LIMIT 1");
+				$status = $priority->num_rows ? $priority->row['service_status'] : 'served';
+			}
+		}
 		$check = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table_status` WHERE table_id = '" . $table_id . "' LIMIT 1");
 
 		if ($check->num_rows) {

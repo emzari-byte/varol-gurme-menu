@@ -425,10 +425,13 @@
     filtered.forEach(function(table) {
       var occupied = isOccupied(table);
       var pending = table.service_status === 'payment_pending';
+      var inKitchen = table.service_status === 'in_kitchen';
+      var ready = table.service_status === 'ready_for_service' || table.service_status === 'out_for_service';
+      var served = table.service_status === 'served';
       var billPending = parseInt(table.bill_request_pending || 0, 10);
       var billNew = parseInt(table.bill_request_new || 0, 10);
-      var stateLabel = billPending ? 'Hesap İstiyor' : (pending ? 'Ödeme' : (occupied ? 'Dolu' : 'Boş'));
-      var classes = (occupied ? 'occupied ' : '') + (pending ? 'pending ' : '') + (billPending ? 'bill ' : '') + (billNew ? 'new-bill' : '');
+      var stateLabel = billPending ? 'Hesap istiyor' : (pending ? 'Ödeme' : (inKitchen ? 'Mutfakta' : (ready ? 'Servise hazır' : (served ? 'Servis edildi' : (occupied ? 'Dolu' : 'Boş')))));
+      var classes = (occupied ? 'occupied ' : '') + (pending ? 'pending ' : '') + (inKitchen ? 'in-kitchen ' : '') + (ready ? 'ready ' : '') + (served ? 'served ' : '') + (billPending ? 'bill ' : '') + (billNew ? 'new-bill' : '');
       html += '<button type="button" class="pos-table ' + classes + '" data-table-id="' + table.table_id + '">';
       html += '<div class="mini-meta">' + (billPending ? '<span title="Hesap talebi"><i class="fa fa-bell"></i></span>' : '') + '</div>';
       html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div><div class="waiter-line">' + escapeHtml(table.waiter_name || 'Kasadan yönetiliyor') + '</div><div class="bill-label"><i class="fa fa-bell"></i> Müşteri hesap istiyor</div></div>';
@@ -475,7 +478,12 @@
     $('#receiptTableName').text('Masa ' + detail.table.table_no);
     var firstOrder = detail.orders && detail.orders.length ? detail.orders[0] : null;
     $('#receiptNo').text('Adisyon: ' + (firstOrder ? firstOrder.restaurant_order_id : '0'));
-    $('.receipt-meta b').text(firstOrder && firstOrder.service_status === 'payment_pending' ? 'Ödeme Bekliyor' : 'Hazırlanıyor');
+    var statusText = 'Hazırlanıyor';
+    if (detail.service_status === 'payment_pending') statusText = 'Ödeme bekliyor';
+    else if (detail.service_status === 'served') statusText = 'Servis edildi';
+    else if (detail.service_status === 'ready_for_service' || detail.service_status === 'out_for_service') statusText = 'Servise hazır';
+    else if (detail.service_status === 'in_kitchen') statusText = 'Mutfakta';
+    $('.receipt-meta b').text(statusText);
     $('#receiptTotal,#receiptTotalTop').text(money(detail.total_amount));
 
     if (!detail.items || !detail.items.length) {
@@ -493,10 +501,11 @@
     }
 
     var hasItems = detail.items && detail.items.length;
+    var paymentReady = !!detail.payment_ready;
     $('#receiptActions')
       .toggleClass('has-pay', !!hasItems)
       .html(hasItems
-        ? '<button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
+        ? '<button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn" ' + (paymentReady ? '' : 'disabled title="Sipariş servis edilmeden ödeme alınamaz"') + '><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn" ' + (paymentReady ? '' : 'disabled title="Sipariş servis edilmeden hızlı ödeme alınamaz"') + '><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
         : '<button type="button" class="btn tag-btn"><i class="fa fa-tag"></i></button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>');
   }
 
@@ -627,12 +636,12 @@
   }
 
   function canPay() {
-    return selectedTableId && currentDetail && currentDetail.items && currentDetail.items.length;
+    return selectedTableId && currentDetail && currentDetail.payment_ready && currentDetail.items && currentDetail.items.length;
   }
 
   function openPayModal() {
     if (!canPay()) {
-      alert('Ödeme için ürün bulunan masa seçin.');
+      alert('Ödeme için siparişin servis edilmiş olması gerekir.');
       return;
     }
     fillPayModal();
@@ -641,7 +650,7 @@
 
   function openQuickPayModal() {
     if (!canPay()) {
-      alert('Hızlı ödeme için ürün bulunan masa seçin.');
+      alert('Hızlı ödeme için siparişin servis edilmiş olması gerekir.');
       return;
     }
     fillPayModal();
