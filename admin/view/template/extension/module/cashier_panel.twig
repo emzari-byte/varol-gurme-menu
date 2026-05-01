@@ -64,10 +64,8 @@
       .receipt-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:900;color:#173126;}
       .receipt-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;color:#6f7f76;font-size:12px;font-weight:800;}
       .receipt-items{padding:10px;overflow:auto;min-height:0;flex:1;}
-      .receipt-row{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;border:1px solid #edf2ee;border-radius:12px;padding:9px;margin-bottom:9px;background:#fff;box-shadow:0 6px 16px rgba(23,49,38,.04);}
-      .qty-stepper{display:grid;grid-template-rows:30px 32px 30px;border:1px solid #edf2ee;border-radius:10px;overflow:hidden;background:#fbfdfb;}
-      .qty-stepper button{border:0;background:#fff;color:#c83e38;font-weight:900;font-size:16px;}
-      .qty-stepper span{display:flex;align-items:center;justify-content:center;background:#f7faf8;font-weight:900;color:#173126;}
+      .receipt-row{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;border:1px solid #edf2ee;border-radius:12px;padding:10px;margin-bottom:9px;background:#fff;box-shadow:0 6px 16px rgba(23,49,38,.04);}
+      .qty-badge{width:42px;height:42px;border-radius:12px;background:#f3f7f5;color:#173126;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;}
       .receipt-name{font-weight:900;color:#173126;line-height:1.25;}
       .receipt-sub{font-size:12px;color:#8a968f;margin-top:4px;font-weight:800;}
       .receipt-total{font-weight:900;color:#173126;white-space:nowrap;text-align:right;}
@@ -128,6 +126,18 @@
       .pay-method:hover{border-color:#2f6f49;background:#f3fbf6;}
       .quick-pay-modal .pay-method-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;background:#f7faf8;}
       .quick-sub{padding:14px 18px 0;color:#728278;font-weight:800;background:#f7faf8;}
+      .cancel-modal{width:min(620px,calc(100vw - 36px));}
+      .cancel-body{padding:22px;background:#fff;}
+      .cancel-body h4{margin:0;font-size:24px;font-weight:900;color:#242424;}
+      .cancel-body .cancel-product{margin:6px 0 22px;color:#5f6662;font-size:15px;font-weight:800;}
+      .cancel-error{display:none;color:#c83e38;font-weight:900;margin-bottom:12px;}
+      .cancel-reasons{border-top:2px solid #d3423c;padding-top:18px;margin-top:14px;}
+      .cancel-option{display:flex;align-items:center;gap:12px;border-bottom:1px solid #edf2ee;padding:14px 0;font-size:18px;font-weight:900;color:#303030;cursor:pointer;}
+      .cancel-option input{width:22px;height:22px;margin:0;}
+      .cancel-note{width:100%;min-height:86px;margin-top:14px;border:1px solid #dfe7e3;border-radius:12px;padding:12px;resize:vertical;font-weight:700;}
+      .cancel-actions{display:flex;justify-content:flex-end;align-items:center;gap:14px;padding:16px 22px;background:#fff;}
+      .cancel-actions .btn-link{color:#c83e38;font-weight:900;text-decoration:none;}
+      .cancel-actions .btn-danger{height:48px;min-width:110px;border-radius:7px;font-weight:900;background:#c83e38;border-color:#c83e38;box-shadow:0 8px 18px rgba(200,62,56,.24);}
       @media(max-width:1180px){.order-view{grid-template-columns:360px 1fr;}.pay-body{grid-template-columns:1fr;}.cashier-pay-modal{width:calc(100vw - 28px);max-height:calc(100vh - 30px);overflow:auto;}}
       @media(max-width:780px){.order-view.active{display:block;height:auto;}.receipt-pane{min-height:420px;}.table-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.product-tools{grid-template-columns:1fr;}.cashier-nav strong{min-width:140px;}.receipt-actions.has-pay{grid-template-columns:1fr 1fr;}.tag-btn{display:none;}}
     </style>
@@ -181,6 +191,25 @@
 </div>
 
 <div class="cashier-modal-backdrop" id="payBackdrop"></div>
+<div class="cashier-pay-modal cancel-modal" id="cancelModal">
+  <div class="cancel-body">
+    <h4>Ürün İptali</h4>
+    <div class="cancel-product" id="cancelProductName">Ürünü iptal etmek üzeresiniz</div>
+    <div class="cancel-error" id="cancelError">İptal sebebi seçiniz.</div>
+    <strong style="color:#c83e38;">*İptal Sebebi Seçiniz</strong>
+    <div class="cancel-reasons">
+      <label class="cancel-option"><input type="radio" name="cancel_reason" value="waste" data-label="Ürün zayi oldu"> <span>Ürün zayi oldu</span></label>
+      <label class="cancel-option"><input type="radio" name="cancel_reason" value="wrong_item" data-label="Yanlış ürün girildi"> <span>Yanlış ürün girildi</span></label>
+      <label class="cancel-option"><input type="radio" name="cancel_reason" value="customer_cancel" data-label="Müşteri vazgeçti"> <span>Müşteri vazgeçti</span></label>
+      <label class="cancel-option"><input type="radio" name="cancel_reason" value="other" data-label="Diğer"> <span>Diğer</span></label>
+    </div>
+    <textarea class="cancel-note" id="cancelNote" placeholder="Not / açıklama (opsiyonel)"></textarea>
+  </div>
+  <div class="cancel-actions">
+    <button type="button" class="btn btn-link" id="closeCancelModal">İptal</button>
+    <button type="button" class="btn btn-danger" id="confirmCancelProduct">Kaydet</button>
+  </div>
+</div>
 <div class="cashier-pay-modal" id="payModal">
   <div class="pay-head">
     <div><h3 id="payTitle">Ödeme Ekranı</h3><strong id="payTableName"></strong></div>
@@ -250,6 +279,8 @@
   var selectedArea = '';
   var selectedCategory = categories.length ? parseInt(categories[0].category_id, 10) : 0;
   var currentDetail = null;
+  var pendingCancelRowId = 0;
+  var pendingCancelName = '';
   var searchTimer = null;
   var payAmount = '';
 
@@ -365,8 +396,8 @@
       var html = '';
       detail.items.forEach(function(item) {
         html += '<div class="receipt-row" data-row-id="' + item.restaurant_order_product_id + '" data-qty="' + item.quantity + '">';
-        html += '<div class="qty-stepper"><button type="button" class="qty-plus"><i class="fa fa-plus"></i></button><span>' + item.quantity + '</span><button type="button" class="qty-minus"><i class="fa fa-minus"></i></button></div>';
-        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet</div><div class="row-actions"><button type="button" class="qty-remove"><i class="fa fa-trash"></i></button></div></div>';
+        html += '<div class="qty-badge">' + item.quantity + '</div>';
+        html += '<div><div class="receipt-name">' + escapeHtml(item.name) + '</div><div class="receipt-sub">' + money(item.price) + ' / adet</div><div class="row-actions"><button type="button" class="qty-remove" data-product-name="' + escapeHtml(item.name) + '"><i class="fa fa-trash"></i></button></div></div>';
         html += '<div class="receipt-total">' + money(item.total) + '</div>';
         html += '</div>';
       });
@@ -424,12 +455,37 @@
     }, 'json');
   }
 
-  function removeRow(rowId) {
-    $.post(removeProductUrl, {restaurant_order_product_id:rowId}, function(json) {
+  function openCancelModal(rowId, productName) {
+    pendingCancelRowId = parseInt(rowId || 0, 10);
+    pendingCancelName = productName || '';
+    $('input[name="cancel_reason"]').prop('checked', false);
+    $('#cancelNote').val('');
+    $('#cancelError').hide();
+    $('#cancelProductName').text(pendingCancelName ? pendingCancelName + ' ürününü iptal etmek üzeresiniz' : 'Ürünü iptal etmek üzeresiniz');
+    $('#payBackdrop,#cancelModal').show();
+  }
+
+  function closeCancelModal() {
+    pendingCancelRowId = 0;
+    pendingCancelName = '';
+    $('#cancelModal').hide();
+    if (!$('#payModal').is(':visible') && !$('#quickPayModal').is(':visible')) {
+      $('#payBackdrop').hide();
+    }
+  }
+
+  function removeRow(rowId, reasonCode, reasonText, note) {
+    $.post(removeProductUrl, {
+      restaurant_order_product_id: rowId,
+      reason_code: reasonCode,
+      reason_text: reasonText,
+      note: note || ''
+    }, function(json) {
       if (!json || !json.success) {
         alert(json && json.message ? json.message : 'Ürün silinemedi.');
         return;
       }
+      closeCancelModal();
       renderDetail(json.detail);
       refreshTables(false);
     }, 'json');
@@ -479,7 +535,7 @@
   }
 
   function closePayModal() {
-    $('#payBackdrop,#payModal,#quickPayModal').hide();
+    $('#payBackdrop,#payModal,#quickPayModal,#cancelModal').hide();
   }
 
   function setPayAmount(value) {
@@ -553,9 +609,16 @@
       refreshTables(false);
     }, 'json');
   });
-  $(document).on('click', '.qty-plus', function(){ var row = $(this).closest('.receipt-row'); updateRow(row.data('row-id'), parseInt(row.data('qty'), 10) + 1); });
-  $(document).on('click', '.qty-minus', function(){ var row = $(this).closest('.receipt-row'); updateRow(row.data('row-id'), parseInt(row.data('qty'), 10) - 1); });
-  $(document).on('click', '.qty-remove', function(){ var row = $(this).closest('.receipt-row'); if (confirm('Bu ürünü adisyondan silmek istiyor musunuz?')) removeRow(row.data('row-id')); });
+  $(document).on('click', '.qty-remove', function(){ var row = $(this).closest('.receipt-row'); openCancelModal(row.data('row-id'), $(this).data('product-name') || row.find('.receipt-name').text()); });
+  $('#closeCancelModal').on('click', closeCancelModal);
+  $('#confirmCancelProduct').on('click', function(){
+    var reason = $('input[name="cancel_reason"]:checked');
+    if (!pendingCancelRowId || !reason.length) {
+      $('#cancelError').show();
+      return;
+    }
+    removeRow(pendingCancelRowId, reason.val(), reason.data('label') || reason.closest('label').text(), $('#cancelNote').val());
+  });
   $('#productSearch').on('input', function(){ clearTimeout(searchTimer); searchTimer = setTimeout(loadProducts, 220); });
   $('#clearProductSearch').on('click', function(){ $('#productSearch').val(''); loadProducts(); });
   $('#payAmountInput').on('input', function(){ payAmount = $(this).val(); });

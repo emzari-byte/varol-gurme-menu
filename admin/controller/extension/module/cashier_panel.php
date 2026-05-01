@@ -149,7 +149,10 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 		} else {
 			$this->load->model('extension/module/cashier_panel');
 			$restaurant_order_product_id = isset($this->request->post['restaurant_order_product_id']) ? (int)$this->request->post['restaurant_order_product_id'] : 0;
-			$json = $this->model_extension_module_cashier_panel->removeProductFromTable($restaurant_order_product_id, (int)$this->user->getId());
+			$reason_code = isset($this->request->post['reason_code']) ? trim((string)$this->request->post['reason_code']) : '';
+			$reason_text = isset($this->request->post['reason_text']) ? trim((string)$this->request->post['reason_text']) : '';
+			$note = isset($this->request->post['note']) ? trim((string)$this->request->post['note']) : '';
+			$json = $this->model_extension_module_cashier_panel->removeProductFromTable($restaurant_order_product_id, (int)$this->user->getId(), $this->user->getUserName(), $reason_code, $reason_text, $note);
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

@@ -46,6 +46,29 @@ class ModelExtensionModuleCashierPanel extends Model {
 			KEY `action` (`action`),
 			KEY `date_added` (`date_added`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_order_product_cancel` (
+			`cancel_id` int(11) NOT NULL AUTO_INCREMENT,
+			`restaurant_order_product_id` int(11) NOT NULL DEFAULT '0',
+			`restaurant_order_id` int(11) NOT NULL DEFAULT '0',
+			`table_id` int(11) NOT NULL DEFAULT '0',
+			`product_id` int(11) NOT NULL DEFAULT '0',
+			`name` varchar(255) NOT NULL DEFAULT '',
+			`quantity` int(11) NOT NULL DEFAULT '0',
+			`price` decimal(15,4) NOT NULL DEFAULT '0.0000',
+			`total` decimal(15,4) NOT NULL DEFAULT '0.0000',
+			`reason_code` varchar(64) NOT NULL DEFAULT '',
+			`reason_text` varchar(255) NOT NULL DEFAULT '',
+			`note` text NOT NULL,
+			`user_id` int(11) NOT NULL DEFAULT '0',
+			`user_name` varchar(128) NOT NULL DEFAULT '',
+			`date_added` datetime NOT NULL,
+			PRIMARY KEY (`cancel_id`),
+			KEY `restaurant_order_id` (`restaurant_order_id`),
+			KEY `table_id` (`table_id`),
+			KEY `reason_code` (`reason_code`),
+			KEY `date_added` (`date_added`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 	}
 
 	public function tableExists($table) {
@@ -301,10 +324,29 @@ class ModelExtensionModuleCashierPanel extends Model {
 		return array('success' => true, 'message' => 'Ürün adedi güncellendi.', 'detail' => $this->getTableDetail($table_id));
 	}
 
-	public function removeProductFromTable($restaurant_order_product_id, $user_id = 0) {
+	public function removeProductFromTable($restaurant_order_product_id, $user_id = 0, $user_name = '', $reason_code = '', $reason_text = '', $note = '') {
 		$this->install();
 		$restaurant_order_product_id = (int)$restaurant_order_product_id;
 		$user_id = (int)$user_id;
+		$user_name = trim((string)$user_name);
+		$reason_code = trim((string)$reason_code);
+		$reason_text = trim((string)$reason_text);
+		$note = trim((string)$note);
+
+		$allowed_reasons = array(
+			'waste' => 'Ürün zayi oldu',
+			'wrong_item' => 'Yanlış ürün girildi',
+			'customer_cancel' => 'Müşteri vazgeçti',
+			'other' => 'Diğer'
+		);
+
+		if (!isset($allowed_reasons[$reason_code])) {
+			return array('success' => false, 'message' => 'Ürün iptal sebebi seçilmelidir.');
+		}
+
+		if ($reason_text === '') {
+			$reason_text = $allowed_reasons[$reason_code];
+		}
 
 		$query = $this->db->query("SELECT rop.*, ro.table_id, ro.service_status
 			FROM `" . DB_PREFIX . "restaurant_order_product` rop
@@ -318,6 +360,22 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 		$order_id = (int)$query->row['restaurant_order_id'];
 		$table_id = (int)$query->row['table_id'];
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_product_cancel`
+			SET restaurant_order_product_id = '" . $restaurant_order_product_id . "',
+				restaurant_order_id = '" . $order_id . "',
+				table_id = '" . $table_id . "',
+				product_id = '" . (int)$query->row['product_id'] . "',
+				name = '" . $this->db->escape($query->row['name']) . "',
+				quantity = '" . (int)$query->row['quantity'] . "',
+				price = '" . (float)$query->row['price'] . "',
+				total = '" . (float)$query->row['total'] . "',
+				reason_code = '" . $this->db->escape($reason_code) . "',
+				reason_text = '" . $this->db->escape($reason_text) . "',
+				note = '" . $this->db->escape($note) . "',
+				user_id = '" . $user_id . "',
+				user_name = '" . $this->db->escape($user_name) . "',
+				date_added = NOW()");
 
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "restaurant_order_product`
 			WHERE restaurant_order_product_id = '" . $restaurant_order_product_id . "'");
@@ -343,8 +401,27 @@ class ModelExtensionModuleCashierPanel extends Model {
 				old_status = 'served',
 				new_status = 'served',
 				user_id = '" . $user_id . "',
-				comment = '" . $this->db->escape('Kasa ürün satırını sildi: ' . $query->row['name']) . "',
+				comment = '" . $this->db->escape('Kasa ürün iptali: ' . $query->row['name'] . ' - ' . $reason_text) . "',
 				date_added = NOW()");
+
+		$this->addLog(array(
+			'restaurant_order_id' => $order_id,
+			'table_id' => $table_id,
+			'user_id' => $user_id,
+			'user_name' => $user_name,
+			'action' => 'product_cancel',
+			'message' => 'Kasa ürün iptali kaydedildi.',
+			'data' => array(
+				'restaurant_order_product_id' => $restaurant_order_product_id,
+				'product_id' => (int)$query->row['product_id'],
+				'name' => $query->row['name'],
+				'quantity' => (int)$query->row['quantity'],
+				'total' => (float)$query->row['total'],
+				'reason_code' => $reason_code,
+				'reason_text' => $reason_text,
+				'note' => $note
+			)
+		));
 
 		return array('success' => true, 'message' => 'Ürün satırı silindi.', 'detail' => $this->getTableDetail($table_id));
 	}
