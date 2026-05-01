@@ -1,6 +1,19 @@
 <?php
 class ModelExtensionModuleCashierPanel extends Model {
 	public function install() {
+		if ($this->tableExists(DB_PREFIX . 'restaurant_order')) {
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'payment_status', "VARCHAR(32) NOT NULL DEFAULT 'unpaid'");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'payment_type', "VARCHAR(32) DEFAULT NULL");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'payment_total', "DECIMAL(15,4) NOT NULL DEFAULT '0.0000'");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'discount_type', "VARCHAR(16) NOT NULL DEFAULT 'none'");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'discount_value', "DECIMAL(15,4) NOT NULL DEFAULT '0.0000'");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'discount_amount', "DECIMAL(15,4) NOT NULL DEFAULT '0.0000'");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'service_fee', "DECIMAL(15,4) NOT NULL DEFAULT '0.0000'");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'paid_at', "DATETIME DEFAULT NULL");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'cashier_user_id', "INT(11) NOT NULL DEFAULT '0'");
+			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_order', 'locked', "TINYINT(1) NOT NULL DEFAULT '0'");
+		}
+
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_payment` (
 			`payment_id` int(11) NOT NULL AUTO_INCREMENT,
 			`restaurant_order_id` int(11) NOT NULL,
@@ -16,6 +29,39 @@ class ModelExtensionModuleCashierPanel extends Model {
 			KEY `table_id` (`table_id`),
 			KEY `date_added` (`date_added`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_cashier_log` (
+			`log_id` int(11) NOT NULL AUTO_INCREMENT,
+			`restaurant_order_id` int(11) NOT NULL DEFAULT '0',
+			`table_id` int(11) NOT NULL DEFAULT '0',
+			`user_id` int(11) NOT NULL DEFAULT '0',
+			`user_name` varchar(128) NOT NULL DEFAULT '',
+			`action` varchar(64) NOT NULL,
+			`message` text,
+			`data_json` mediumtext,
+			`date_added` datetime NOT NULL,
+			PRIMARY KEY (`log_id`),
+			KEY `restaurant_order_id` (`restaurant_order_id`),
+			KEY `table_id` (`table_id`),
+			KEY `action` (`action`),
+			KEY `date_added` (`date_added`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+	}
+
+	public function tableExists($table) {
+		$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+		return $query->num_rows > 0;
+	}
+
+	public function columnExists($table, $column) {
+		$query = $this->db->query("SHOW COLUMNS FROM `" . $this->db->escape($table) . "` LIKE '" . $this->db->escape($column) . "'");
+		return $query->num_rows > 0;
+	}
+
+	private function addColumnIfMissing($table, $column, $definition) {
+		if (!$this->columnExists($table, $column)) {
+			$this->db->query("ALTER TABLE `" . $this->db->escape($table) . "` ADD `" . $this->db->escape($column) . "` " . $definition);
+		}
 	}
 
 	public function getOpenTables() {
@@ -41,7 +87,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 					FROM `" . DB_PREFIX . "restaurant_payment`
 					GROUP BY restaurant_order_id
 				) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
-				WHERE ro.service_status = 'served'
+				WHERE ro.service_status IN ('served','payment_pending')
+				AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')
 				GROUP BY ro.table_id
 			) active ON (active.table_id = rt.table_id)
 			LEFT JOIN `" . DB_PREFIX . "restaurant_table_status` rts ON (rts.table_id = rt.table_id)
@@ -63,7 +110,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 		$orders = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE table_id = '" . $table_id . "'
-			AND service_status = 'served'
+			AND service_status IN ('served','payment_pending')
+			AND (payment_status IS NULL OR payment_status != 'paid')
 			ORDER BY restaurant_order_id ASC")->rows;
 
 		$items = array();
@@ -158,6 +206,16 @@ class ModelExtensionModuleCashierPanel extends Model {
 			return array('success' => false, 'message' => 'Masa bulunamadı.');
 		}
 
+		$locked = $this->db->query("SELECT restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . $table_id . "'
+			AND service_status = 'payment_pending'
+			AND (payment_status IS NULL OR payment_status != 'paid')
+			LIMIT 1");
+
+		if ($locked->num_rows) {
+			return array('success' => false, 'message' => 'Hesap alınmış masaya ürün eklenemez.');
+		}
+
 		$product = $this->db->query("SELECT p.product_id, p.price, pd.name
 			FROM `" . DB_PREFIX . "product` p
 			INNER JOIN `" . DB_PREFIX . "product_description` pd ON (pd.product_id = p.product_id AND pd.language_id = '" . (int)$this->getTurkishLanguageId() . "')
@@ -199,7 +257,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows || $query->row['service_status'] !== 'served') {
+		if (!$query->num_rows || $query->row['service_status'] !== 'served' || !empty($query->row['locked'])) {
 			return array('success' => false, 'message' => 'Ürün satırı güncellenemedi.');
 		}
 
@@ -237,7 +295,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 			WHERE rop.restaurant_order_product_id = '" . $restaurant_order_product_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows || $query->row['service_status'] !== 'served') {
+		if (!$query->num_rows || $query->row['service_status'] !== 'served' || !empty($query->row['locked'])) {
 			return array('success' => false, 'message' => 'Ürün satırı silinemedi.');
 		}
 
@@ -272,6 +330,70 @@ class ModelExtensionModuleCashierPanel extends Model {
 				date_added = NOW()");
 
 		return array('success' => true, 'message' => 'Ürün satırı silindi.', 'detail' => $this->getTableDetail($table_id));
+	}
+
+	public function markPaymentPending($table_id, $user_id = 0, $user_name = '') {
+		$this->install();
+		$table_id = (int)$table_id;
+		$user_id = (int)$user_id;
+
+		if (!$table_id) {
+			return array('success' => false, 'message' => 'Masa bulunamadı.');
+		}
+
+		$orders = $this->db->query("SELECT restaurant_order_id, service_status
+			FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . $table_id . "'
+			AND service_status = 'served'
+			AND (payment_status IS NULL OR payment_status != 'paid')
+			ORDER BY restaurant_order_id ASC")->rows;
+
+		if (!$orders) {
+			return array('success' => false, 'message' => 'Hesap alınacak servis edilmiş sipariş bulunamadı.');
+		}
+
+		foreach ($orders as $order) {
+			$order_id = (int)$order['restaurant_order_id'];
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+				SET service_status = 'payment_pending',
+					payment_status = 'pending',
+					locked = '1',
+					date_modified = NOW()
+				WHERE restaurant_order_id = '" . $order_id . "'");
+
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_order_history`
+				SET restaurant_order_id = '" . $order_id . "',
+					old_status = '" . $this->db->escape($order['service_status']) . "',
+					new_status = 'payment_pending',
+					user_id = '" . $user_id . "',
+					comment = 'Kasa panelinden hesap alındı.',
+					date_added = NOW()");
+		}
+
+		$this->syncTableStatus($table_id);
+		$this->addLog(array(
+			'table_id' => $table_id,
+			'user_id' => $user_id,
+			'user_name' => $user_name,
+			'action' => 'payment_pending',
+			'message' => 'Hesap alındı.',
+			'data' => array('orders' => $orders)
+		));
+
+		return array('success' => true, 'message' => 'Masa ödeme bekliyor durumuna alındı.', 'detail' => $this->getTableDetail($table_id));
+	}
+
+	public function addLog($data) {
+		$this->install();
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_cashier_log`
+			SET restaurant_order_id = '" . (int)(isset($data['restaurant_order_id']) ? $data['restaurant_order_id'] : 0) . "',
+				table_id = '" . (int)(isset($data['table_id']) ? $data['table_id'] : 0) . "',
+				user_id = '" . (int)(isset($data['user_id']) ? $data['user_id'] : 0) . "',
+				user_name = '" . $this->db->escape(isset($data['user_name']) ? $data['user_name'] : '') . "',
+				action = '" . $this->db->escape(isset($data['action']) ? $data['action'] : '') . "',
+				message = '" . $this->db->escape(isset($data['message']) ? $data['message'] : '') . "',
+				data_json = '" . $this->db->escape(json_encode(isset($data['data']) ? $data['data'] : array())) . "',
+				date_added = NOW()");
 	}
 
 	public function getSummary() {
@@ -311,7 +433,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 
 		$open = $this->db->query("SELECT COUNT(*) AS count_total, COALESCE(SUM(total_amount), 0) AS amount_total
 			FROM `" . DB_PREFIX . "restaurant_order`
-			WHERE service_status = 'served'")->row;
+			WHERE service_status IN ('served','payment_pending')
+			AND (payment_status IS NULL OR payment_status != 'paid')")->row;
 
 		$summary['open_count'] = (int)$open['count_total'];
 		$summary['open_total'] = (float)$open['amount_total'];
@@ -348,7 +471,8 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$orders = $this->db->query("SELECT restaurant_order_id, table_id, service_status, total_amount
 			FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE table_id = '" . $table_id . "'
-			AND service_status = 'served'
+			AND service_status IN ('served','payment_pending')
+			AND (payment_status IS NULL OR payment_status != 'paid')
 			ORDER BY restaurant_order_id ASC")->rows;
 
 		if (!$orders) {
@@ -409,10 +533,20 @@ class ModelExtensionModuleCashierPanel extends Model {
 			foreach ($orders as $order) {
 				$order_id = (int)$order['restaurant_order_id'];
 				$old_status = (string)$order['service_status'];
+				$payment_types = $this->db->query("SELECT COUNT(DISTINCT payment_method) AS type_count, COUNT(*) AS payment_count
+					FROM `" . DB_PREFIX . "restaurant_payment`
+					WHERE restaurant_order_id = '" . $order_id . "'")->row;
+				$final_payment_type = ((int)$payment_types['type_count'] > 1 || (int)$payment_types['payment_count'] > 1) ? 'mixed' : $payment_method;
 
 				$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
 					SET service_status = 'paid',
 						is_paid = '1',
+						payment_status = 'paid',
+						payment_type = '" . $this->db->escape($final_payment_type) . "',
+						payment_total = total_amount,
+						paid_at = NOW(),
+						cashier_user_id = '" . $user_id . "',
+						locked = '1',
 						date_modified = NOW()
 					WHERE restaurant_order_id = '" . $order_id . "'");
 
@@ -439,10 +573,42 @@ class ModelExtensionModuleCashierPanel extends Model {
 					date_modified = NOW()
 				WHERE table_id = '" . $table_id . "'");
 
+			$this->addLog(array(
+				'table_id' => $table_id,
+				'user_id' => $user_id,
+				'action' => 'payment_complete',
+				'message' => 'Masa ödemesi tamamlandı.',
+				'data' => array('payment_method' => $payment_method, 'amount' => $amount)
+			));
+
 			return array('success' => true, 'closed' => true, 'message' => 'Ödeme alındı ve masa kapatıldı.');
 		}
 
+		foreach ($orders as $order) {
+			$order_id = (int)$order['restaurant_order_id'];
+			$paid = $this->db->query("SELECT COALESCE(SUM(amount), 0) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				WHERE restaurant_order_id = '" . $order_id . "'")->row;
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
+				SET service_status = 'payment_pending',
+					payment_status = 'partial',
+					payment_type = 'mixed',
+					payment_total = '" . (float)$paid['paid_amount'] . "',
+					cashier_user_id = '" . $user_id . "',
+					locked = '1',
+					date_modified = NOW()
+				WHERE restaurant_order_id = '" . $order_id . "'");
+		}
+
 		$this->syncTableStatus($table_id);
+		$this->addLog(array(
+			'table_id' => $table_id,
+			'user_id' => $user_id,
+			'action' => 'payment_partial',
+			'message' => 'Parçalı tahsilat alındı.',
+			'data' => array('payment_method' => $payment_method, 'amount' => $amount, 'remaining' => $detail['total_amount'])
+		));
 		return array('success' => true, 'closed' => false, 'message' => 'Tahsilat alındı.', 'detail' => $detail);
 	}
 
@@ -516,6 +682,91 @@ class ModelExtensionModuleCashierPanel extends Model {
 		return array('success' => true, 'message' => 'Ödeme alındı ve masa kapatıldı.');
 	}
 
+	public function getDailyReport($date) {
+		$this->install();
+		$date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? $date : date('Y-m-d');
+
+		$summary = array(
+			'total' => 0,
+			'cash' => 0,
+			'card' => 0,
+			'count' => 0
+		);
+
+		$payments = $this->db->query("SELECT payment_method, COUNT(*) AS count_total, COALESCE(SUM(amount), 0) AS amount_total
+			FROM `" . DB_PREFIX . "restaurant_payment`
+			WHERE DATE(date_added) = '" . $this->db->escape($date) . "'
+			GROUP BY payment_method")->rows;
+
+		foreach ($payments as $payment) {
+			$amount = (float)$payment['amount_total'];
+			$summary['total'] += $amount;
+			$summary['count'] += (int)$payment['count_total'];
+
+			if ($payment['payment_method'] === 'cash') {
+				$summary['cash'] += $amount;
+			} elseif ($payment['payment_method'] === 'card') {
+				$summary['card'] += $amount;
+			}
+		}
+
+		$tables = $this->db->query("SELECT rt.table_no, rt.area, COALESCE(SUM(rp.amount), 0) AS amount_total
+			FROM `" . DB_PREFIX . "restaurant_payment` rp
+			LEFT JOIN `" . DB_PREFIX . "restaurant_table` rt ON (rt.table_id = rp.table_id)
+			WHERE DATE(rp.date_added) = '" . $this->db->escape($date) . "'
+			GROUP BY rp.table_id
+			ORDER BY amount_total DESC")->rows;
+
+		$products = $this->db->query("SELECT rop.name, SUM(rop.quantity) AS quantity_total, SUM(rop.total) AS total_amount
+			FROM `" . DB_PREFIX . "restaurant_order_product` rop
+			INNER JOIN `" . DB_PREFIX . "restaurant_order` ro ON (ro.restaurant_order_id = rop.restaurant_order_id)
+			WHERE DATE(ro.paid_at) = '" . $this->db->escape($date) . "'
+			AND ro.payment_status = 'paid'
+			GROUP BY rop.product_id, rop.name
+			ORDER BY total_amount DESC
+			LIMIT 50")->rows;
+
+		return array(
+			'date' => $date,
+			'summary' => $summary,
+			'tables' => $tables,
+			'products' => $products
+		);
+	}
+
+	public function getReceiptHtml($table_id) {
+		$detail = $this->getTableDetail($table_id);
+
+		if (!$detail || empty($detail['table'])) {
+			return '<!doctype html><html><body>Fiş bulunamadı.</body></html>';
+		}
+
+		$escape = function($value) {
+			return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+		};
+
+		$html = '<!doctype html><html><head><meta charset="utf-8"><title>Fiş</title>';
+		$html .= '<style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;color:#111;font-size:12px}.center{text-align:center}.line{border-top:1px dashed #111;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.item{margin:5px 0}.total{font-weight:bold;font-size:14px}</style>';
+		$html .= '</head><body>';
+		$html .= '<div class="center"><h3>Varol Veranda</h3><div>Afiyet olsun</div></div><div class="line"></div>';
+		$html .= '<div>Masa: ' . $escape($detail['table']['table_no']) . '</div>';
+		$html .= '<div>Alan: ' . $escape($detail['table']['area']) . '</div>';
+		$html .= '<div>Tarih: ' . date('d.m.Y H:i') . '</div><div class="line"></div>';
+
+		foreach ($detail['items'] as $item) {
+			$html .= '<div class="item"><div>' . $escape($item['name']) . '</div><div class="row"><span>' . (int)$item['quantity'] . ' x ' . number_format((float)$item['price'], 2, ',', '.') . '</span><strong>' . number_format((float)$item['total'], 2, ',', '.') . ' TL</strong></div></div>';
+		}
+
+		$html .= '<div class="line"></div>';
+		$html .= '<div class="row"><span>Ara Toplam</span><strong>' . number_format((float)$detail['subtotal_amount'], 2, ',', '.') . ' TL</strong></div>';
+		$html .= '<div class="row"><span>Alınan</span><strong>' . number_format((float)$detail['paid_amount'], 2, ',', '.') . ' TL</strong></div>';
+		$html .= '<div class="row total"><span>Kalan</span><strong>' . number_format((float)$detail['total_amount'], 2, ',', '.') . ' TL</strong></div>';
+		$html .= '<div class="line"></div><div class="center">Teşekkür ederiz</div>';
+		$html .= '</body></html>';
+
+		return $html;
+	}
+
 	private function getOrCreateCashierOrder($table_id, $user_id = 0) {
 		$query = $this->db->query("SELECT restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE table_id = '" . (int)$table_id . "'
@@ -572,11 +823,17 @@ class ModelExtensionModuleCashierPanel extends Model {
 				GROUP BY restaurant_order_id
 			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)
 			WHERE ro.table_id = '" . $table_id . "'
-			AND ro.service_status = 'served'")->row;
+			AND ro.service_status IN ('served','payment_pending')
+			AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')")->row;
 
 		$count = (int)$active['active_order_count'];
 		$total = (float)$active['total_amount'];
-		$status = ($count > 0 && $total > 0.009) ? 'served' : 'empty';
+		$pending = $this->db->query("SELECT restaurant_order_id FROM `" . DB_PREFIX . "restaurant_order`
+			WHERE table_id = '" . $table_id . "'
+			AND service_status = 'payment_pending'
+			AND (payment_status IS NULL OR payment_status != 'paid')
+			LIMIT 1");
+		$status = ($count > 0 && $total > 0.009) ? ($pending->num_rows ? 'payment_pending' : 'served') : 'empty';
 		$check = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table_status` WHERE table_id = '" . $table_id . "' LIMIT 1");
 
 		if ($check->num_rows) {

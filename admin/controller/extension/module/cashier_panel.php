@@ -1,5 +1,10 @@
 <?php
 class ControllerExtensionModuleCashierPanel extends Controller {
+	public function install() {
+		$this->load->model('extension/module/cashier_panel');
+		$this->model_extension_module_cashier_panel->install();
+	}
+
 	public function index() {
 		if (!$this->user->hasPermission('access', 'extension/module/cashier_panel') || !$this->isCashierPanelEnabled()) {
 			$this->response->redirect($this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true));
@@ -8,6 +13,7 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 
 		$this->document->setTitle('Kasa Paneli');
 		$this->load->model('extension/module/cashier_panel');
+		$this->model_extension_module_cashier_panel->install();
 
 		$data['breadcrumbs'] = array(
 			array(
@@ -33,6 +39,9 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 		$data['add_product_url'] = $this->url->link('extension/module/cashier_panel/addProduct', 'user_token=' . $this->session->data['user_token'], true);
 		$data['update_product_url'] = $this->url->link('extension/module/cashier_panel/updateProduct', 'user_token=' . $this->session->data['user_token'], true);
 		$data['remove_product_url'] = $this->url->link('extension/module/cashier_panel/removeProduct', 'user_token=' . $this->session->data['user_token'], true);
+		$data['mark_payment_pending_url'] = $this->url->link('extension/module/cashier_panel/markPaymentPending', 'user_token=' . $this->session->data['user_token'], true);
+		$data['print_receipt_url'] = $this->url->link('extension/module/cashier_panel/printReceipt', 'user_token=' . $this->session->data['user_token'], true);
+		$data['daily_report_url'] = $this->url->link('extension/module/cashier_panel/dailyReport', 'user_token=' . $this->session->data['user_token'], true);
 		$data['logout_url'] = $this->url->link('common/logout', 'user_token=' . $this->session->data['user_token'], true);
 		$data['image_base'] = (!empty($this->request->server['HTTPS']) && $this->request->server['HTTPS'] !== 'off' ? HTTPS_CATALOG : HTTP_CATALOG) . 'image/';
 		$data['cashier_fullscreen'] = $this->isCashierOnlyUser() ? 1 : 0;
@@ -159,10 +168,62 @@ class ControllerExtensionModuleCashierPanel extends Controller {
 
 			$table_id = isset($this->request->post['table_id']) ? (int)$this->request->post['table_id'] : 0;
 			$payment_method = isset($this->request->post['payment_method']) ? trim((string)$this->request->post['payment_method']) : '';
-			$amount = isset($this->request->post['amount']) ? (float)str_replace(',', '.', (string)$this->request->post['amount']) : 0;
+			$amount_raw = isset($this->request->post['amount']) ? (string)$this->request->post['amount'] : '0';
+			$amount_clean = strpos($amount_raw, ',') !== false
+				? str_replace(',', '.', str_replace('.', '', $amount_raw))
+				: $amount_raw;
+			$amount = (float)preg_replace('/[^0-9.]/', '', $amount_clean);
 			$note = isset($this->request->post['note']) ? trim((string)$this->request->post['note']) : '';
 
 			$json = $this->model_extension_module_cashier_panel->payTablePartial($table_id, $payment_method, (int)$this->user->getId(), $note, $amount);
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function markPaymentPending() {
+		$json = array();
+
+		if (!$this->user->hasPermission('modify', 'extension/module/cashier_panel') || !$this->isCashierPanelEnabled()) {
+			$json['success'] = false;
+			$json['message'] = 'Yetkiniz yok.';
+		} else {
+			$this->load->model('extension/module/cashier_panel');
+			$table_id = isset($this->request->post['table_id']) ? (int)$this->request->post['table_id'] : 0;
+			$json = $this->model_extension_module_cashier_panel->markPaymentPending($table_id, (int)$this->user->getId(), $this->user->getUserName());
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function printReceipt() {
+		if (!$this->user->hasPermission('access', 'extension/module/cashier_panel') || !$this->isCashierPanelEnabled()) {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => false, 'message' => 'Yetki yok.')));
+			return;
+		}
+
+		$this->load->model('extension/module/cashier_panel');
+		$table_id = isset($this->request->get['table_id']) ? (int)$this->request->get['table_id'] : 0;
+		$html = $this->model_extension_module_cashier_panel->getReceiptHtml($table_id);
+
+		$this->response->addHeader('Content-Type: text/html; charset=utf-8');
+		$this->response->setOutput($html);
+	}
+
+	public function dailyReport() {
+		$json = array();
+
+		if (!$this->user->hasPermission('access', 'extension/module/cashier_panel') || !$this->isCashierPanelEnabled()) {
+			$json['success'] = false;
+			$json['message'] = 'Yetki yok.';
+		} else {
+			$this->load->model('extension/module/cashier_panel');
+			$date = isset($this->request->get['date']) ? trim((string)$this->request->get['date']) : date('Y-m-d');
+			$json['success'] = true;
+			$json['report'] = $this->model_extension_module_cashier_panel->getDailyReport($date);
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

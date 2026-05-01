@@ -78,7 +78,7 @@
       .receipt-grand{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:900;color:#173126;}
       .receipt-grand strong{font-size:22px;}
       .receipt-actions{display:grid;grid-template-columns:42px 1fr;gap:8px;}
-      .receipt-actions.has-pay{grid-template-columns:42px 1fr 1fr 1fr;}
+      .receipt-actions.has-pay{grid-template-columns:repeat(2,minmax(0,1fr));}
       .receipt-actions .btn{height:46px;border-radius:10px;font-weight:900;}
       .tag-btn{background:#f1f3f2;color:#c83e38;border:0;}
       .save-btn{background:#173126;color:#fff;border:0;}
@@ -128,6 +128,9 @@
       .pay-method:hover{border-color:#2f6f49;background:#f3fbf6;}
       .quick-pay-modal .pay-method-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;background:#f7faf8;}
       .quick-sub{padding:14px 18px 0;color:#728278;font-weight:800;background:#f7faf8;}
+      .cashier-report{display:none;position:fixed;right:18px;top:78px;width:min(420px,calc(100vw - 36px));background:#fff;border:1px solid #dfe9e4;border-radius:16px;box-shadow:0 24px 70px rgba(23,49,38,.2);z-index:30;padding:16px;}
+      .cashier-report h3{margin:0 0 12px;font-size:17px;font-weight:900;color:#173126;}
+      .report-row{display:flex;justify-content:space-between;border-bottom:1px solid #edf2ee;padding:8px 0;font-weight:800;}
       @media(max-width:1180px){.order-view{grid-template-columns:360px 1fr;}.pay-body{grid-template-columns:1fr;}.cashier-pay-modal{width:calc(100vw - 28px);max-height:calc(100vh - 30px);overflow:auto;}}
       @media(max-width:780px){.order-view.active{display:block;height:auto;}.receipt-pane{min-height:420px;}.table-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.product-tools{grid-template-columns:1fr;}.cashier-nav strong{min-width:140px;}.receipt-actions.has-pay{grid-template-columns:1fr 1fr;}.tag-btn{display:none;}}
     </style>
@@ -145,7 +148,10 @@
     <div class="view tables-view active" id="tablesView">
       <div class="table-toolbar">
         <div class="area-tabs" id="areaTabs"></div>
-        <button type="button" class="btn btn-default" id="refreshTables"><i class="fa fa-refresh"></i> Yenile</button>
+        <div>
+          <button type="button" class="btn btn-default" id="dailyReportBtn"><i class="fa fa-bar-chart"></i> Rapor</button>
+          <button type="button" class="btn btn-default" id="refreshTables"><i class="fa fa-refresh"></i> Yenile</button>
+        </div>
       </div>
       <div class="table-grid" id="tableGrid"></div>
     </div>
@@ -179,6 +185,10 @@
 </div>
 
 <div class="cashier-modal-backdrop" id="payBackdrop"></div>
+<div class="cashier-report" id="dailyReportBox">
+  <h3>Günlük Rapor</h3>
+  <div id="dailyReportContent"></div>
+</div>
 <div class="cashier-pay-modal" id="payModal">
   <div class="pay-head">
     <div><h3 id="payTitle">Ödeme Ekranı</h3><strong id="payTableName"></strong></div>
@@ -238,6 +248,9 @@
   var addProductUrl = '{{ add_product_url|replace({"&amp;":"&"}) }}';
   var updateProductUrl = '{{ update_product_url|replace({"&amp;":"&"}) }}';
   var removeProductUrl = '{{ remove_product_url|replace({"&amp;":"&"}) }}';
+  var markPaymentPendingUrl = '{{ mark_payment_pending_url|replace({"&amp;":"&"}) }}';
+  var printReceiptUrl = '{{ print_receipt_url|replace({"&amp;":"&"}) }}';
+  var dailyReportUrl = '{{ daily_report_url|replace({"&amp;":"&"}) }}';
   var imageBase = '{{ image_base|replace({"&amp;":"&"}) }}';
   var tables = {{ tables_json|raw }};
   var categories = {{ categories_json|raw }};
@@ -306,9 +319,10 @@
     var html = '';
     filtered.forEach(function(table) {
       var occupied = isOccupied(table);
+      var stateLabel = table.service_status === 'payment_pending' ? 'Hesap' : (occupied ? 'Dolu' : 'Boş');
       html += '<button type="button" class="pos-table ' + (occupied ? 'occupied' : '') + '" data-table-id="' + table.table_id + '">';
       html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div></div>';
-      html += '<div class="table-bottom"><span class="state">' + (occupied ? 'Dolu' : 'Boş') + '</span><span class="amount">' + (occupied ? money(table.total_amount) : '') + '</span></div>';
+      html += '<div class="table-bottom"><span class="state">' + stateLabel + '</span><span class="amount">' + (occupied ? money(table.total_amount) : '') + '</span></div>';
       html += '</button>';
     });
     $('#tableGrid').html(html || '<div class="empty-state">Bu filtrede masa bulunamadı.</div>');
@@ -349,7 +363,9 @@
 
     $('#topTitle').text('Masa ' + detail.table.table_no);
     $('#receiptTableName').text('Masa ' + detail.table.table_no);
-    $('#receiptNo').text('Adisyon: ' + (detail.orders && detail.orders.length ? detail.orders[0].restaurant_order_id : '0'));
+    var firstOrder = detail.orders && detail.orders.length ? detail.orders[0] : null;
+    $('#receiptNo').text('Adisyon: ' + (firstOrder ? firstOrder.restaurant_order_id : '0'));
+    $('.receipt-meta b').text(firstOrder && firstOrder.service_status === 'payment_pending' ? 'Ödeme Bekliyor' : 'Hazırlanıyor');
     $('#receiptTotal,#receiptTotalTop').text(money(detail.total_amount));
 
     if (!detail.items || !detail.items.length) {
@@ -370,7 +386,7 @@
     $('#receiptActions')
       .toggleClass('has-pay', !!hasItems)
       .html(hasItems
-        ? '<button type="button" class="btn tag-btn"><i class="fa fa-tag"></i></button><button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
+        ? '<button type="button" class="btn btn-default" id="markPendingBtn"><i class="fa fa-lock"></i> Hesap Al</button><button type="button" class="btn btn-default" id="printReceiptBtn"><i class="fa fa-print"></i> Fiş</button><button type="button" class="btn btn-success" id="payBtn"><i class="fa fa-credit-card"></i> Öde</button><button type="button" class="btn btn-warning" id="quickPayBtn"><i class="fa fa-bolt"></i> Hızlı Öde</button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>'
         : '<button type="button" class="btn tag-btn"><i class="fa fa-tag"></i></button><button type="button" class="btn save-btn" id="saveTableBtn">Kaydet</button>');
   }
 
@@ -515,6 +531,42 @@
     }, 'json');
   }
 
+  function markPaymentPending() {
+    if (!selectedTableId) return;
+    $.post(markPaymentPendingUrl, {table_id:selectedTableId}, function(json) {
+      if (!json || !json.success) {
+        alert(json && json.message ? json.message : 'Hesap alınamadı.');
+        return;
+      }
+      if (json.detail) renderDetail(json.detail);
+      refreshTables(false);
+    }, 'json');
+  }
+
+  function printReceipt() {
+    if (!selectedTableId) return;
+    window.open(printReceiptUrl + '&table_id=' + selectedTableId, '_blank', 'width=420,height=720');
+  }
+
+  function showDailyReport() {
+    $.getJSON(dailyReportUrl, function(json) {
+      if (!json || !json.success) {
+        alert(json && json.message ? json.message : 'Rapor alınamadı.');
+        return;
+      }
+      var report = json.report || {};
+      var summary = report.summary || {};
+      var html = '';
+      html += '<div class="report-row"><span>Tarih</span><strong>' + escapeHtml(report.date || '') + '</strong></div>';
+      html += '<div class="report-row"><span>Toplam</span><strong>' + money(summary.total || 0) + '</strong></div>';
+      html += '<div class="report-row"><span>Nakit</span><strong>' + money(summary.cash || 0) + '</strong></div>';
+      html += '<div class="report-row"><span>Kart</span><strong>' + money(summary.card || 0) + '</strong></div>';
+      html += '<div class="report-row"><span>Ödeme Adedi</span><strong>' + (summary.count || 0) + '</strong></div>';
+      $('#dailyReportContent').html(html);
+      $('#dailyReportBox').toggle();
+    });
+  }
+
   $(document).on('click', '.pos-table', function(){ loadDetail($(this).data('table-id')); });
   $(document).on('click', '.area-tab', function(){ selectedArea = $(this).data('area') || ''; renderTables(); });
   $(document).on('click', '.category-btn', function(){ selectedCategory = parseInt($(this).data('id') || 0, 10); renderCategories(); loadProducts(); });
@@ -548,6 +600,9 @@
   $(document).on('click', '#saveTableBtn', showTables);
   $(document).on('click', '#payBtn', openPayModal);
   $(document).on('click', '#quickPayBtn', openQuickPayModal);
+  $(document).on('click', '#markPendingBtn', markPaymentPending);
+  $(document).on('click', '#printReceiptBtn', printReceipt);
+  $('#dailyReportBtn').on('click', showDailyReport);
   $('#closePayModal,#closeQuickPayModal,#payBackdrop').on('click', closePayModal);
   $(document).on('click', '.pay-method', function(){ pay($(this).data('method')); });
 
