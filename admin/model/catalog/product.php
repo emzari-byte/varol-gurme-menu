@@ -375,6 +375,11 @@ class ModelCatalogProduct extends Model {
 				SET image = '" . $this->db->escape($value) . "',
 					date_modified = NOW()
 				WHERE product_id = '" . (int)$product_id . "'");
+		} elseif ($field == 'sort_order') {
+			$this->db->query("UPDATE " . DB_PREFIX . "product
+				SET sort_order = '" . (int)$value . "',
+					date_modified = NOW()
+				WHERE product_id = '" . (int)$product_id . "'");
 		}
 
 		$this->cache->delete('product');

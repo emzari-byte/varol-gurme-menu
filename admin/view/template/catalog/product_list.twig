@@ -316,7 +316,7 @@
                     </td>
                     <td class="text-right">
                       <button type="button" class="btn btn-info quick-description" data-toggle="tooltip" title="Açıklama" data-product-id="{{ product.product_id }}"><i class="fa fa-align-left"></i></button>
-                      <a href="{{ product.edit }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary"><i class="fa fa-pencil"></i></a>
+                      <a href="{{ product.edit }}" data-product-id="{{ product.product_id }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary quick-product-edit"><i class="fa fa-pencil"></i></a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -363,10 +363,11 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <form id="form-quick-product">
+          <input type="hidden" name="product_id" id="quick-product-id" value="" />
           <div class="quick-product-shell">
             <aside class="quick-product-side">
-              <h2>Hızlı Ürün Ekle</h2>
-              <p>Menüye yeni ürünü birkaç temel bilgiyle ekleyin. Detay, alerjen ve galeri düzenlemeleri sonradan yapılabilir.</p>
+              <h2 id="quick-product-side-title">Hızlı Ürün Ekle</h2>
+              <p id="quick-product-side-text">Menüye yeni ürünü birkaç temel bilgiyle ekleyin. Detay, alerjen ve galeri düzenlemeleri sonradan yapılabilir.</p>
               <div class="quick-product-image">
                 <a href="" id="thumb-quick-product-image" data-toggle="image" class="img-thumbnail">
                   <img src="{{ placeholder }}" alt="" title="" data-placeholder="{{ placeholder }}" />
@@ -378,8 +379,8 @@
             <section class="quick-product-main">
               <div class="quick-product-toolbar">
                 <div>
-                  <h3>Yeni Menü Ürünü</h3>
-                  <p>Ürün adı, fiyat, kategori ve hazırlık süresi menüde hemen kullanılacak alanlardır.</p>
+                  <h3 id="quick-product-main-title">Yeni Menü Ürünü</h3>
+                  <p id="quick-product-main-text">Ürün adı, fiyat, kategori ve hazırlık süresi menüde hemen kullanılacak alanlardır.</p>
                 </div>
                 <button type="button" class="quick-product-close" data-dismiss="modal" aria-label="Close">&times;</button>
               </div>
@@ -436,7 +437,7 @@
               <div class="quick-product-actions">
                 <span class="quick-product-state" id="quick-product-state"></span>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Vazgeç</button>
-                <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> Ürünü Ekle</button>
+                <button type="submit" class="btn btn-success" id="quick-product-submit"><i class="fa fa-check"></i> Ürünü Ekle</button>
               </div>
             </section>
           </div>
@@ -527,13 +528,80 @@
   <script type="text/javascript" src="view/javascript/summernote/summernote.min.js"></script>
   <script type="text/javascript" src="view/javascript/summernote/summernote-image-attributes.js"></script>
   <script type="text/javascript"><!--
-$('#button-open-quick-product').on('click', function(e) {
-	e.preventDefault();
+function resetQuickProductForm(mode) {
 	$('#form-quick-product')[0].reset();
+	$('#quick-product-id').val('');
 	$('#input-quick-product-image').val('');
 	$('#thumb-quick-product-image img').attr('src', '{{ placeholder }}');
+	$('.quick-product-category-list input[type="checkbox"]').prop('checked', false);
 	$('#quick-product-state').text('');
+
+	if (mode == 'edit') {
+		$('#quick-product-side-title').text('Ürünü Düzenle');
+		$('#quick-product-side-text').text('Menüdeki ürün bilgilerini hızlıca güncelleyin. Değişiklikler kaydedildiğinde liste yenilenir.');
+		$('#quick-product-main-title').text('Ürün Kartı');
+		$('#quick-product-main-text').text('Ürün adı, fiyat, kategori ve hazırlık süresini aynı ekranda düzenleyin.');
+		$('#quick-product-submit').html('<i class="fa fa-save"></i> Değişiklikleri Kaydet');
+	} else {
+		$('#quick-product-side-title').text('Hızlı Ürün Ekle');
+		$('#quick-product-side-text').text('Menüye yeni ürünü birkaç temel bilgiyle ekleyin. Detay, alerjen ve galeri düzenlemeleri sonradan yapılabilir.');
+		$('#quick-product-main-title').text('Yeni Menü Ürünü');
+		$('#quick-product-main-text').text('Ürün adı, fiyat, kategori ve hazırlık süresi menüde hemen kullanılacak alanlardır.');
+		$('#quick-product-submit').html('<i class="fa fa-check"></i> Ürünü Ekle');
+	}
+}
+
+function fillQuickProductForm(product) {
+	$('#quick-product-id').val(product.product_id);
+	$('input[name="model"]').val(product.model);
+	$('input[name="price"]').val(product.price);
+	$('select[name="status"]').val(product.status);
+	$('input[name="sort_order"]').val(product.sort_order);
+	$('#input-quick-product-image').val(product.image);
+	$('#thumb-quick-product-image img').attr('src', product.thumb || '{{ placeholder }}');
+
+	$.each(product.descriptions || {}, function(languageId, description) {
+		$('input[name="name[' + languageId + ']"]').val(description.name || '');
+		$('textarea[name="description[' + languageId + ']"]').val(description.description || '');
+		$('input[name="tag[' + languageId + ']"]').val(description.tag || '');
+	});
+
+	$.each(product.categories || [], function(index, categoryId) {
+		$('.quick-product-category-list input[value="' + categoryId + '"]').prop('checked', true);
+	});
+}
+
+$('#button-open-quick-product').on('click', function(e) {
+	e.preventDefault();
+	resetQuickProductForm('add');
 	$('#modal-quick-product').modal('show');
+});
+
+$(document).on('click', '.quick-product-edit', function(e) {
+	e.preventDefault();
+
+	var productId = $(this).data('product-id');
+
+	resetQuickProductForm('edit');
+	$('#quick-product-state').text('Ürün bilgileri yükleniyor...');
+	$('#modal-quick-product').modal('show');
+
+	$.ajax({
+		url: 'index.php?route=catalog/product/quickForm&user_token={{ user_token }}&product_id=' + productId,
+		dataType: 'json',
+		success: function(json) {
+			if (json.error) {
+				$('#quick-product-state').text(json.error);
+				return;
+			}
+
+			fillQuickProductForm(json.product);
+			$('#quick-product-state').text('');
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			$('#quick-product-state').text(thrownError + ' - ' + xhr.statusText);
+		}
+	});
 });
 
 $('#form-quick-product').on('submit', function(e) {
@@ -556,7 +624,7 @@ $('#form-quick-product').on('submit', function(e) {
 				return;
 			}
 
-			$('#quick-product-state').text('Ürün eklendi, liste yenileniyor...');
+			$('#quick-product-state').text((json.message || 'Ürün kaydedildi') + ' Liste yenileniyor...');
 			location.reload();
 		},
 		error: function(xhr, ajaxOptions, thrownError) {

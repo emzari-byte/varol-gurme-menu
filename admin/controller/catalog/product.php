@@ -316,6 +316,45 @@ class ControllerCatalogProduct extends Controller {
 		$this->response->setOutput(json_encode($json));
 	}
 
+	public function quickForm() {
+		$this->load->language('catalog/product');
+		$this->load->model('catalog/product');
+		$this->load->model('tool/image');
+
+		$json = array();
+		$product_id = isset($this->request->get['product_id']) ? (int)$this->request->get['product_id'] : 0;
+
+		if (!$this->user->hasPermission('access', 'catalog/product')) {
+			$json['error'] = $this->language->get('error_permission');
+		} elseif (!$product_id) {
+			$json['error'] = 'Geçersiz ürün.';
+		} else {
+			$product_info = $this->model_catalog_product->getProduct($product_id);
+
+			if (!$product_info) {
+				$json['error'] = 'Ürün bulunamadı.';
+			} else {
+				$image = !empty($product_info['image']) && is_file(DIR_IMAGE . $product_info['image']) ? $product_info['image'] : 'no_image.png';
+
+				$json['success'] = true;
+				$json['product'] = array(
+					'product_id' => (int)$product_id,
+					'model' => $product_info['model'],
+					'price' => $product_info['price'],
+					'status' => (int)$product_info['status'],
+					'sort_order' => (int)$product_info['sort_order'],
+					'image' => $product_info['image'],
+					'thumb' => $this->model_tool_image->resize($image, 120, 120),
+					'descriptions' => $this->model_catalog_product->getProductDescriptions($product_id),
+					'categories' => $this->model_catalog_product->getProductCategories($product_id)
+				);
+			}
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
 	public function quickAdd() {
 		$this->load->language('catalog/product');
 		$this->load->model('catalog/product');
@@ -329,6 +368,7 @@ class ControllerCatalogProduct extends Controller {
 			$languages = $this->model_localisation_language->getLanguages();
 			$default_language_id = (int)$this->config->get('config_language_id');
 
+			$product_id = isset($this->request->post['product_id']) ? (int)$this->request->post['product_id'] : 0;
 			$names = isset($this->request->post['name']) ? (array)$this->request->post['name'] : array();
 			$descriptions = isset($this->request->post['description']) ? (array)$this->request->post['description'] : array();
 			$tags = isset($this->request->post['tag']) ? (array)$this->request->post['tag'] : array();
@@ -416,12 +456,33 @@ class ControllerCatalogProduct extends Controller {
 					'product_category'    => array_unique($clean_categories)
 				);
 
-				$product_id = $this->model_catalog_product->addProduct($product_data);
+				if ($product_id) {
+					$product_info = $this->model_catalog_product->getProduct($product_id);
 
-				$json['success'] = true;
-				$json['product_id'] = (int)$product_id;
-				$json['message'] = 'Ürün eklendi.';
-				$json['edit'] = $this->url->link('catalog/product/edit', 'user_token=' . $this->session->data['user_token'] . '&product_id=' . (int)$product_id, true);
+					if (!$product_info) {
+						$json['error'] = 'Ürün bulunamadı.';
+					} else {
+						$this->model_catalog_product->quickUpdateProductDescriptions($product_id, $product_description);
+						$this->model_catalog_product->quickUpdateProductCategories($product_id, array_unique($clean_categories));
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'model', $model);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'price', $price);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'status', $status ? 1 : 0);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'sort_order', $sort_order);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'image', $image);
+
+						$json['success'] = true;
+						$json['product_id'] = (int)$product_id;
+						$json['message'] = 'Ürün güncellendi.';
+						$json['edit'] = $this->url->link('catalog/product/edit', 'user_token=' . $this->session->data['user_token'] . '&product_id=' . (int)$product_id, true);
+					}
+				} else {
+					$product_id = $this->model_catalog_product->addProduct($product_data);
+
+					$json['success'] = true;
+					$json['product_id'] = (int)$product_id;
+					$json['message'] = 'Ürün eklendi.';
+					$json['edit'] = $this->url->link('catalog/product/edit', 'user_token=' . $this->session->data['user_token'] . '&product_id=' . (int)$product_id, true);
+				}
 			}
 		}
 
