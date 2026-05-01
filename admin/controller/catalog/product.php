@@ -19,6 +19,10 @@ class ControllerCatalogProduct extends Controller {
 
 		$this->load->model('catalog/product');
 
+		if ($this->request->server['REQUEST_METHOD'] == 'POST') {
+			$this->normalizeRestaurantProductPost();
+		}
+
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
 			$this->model_catalog_product->addProduct($this->request->post);
 
@@ -70,6 +74,10 @@ class ControllerCatalogProduct extends Controller {
 		$this->document->setTitle($this->language->get('heading_title'));
 
 		$this->load->model('catalog/product');
+
+		if ($this->request->server['REQUEST_METHOD'] == 'POST') {
+			$this->normalizeRestaurantProductPost();
+		}
 
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
 			$this->model_catalog_product->editProduct($this->request->get['product_id'], $this->request->post);
@@ -769,6 +777,30 @@ class ControllerCatalogProduct extends Controller {
 		}
 
 		return $html;
+	}
+
+	private function normalizeRestaurantProductPost() {
+		if (!isset($this->request->post['product_description']) || !is_array($this->request->post['product_description'])) {
+			return;
+		}
+
+		foreach ($this->request->post['product_description'] as $language_id => $description) {
+			$name = isset($description['name']) ? trim((string)$description['name']) : '';
+
+			if ($name !== '') {
+				$this->request->post['product_description'][$language_id]['meta_title'] = $name;
+			}
+		}
+
+		if (!isset($this->request->post['minimum']) || (int)$this->request->post['minimum'] < 1) {
+			$this->request->post['minimum'] = 1;
+		}
+
+		if (!isset($this->request->post['quantity'])) {
+			$this->request->post['quantity'] = 1;
+		}
+
+		$this->request->post['subtract'] = 0;
 	}
 
 	private function getAkinsoftProductSyncMap($products) {

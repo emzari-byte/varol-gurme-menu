@@ -80,7 +80,7 @@ $_['entry_category']         = 'Kategoriler';
 $_['entry_filter']           = 'Filtreler';
 $_['entry_download']         = 'Dosyalar';
 $_['entry_related']          = 'Benzer Ürünler';
-$_['entry_tag']              = 'Ürün Etiketleri';
+$_['entry_tag']              = 'Hazırlık Süresi';
 $_['entry_reward']           = 'Puanlar';
 $_['entry_layout']           = 'Bu Bölüm Gibi Davran';
 $_['entry_recurring']        = 'Abonelik Profili';
@@ -100,7 +100,7 @@ $_['help_category']          = '(Otomatik Tamamlama)';
 $_['help_filter']            = '(Otomatik Tamamlama)';
 $_['help_download']          = '(Otomatik Tamamlama)';
 $_['help_related']           = '(Otomatik Tamamlama)';
-$_['help_tag']               = 'Virgül ile ayrınız';
+$_['help_tag']               = 'Örnek: 25 - 30 dk';
 
 // Error
 $_['error_warning']          = 'Uyarı: Oluşan hatalar için lütfen formu dikkatli kontrol ediniz!';

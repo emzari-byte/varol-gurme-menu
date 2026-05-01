@@ -23,7 +23,31 @@
         <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_form }}</h3>
       </div>
       <div class="panel-body">
-        <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-product" class="form-horizontal">
+        <style>
+          .restaurant-product-form .nav-tabs{border-bottom:1px solid #e4ece7;margin-bottom:18px;}
+          .restaurant-product-form .nav-tabs>li>a{border:0;border-radius:8px 8px 0 0;color:#8b9790;font-weight:700;}
+          .restaurant-product-form .nav-tabs>li.active>a,.restaurant-product-form .nav-tabs>li.active>a:hover{border:1px solid #dfe8e2;border-bottom-color:#fff;color:#143629;background:#fff;}
+          .restaurant-product-form .restaurant-product-hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin:-4px 0 22px;padding:22px;border:1px solid #dfe8e2;border-radius:14px;background:linear-gradient(135deg,#f8fbf9,#eef6f1);}
+          .restaurant-product-form .restaurant-product-hero h2{margin:0 0 6px;color:#143629;font-size:24px;font-weight:800;}
+          .restaurant-product-form .restaurant-product-hero p{margin:0;color:#708078;max-width:680px;}
+          .restaurant-product-form .restaurant-form-section{margin:20px 0 14px;padding:18px 20px;border:1px solid #dfe8e2;border-radius:12px;background:#fff;box-shadow:0 10px 28px rgba(20,54,41,.04);}
+          .restaurant-product-form .restaurant-form-section h3{margin:0 0 14px;color:#143629;font-size:16px;font-weight:800;}
+          .restaurant-product-form .form-group{border:0;margin-left:0;margin-right:0;padding-top:6px;padding-bottom:6px;}
+          .restaurant-product-form .control-label{color:#33453c;font-weight:800;}
+          .restaurant-product-form .form-control{border-color:#dfe8e2;border-radius:8px;box-shadow:none;min-height:40px;}
+          .restaurant-product-form .form-control:focus{border-color:#6fa482;box-shadow:0 0 0 3px rgba(111,164,130,.12);}
+          .restaurant-product-form .note-editor{border-color:#dfe8e2;border-radius:10px;overflow:hidden;}
+          .restaurant-product-form [data-toggle="tooltip"]{text-decoration:none;border:0;cursor:default;}
+          .restaurant-hidden-field{display:none !important;}
+          @media (max-width:767px){.restaurant-product-form .restaurant-product-hero{display:block;}.restaurant-product-form .control-label{text-align:left;margin-bottom:6px;}}
+        </style>
+        <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-product" class="form-horizontal restaurant-product-form">
+          <div class="restaurant-product-hero">
+            <div>
+              <h2>Restoran Ürün Kartı</h2>
+              <p>Ürün adı, açıklama, hazırlık süresi, fiyat ve kategori bilgilerini sade bir akışta yönetin.</p>
+            </div>
+          </div>
           <ul class="nav nav-tabs">
             <li class="active"><a href="#tab-general" data-toggle="tab">{{ tab_general }}</a></li>
             <li><a href="#tab-data" data-toggle="tab">{{ tab_data }}</a></li>
@@ -55,7 +79,7 @@
                         <textarea name="product_description[{{ language.language_id }}][description]" placeholder="{{ entry_description }}" id="input-description{{ language.language_id }}" data-toggle="summernote" data-lang="{{ language.locale }}" class="form-control">{{ product_description[language.language_id] ? product_description[language.language_id].description }}</textarea>
                       </div>
                     </div>
-                    <div class="form-group required">
+                    <div class="form-group required restaurant-hidden-field">
                       <label class="col-sm-2 control-label" for="input-meta-title{{ language.language_id }}">{{ entry_meta_title }}</label>
                       <div class="col-sm-10">
                         <input type="text" name="product_description[{{ language.language_id }}][meta_title]" value="{{ product_description[language.language_id] ? product_description[language.language_id].meta_title }}" placeholder="{{ entry_meta_title }}" id="input-meta-title{{ language.language_id }}" class="form-control"/>
@@ -76,13 +100,17 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <label class="col-sm-2 control-label" for="input-tag{{ language.language_id }}"><span data-toggle="tooltip" title="{{ help_tag }}">{{ entry_tag }}</span></label>
+                      <label class="col-sm-2 control-label" for="input-tag{{ language.language_id }}">{{ entry_tag }}</label>
                       <div class="col-sm-10">
-                        <input type="text" name="product_description[{{ language.language_id }}][tag]" value="{{ product_description[language.language_id] ? product_description[language.language_id].tag }}" placeholder="{{ entry_tag }}" id="input-tag{{ language.language_id }}" class="form-control"/>
+                        <input type="text" name="product_description[{{ language.language_id }}][tag]" value="{{ product_description[language.language_id] ? product_description[language.language_id].tag }}" placeholder="25 - 30 dk" id="input-tag{{ language.language_id }}" class="form-control"/>
                       </div>
                     </div>
                   </div>
                 {% endfor %}</div>
+              <div class="restaurant-form-section">
+                <h3>Ürün Bilgileri</h3>
+                <div id="restaurant-product-core-fields"></div>
+              </div>
             </div>
             <div class="tab-pane" id="tab-data">
               <div class="form-group required">
@@ -168,19 +196,19 @@
                   </select>
                 </div>
               </div>
-              <div class="form-group">
+              <div class="form-group restaurant-hidden-field">
                 <label class="col-sm-2 control-label" for="input-quantity">{{ entry_quantity }}</label>
                 <div class="col-sm-10">
                   <input type="text" name="quantity" value="{{ quantity }}" placeholder="{{ entry_quantity }}" id="input-quantity" class="form-control"/>
                 </div>
               </div>
-              <div class="form-group">
+              <div class="form-group restaurant-hidden-field">
                 <label class="col-sm-2 control-label" for="input-minimum"><span data-toggle="tooltip" title="{{ help_minimum }}">{{ entry_minimum }}</span></label>
                 <div class="col-sm-10">
                   <input type="text" name="minimum" value="{{ minimum }}" placeholder="{{ entry_minimum }}" id="input-minimum" class="form-control"/>
                 </div>
               </div>
-              <div class="form-group">
+              <div class="form-group restaurant-hidden-field">
                 <label class="col-sm-2 control-label" for="input-subtract">{{ entry_subtract }}</label>
                 <div class="col-sm-10">
                   <select name="subtract" id="input-subtract" class="form-control">
@@ -367,7 +395,7 @@
               </div>
             </div>
             <div class="tab-pane" id="tab-links">
-              <div class="form-group">
+              <div class="form-group restaurant-hidden-field">
                 <label class="col-sm-2 control-label" for="input-manufacturer"><span data-toggle="tooltip" title="{{ help_manufacturer }}">{{ entry_manufacturer }}</span></label>
                 <div class="col-sm-10">
                   <input type="text" name="manufacturer" value="{{ manufacturer }}" placeholder="{{ entry_manufacturer }}" id="input-manufacturer" class="form-control"/> <input type="hidden" name="manufacturer_id" value="{{ manufacturer_id }}"/>
@@ -395,7 +423,7 @@
                     {% endfor %}</div>
                 </div>
               </div>
-              <div class="form-group">
+              <div class="form-group restaurant-hidden-field">
                 <label class="col-sm-2 control-label">{{ entry_store }}</label>
                 <div class="col-sm-10">
                   <div class="well well-sm" style="height: 150px; overflow: auto;"> {% for store in stores %}
@@ -1156,6 +1184,52 @@
   <script type="text/javascript" src="view/javascript/summernote/summernote-image-attributes.js"></script>
   <script type="text/javascript" src="view/javascript/summernote/opencart.js"></script>
   <script type="text/javascript"><!--
+  function syncRestaurantProductMetaTitle() {
+    {% for language in languages %}
+    var $name{{ language.language_id }} = $('#input-name{{ language.language_id }}');
+    var $meta{{ language.language_id }} = $('#input-meta-title{{ language.language_id }}');
+
+    if ($name{{ language.language_id }}.length && $meta{{ language.language_id }}.length) {
+      var productName{{ language.language_id }} = $.trim($name{{ language.language_id }}.val());
+
+      if (productName{{ language.language_id }} !== '') {
+        $meta{{ language.language_id }}.val(productName{{ language.language_id }});
+      }
+    }
+    {% endfor %}
+  }
+
+  function prepareRestaurantProductForm() {
+    var $core = $('#restaurant-product-core-fields');
+
+    if ($core.length) {
+      $('#input-model,#input-sku,#input-price,#input-status,#input-sort-order,#input-category').each(function() {
+        var $group = $(this).closest('.form-group');
+
+        if ($group.length && !$group.data('restaurant-moved')) {
+          $group.data('restaurant-moved', true).appendTo($core);
+        }
+      });
+    }
+
+    $('#form-product [data-toggle="tooltip"]').each(function() {
+      var $span = $(this);
+      $span.replaceWith($span.text());
+    });
+
+    syncRestaurantProductMetaTitle();
+  }
+
+  $(function() {
+    prepareRestaurantProductForm();
+
+    {% for language in languages %}
+    $('#input-name{{ language.language_id }}').on('input blur', syncRestaurantProductMetaTitle);
+    {% endfor %}
+
+    $('#form-product').on('submit', syncRestaurantProductMetaTitle);
+  });
+
   // Manufacturer
   $('input[name=\'manufacturer\']').autocomplete({
 	  'source': function(request, response) {
