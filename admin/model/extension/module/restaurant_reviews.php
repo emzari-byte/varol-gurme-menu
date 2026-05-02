@@ -75,10 +75,120 @@ class ModelExtensionModuleRestaurantReviews extends Model {
 			$where[] = "rating = '" . (int)$filter['rating'] . "'";
 		}
 
-		return $this->db->query("SELECT *
+		$rows = $this->db->query("SELECT *
 			FROM `" . DB_PREFIX . "restaurant_review`
 			WHERE " . implode(' AND ', $where) . "
 			ORDER BY date_added DESC
 			LIMIT 250")->rows;
+
+		$reviews = array();
+
+		foreach ($rows as $row) {
+			$reviews[] = $this->enrichReview($row);
+		}
+
+		return $reviews;
+	}
+
+	private function enrichReview($review) {
+		$order_ids = array();
+
+		foreach (explode(',', (string)$review['restaurant_order_ids']) as $order_id) {
+			$order_id = (int)$order_id;
+
+			if ($order_id > 0) {
+				$order_ids[] = $order_id;
+			}
+		}
+
+		$order_ids = array_values(array_unique($order_ids));
+		$waiter_name = trim((string)$review['waiter_name']);
+		$waiter_user_id = (int)$review['waiter_user_id'];
+
+		if (!$order_ids || $waiter_name === '') {
+			$fallback = $this->getReviewOrderMeta($review, $order_ids);
+
+			if (!$order_ids && !empty($fallback['order_ids'])) {
+				$order_ids = $fallback['order_ids'];
+			}
+
+			if ($waiter_name === '' && !empty($fallback['waiter_name'])) {
+				$waiter_name = $fallback['waiter_name'];
+			}
+
+			if (!$waiter_user_id && !empty($fallback['waiter_user_id'])) {
+				$waiter_user_id = (int)$fallback['waiter_user_id'];
+			}
+		}
+
+		$review['display_waiter_name'] = $waiter_name !== '' ? $waiter_name : '-';
+		$review['display_order_no'] = $order_ids ? '#' . implode(', #', $order_ids) : '-';
+		$review['display_order_count'] = count($order_ids);
+		$review['display_table'] = trim((string)$review['table_name']) !== '' ? $review['table_name'] : ((int)$review['table_no'] ? 'Masa ' . (int)$review['table_no'] : '-');
+		$review['display_waiter_user_id'] = $waiter_user_id;
+
+		return $review;
+	}
+
+	private function getReviewOrderMeta($review, $order_ids = array()) {
+		if (!$this->tableExists(DB_PREFIX . 'restaurant_order')) {
+			return array();
+		}
+
+		$where = array();
+
+		if ($order_ids) {
+			$where[] = "ro.restaurant_order_id IN (" . implode(',', array_map('intval', $order_ids)) . ")";
+		} else {
+			$table_id = (int)$review['table_id'];
+			$date_added = $this->db->escape((string)$review['date_added']);
+
+			if (!$table_id || $date_added === '') {
+				return array();
+			}
+
+			$where[] = "ro.table_id = '" . $table_id . "'";
+			$where[] = "ro.date_added <= '" . $date_added . "'";
+			$where[] = "ro.date_added >= DATE_SUB('" . $date_added . "', INTERVAL 12 HOUR)";
+			$where[] = "ro.service_status IN ('paid','completed','served','payment_pending')";
+		}
+
+		$query = $this->db->query("SELECT
+				GROUP_CONCAT(DISTINCT ro.restaurant_order_id ORDER BY ro.restaurant_order_id ASC SEPARATOR ',') AS order_ids,
+				MAX(ro.waiter_user_id) AS waiter_user_id,
+				MAX(COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, '')) AS waiter_name
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN `" . DB_PREFIX . "user` u ON (u.user_id = ro.waiter_user_id)
+			WHERE " . implode(' AND ', $where));
+
+		if (!$query->num_rows) {
+			return array();
+		}
+
+		$resolved_order_ids = array();
+
+		foreach (explode(',', (string)$query->row['order_ids']) as $order_id) {
+			$order_id = (int)$order_id;
+
+			if ($order_id > 0) {
+				$resolved_order_ids[] = $order_id;
+			}
+		}
+
+		return array(
+			'order_ids' => array_values(array_unique($resolved_order_ids)),
+			'waiter_user_id' => (int)$query->row['waiter_user_id'],
+			'waiter_name' => trim((string)$query->row['waiter_name'])
+		);
+	}
+
+	private function tableExists($table) {
+		try {
+			$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+
+			return $query->num_rows > 0;
+		} catch (Exception $e) {
+			return false;
+		}
 	}
 }

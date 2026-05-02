@@ -780,6 +780,18 @@ public function requestWaiter() {
 		$waiter_user_id = (int)$invite['waiter_user_id'];
 		$waiter_name = (string)$invite['waiter_name'];
 
+		if (($waiter_name === '' || !$waiter_user_id) && $order_ids) {
+			$waiter = $this->resolveReviewWaiter($order_ids);
+
+			if ($waiter_name === '' && $waiter['waiter_name'] !== '') {
+				$waiter_name = $waiter['waiter_name'];
+			}
+
+			if (!$waiter_user_id && $waiter['waiter_user_id']) {
+				$waiter_user_id = $waiter['waiter_user_id'];
+			}
+		}
+
 		$ip = isset($this->request->server['REMOTE_ADDR']) ? (string)$this->request->server['REMOTE_ADDR'] : '';
 		$user_agent = isset($this->request->server['HTTP_USER_AGENT']) ? utf8_substr((string)$this->request->server['HTTP_USER_AGENT'], 0, 255) : '';
 
@@ -835,6 +847,38 @@ public function requestWaiter() {
 			'success' => true,
 			'message' => $close ? 'Değerlendirmeniz için teşekkür ederiz.' : 'Puanınız kaydedildi.',
 			'review_prompt' => $this->getReviewPrompt()
+		);
+	}
+
+	private function resolveReviewWaiter($order_ids) {
+		$order_ids = array_values(array_unique(array_filter(array_map('intval', (array)$order_ids))));
+
+		if (!$order_ids) {
+			return array(
+				'waiter_user_id' => 0,
+				'waiter_name' => ''
+			);
+		}
+
+		$query = $this->db->query("SELECT ro.waiter_user_id,
+				COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, '') AS waiter_name
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			LEFT JOIN `" . DB_PREFIX . "user` u ON (u.user_id = ro.waiter_user_id)
+			WHERE ro.restaurant_order_id IN (" . implode(',', $order_ids) . ")
+			AND ro.waiter_user_id > 0
+			ORDER BY ro.restaurant_order_id DESC
+			LIMIT 1");
+
+		if (!$query->num_rows) {
+			return array(
+				'waiter_user_id' => 0,
+				'waiter_name' => ''
+			);
+		}
+
+		return array(
+			'waiter_user_id' => (int)$query->row['waiter_user_id'],
+			'waiter_name' => trim((string)$query->row['waiter_name'])
 		);
 	}
 
