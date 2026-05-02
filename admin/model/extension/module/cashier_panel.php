@@ -125,6 +125,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 	public function getOpenTables() {
 		$this->install();
 		$this->cleanupClosedOrEmptyOrders();
+		$this->reconcileAllTableStatuses();
 
 		return $this->db->query("SELECT rt.table_id, rt.table_no, rt.name, rt.area, rt.capacity,
 				COALESCE(active.order_count, 0) AS order_count,
@@ -172,6 +173,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$this->install();
 		$this->cleanupClosedOrEmptyOrders();
 		$table_id = (int)$table_id;
+		$this->syncTableStatus($table_id);
 
 		$table = $this->db->query("SELECT * FROM `" . DB_PREFIX . "restaurant_table` WHERE table_id = '" . $table_id . "' AND status = '1' LIMIT 1")->row;
 
@@ -1429,6 +1431,14 @@ class ModelExtensionModuleCashierPanel extends Model {
 					date_added = NOW()");
 
 			$this->syncTableStatus($table_id);
+		}
+	}
+
+	private function reconcileAllTableStatuses() {
+		$tables = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table` WHERE status = '1'")->rows;
+
+		foreach ($tables as $table) {
+			$this->syncTableStatus((int)$table['table_id']);
 		}
 	}
 

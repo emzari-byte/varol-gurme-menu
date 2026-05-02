@@ -274,6 +274,7 @@ class ModelExtensionModuleWaiterPanel extends Model {
 	public function getTables($user_id = 0) {
 		$this->closeExpiredWaiterCalls();
 		$this->closeExpiredBillRequests();
+		$this->reconcileAllTableStatuses();
 
 		$filter_sql = $this->buildTableFilterSql($user_id);
 
@@ -343,7 +344,7 @@ class ModelExtensionModuleWaiterPanel extends Model {
 				(
 					SELECT IFNULL(MAX(ro.date_modified),'') FROM `" . DB_PREFIX . "restaurant_order` ro
 					WHERE ro.table_id = rt.table_id
-					AND ro.service_status IN ('waiting_order','in_kitchen','ready_for_service','out_for_service','served')
+					AND ro.service_status IN ('waiting_order','cashier_draft','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
 				) AS latest_order_date
 			FROM `" . DB_PREFIX . "restaurant_table` rt
 			LEFT JOIN `" . DB_PREFIX . "restaurant_table_status` rts ON (rt.table_id = rts.table_id)
@@ -405,6 +406,11 @@ class ModelExtensionModuleWaiterPanel extends Model {
 				$row['operation_label'] = 'Onay bekliyor';
 				$row['operation_class'] = 'order';
 				$this->setOperationAge($row, $row['latest_order_date']);
+			} elseif ($row['service_status'] === 'cashier_draft') {
+				$row['priority_rank'] = 45;
+				$row['operation_label'] = 'Kasada taslak sipariş';
+				$row['operation_class'] = 'order';
+				$this->setOperationAge($row, $row['latest_order_date']);
 			} elseif ($row['service_status'] === 'in_kitchen') {
 				$row['priority_rank'] = 50;
 				$row['operation_label'] = 'Mutfakta';
@@ -463,6 +469,111 @@ class ModelExtensionModuleWaiterPanel extends Model {
 		$minutes = max(0, (int)floor((time() - $timestamp) / 60));
 		$row['operation_minutes'] = $minutes;
 		$row['operation_time'] = $this->formatOperationAge($minutes);
+	}
+
+	private function reconcileAllTableStatuses() {
+		if (!$this->tableExists(DB_PREFIX . 'restaurant_table') || !$this->tableExists(DB_PREFIX . 'restaurant_table_status') || !$this->tableExists(DB_PREFIX . 'restaurant_order')) {
+			return;
+		}
+
+		$tables = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table` WHERE status = '1'")->rows;
+
+		foreach ($tables as $table) {
+			$this->syncTableStatusFromOrders((int)$table['table_id']);
+		}
+	}
+
+	private function syncTableStatusFromOrders($table_id) {
+		$table_id = (int)$table_id;
+		$payment_join = '';
+		$paid_amount_sql = '0';
+		$payment_status_sql = '';
+
+		if ($this->tableExists(DB_PREFIX . 'restaurant_payment')) {
+			$payment_join = "LEFT JOIN (
+				SELECT restaurant_order_id, SUM(amount) AS paid_amount
+				FROM `" . DB_PREFIX . "restaurant_payment`
+				GROUP BY restaurant_order_id
+			) pay ON (pay.restaurant_order_id = ro.restaurant_order_id)";
+			$paid_amount_sql = 'COALESCE(pay.paid_amount, 0)';
+		}
+
+		if ($this->columnExists(DB_PREFIX . 'restaurant_order', 'payment_status')) {
+			$payment_status_sql = "AND (ro.payment_status IS NULL OR ro.payment_status != 'paid')";
+		}
+
+		$active = $this->db->query("SELECT COUNT(*) AS active_order_count,
+				COALESCE(SUM(GREATEST(ro.total_amount - " . $paid_amount_sql . ", 0)), 0) AS total_amount
+			FROM `" . DB_PREFIX . "restaurant_order` ro
+			" . $payment_join . "
+			WHERE ro.table_id = '" . $table_id . "'
+			AND ro.service_status IN ('waiting_order','cashier_draft','in_kitchen','ready_for_service','out_for_service','served','payment_pending')
+			" . $payment_status_sql . "
+			AND ro.total_amount > " . $paid_amount_sql . "
+			AND EXISTS (
+				SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+				WHERE rop.restaurant_order_id = ro.restaurant_order_id
+			)")->row;
+
+		$count = (int)$active['active_order_count'];
+		$total = (float)$active['total_amount'];
+		$status = 'empty';
+
+		if ($count > 0 && $total > 0.009) {
+			$priority = $this->db->query("SELECT ro.service_status
+				FROM `" . DB_PREFIX . "restaurant_order` ro
+				" . $payment_join . "
+				WHERE ro.table_id = '" . $table_id . "'
+				AND ro.service_status IN ('payment_pending','waiting_order','cashier_draft','in_kitchen','ready_for_service','out_for_service','served')
+				" . $payment_status_sql . "
+				AND ro.total_amount > " . $paid_amount_sql . "
+				AND EXISTS (
+					SELECT 1 FROM `" . DB_PREFIX . "restaurant_order_product` rop
+					WHERE rop.restaurant_order_id = ro.restaurant_order_id
+				)
+				ORDER BY FIELD(ro.service_status, 'payment_pending', 'waiting_order', 'cashier_draft', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served')
+				LIMIT 1");
+
+			$status = $priority->num_rows ? $priority->row['service_status'] : 'served';
+		}
+
+		$check = $this->db->query("SELECT table_id FROM `" . DB_PREFIX . "restaurant_table_status` WHERE table_id = '" . $table_id . "' LIMIT 1");
+
+		if ($check->num_rows) {
+			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_table_status`
+				SET service_status = '" . $this->db->escape($status) . "',
+					active_order_count = '" . $count . "',
+					total_amount = '" . $total . "',
+					date_modified = NOW()
+				WHERE table_id = '" . $table_id . "'");
+		} else {
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "restaurant_table_status`
+				SET table_id = '" . $table_id . "',
+					service_status = '" . $this->db->escape($status) . "',
+					active_order_count = '" . $count . "',
+					total_amount = '" . $total . "',
+					date_modified = NOW()");
+		}
+	}
+
+	private function tableExists($table) {
+		try {
+			$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+
+			return $query->num_rows > 0;
+		} catch (Exception $e) {
+			return false;
+		}
+	}
+
+	private function columnExists($table, $column) {
+		try {
+			$query = $this->db->query("SHOW COLUMNS FROM `" . $this->db->escape($table) . "` LIKE '" . $this->db->escape($column) . "'");
+
+			return $query->num_rows > 0;
+		} catch (Exception $e) {
+			return false;
+		}
 	}
 
 	private function formatOperationAge($minutes) {
