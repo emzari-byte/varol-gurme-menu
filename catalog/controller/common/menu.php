@@ -6,6 +6,8 @@ class ControllerCommonMenu extends Controller {
 		$data['text_most_preferred'] = $this->language->get('text_most_preferred');
 		$data['text_view_more'] = $this->language->get('text_view_more');
 		$data['text_view_less'] = $this->language->get('text_view_less');
+		$data['text_coming_soon'] = $this->language->get('text_coming_soon');
+		$data['text_coming_soon_note'] = $this->language->get('text_coming_soon_note');
 
 		$this->load->model('common/restaurant_settings');
 		$data['title'] = $this->config->get('config_meta_title');
@@ -230,9 +232,13 @@ class ControllerCommonMenu extends Controller {
 				);
 			}
 
+			$name_info = $this->normalizeUpcomingProductName($product_info['name']);
+
 			$products[] = array(
 				'product_id'  => (int)$product_info['product_id'],
-				'name'        => $product_info['name'],
+				'name'        => $name_info['name'],
+				'raw_name'    => $product_info['name'],
+				'is_upcoming' => $name_info['is_upcoming'],
 				'description' => $this->model_common_restaurant_settings->cleanProductDescriptionHtml($product_info['description']),
 				'thumb'       => $image,
 				'options'     => $options,
@@ -248,5 +254,24 @@ class ControllerCommonMenu extends Controller {
 		}
 
 		return $products;
+	}
+
+	private function normalizeUpcomingProductName($name) {
+		$name = trim((string)$name);
+		$patterns = array(
+			'/^\s*Pek\s+Yak[ıi\?]nda\s*!\s*/iu',
+			'/^\s*Çok\s+Yak[ıi\?]nda\s*!\s*/iu',
+			'/^\s*Cok\s+Yak[ıi\?]nda\s*!\s*/iu',
+			'/^\s*Coming\s+Soon\s*!\s*/iu'
+		);
+
+		$clean_name = preg_replace($patterns, '', $name);
+		$is_upcoming = $clean_name !== $name;
+		$clean_name = trim((string)$clean_name);
+
+		return array(
+			'name' => $clean_name !== '' ? $clean_name : $name,
+			'is_upcoming' => $is_upcoming
+		);
 	}
 }

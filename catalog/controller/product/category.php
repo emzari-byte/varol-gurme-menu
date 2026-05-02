@@ -106,6 +106,8 @@ class ControllerProductCategory extends Controller {
         $data['text_group_card_description'] = $this->language->get('text_group_card_description');
         $data['text_group'] = $this->language->get('text_group');
         $data['text_category'] = $this->language->get('text_category');
+        $data['text_coming_soon'] = $this->language->get('text_coming_soon');
+        $data['text_coming_soon_note'] = $this->language->get('text_coming_soon_note');
 
         $qr_param = $qr ? '&qr=' . urlencode($qr) : '';
         $qr_param_no_prefix = $qr ? 'qr=' . urlencode($qr) : '';
@@ -389,9 +391,13 @@ class ControllerProductCategory extends Controller {
                 );
             }
 
+            $name_info = $this->normalizeUpcomingProductName($result['name']);
+
             $products[] = array(
                  'product_id' => (int)$result['product_id'],
-                'name'        => $result['name'],
+                'name'        => $name_info['name'],
+                'raw_name'    => $result['name'],
+                'is_upcoming' => $name_info['is_upcoming'],
                 'thumb'       => $image,
                 'options'     => $options,
                 'price'       => $price,
@@ -407,6 +413,25 @@ class ControllerProductCategory extends Controller {
         }
 
         return $products;
+    }
+
+    private function normalizeUpcomingProductName($name) {
+        $name = trim((string)$name);
+        $patterns = array(
+            '/^\s*Pek\s+Yak[ıi\?]nda\s*!\s*/iu',
+            '/^\s*Çok\s+Yak[ıi\?]nda\s*!\s*/iu',
+            '/^\s*Cok\s+Yak[ıi\?]nda\s*!\s*/iu',
+            '/^\s*Coming\s+Soon\s*!\s*/iu'
+        );
+
+        $clean_name = preg_replace($patterns, '', $name);
+        $is_upcoming = $clean_name !== $name;
+        $clean_name = trim((string)$clean_name);
+
+        return array(
+            'name' => $clean_name !== '' ? $clean_name : $name,
+            'is_upcoming' => $is_upcoming
+        );
     }
 
     private function ensureRestaurantAllergens(): void {

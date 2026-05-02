@@ -15,6 +15,17 @@ class ControllerCommonMenuOrder extends Controller {
 			return;
 		}
 
+		$this->load->model('catalog/product');
+		$product_info = $this->model_catalog_product->getProduct($product_id);
+
+		if (!$product_info || $this->isUpcomingProductName($product_info['name'])) {
+			$this->jsonOut(array(
+				'success' => false,
+				'message' => $this->language->get('text_order_coming_soon')
+			));
+			return;
+		}
+
 		$ok = $this->model_common_menu_order->addItem($product_id, 1);
 
 		if (!$ok) {
@@ -125,5 +136,9 @@ public function requestWaiter() {
 
 	private function jsonOut($data) {
 		$this->response->setOutput(json_encode($data, JSON_UNESCAPED_UNICODE));
+	}
+
+	private function isUpcomingProductName($name) {
+		return (bool)preg_match('/^\s*(Pek\s+Yak[ıi\?]nda|Çok\s+Yak[ıi\?]nda|Cok\s+Yak[ıi\?]nda|Coming\s+Soon)\s*!/iu', (string)$name);
 	}
 }

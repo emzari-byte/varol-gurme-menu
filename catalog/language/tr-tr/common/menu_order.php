@@ -42,3 +42,4 @@ $_['text_bill_summary'] = 'Bu masadaki aktif sipariş toplamı';
 $_['text_order_history'] = 'Aktif Siparişlerim';
 $_['text_order_sent_to_waiter'] = 'Siparişiniz garsona iletildi.';
 $_['text_call_waiter'] = 'Garson Çağır';
+$_['text_order_coming_soon'] = 'Bu ürün çok yakında menümüzde olacak, şu anda sipariş alınamıyor.';

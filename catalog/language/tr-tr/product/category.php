@@ -30,3 +30,5 @@ $_['text_menu_home']    = 'Menü Ana Sayfa';
 $_['text_group_card_description'] = 'Bu kategoriye göz atmak için dokunun.';
 $_['text_group'] = 'Grup';
 $_['text_category'] = 'Kategori';
+$_['text_coming_soon'] = 'Çok Yakında';
+$_['text_coming_soon_note'] = 'Bu lezzet çok yakında menümüzde olacak.';

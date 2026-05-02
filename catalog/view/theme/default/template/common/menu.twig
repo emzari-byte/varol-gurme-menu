@@ -16,7 +16,7 @@
       <!-- Bootstrap core CSS -->
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
-      <link href="{{ serv }}css/style.css?v=32" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=33" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <!-- Sidebar CSS -->
@@ -57,6 +57,9 @@
                              onclick="openMenuLightbox('{{ pro.thumb }}', '{{ pro.name|e('js') }}')">
                           
                            <img src="{{ pro.thumb }}" class="img-fluid item-img w-100" alt="{{ pro.name }}"/>
+                           {% if pro.is_upcoming %}
+                           <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                           {% endif %}
                            
                         </div>
 
@@ -64,6 +67,9 @@
                            <div class="yoresel-head">
                               <div class="list-card-body">
                                  <h6 class="mb-1 text-black yoresel-title">{{ pro.name }}</h6>
+                                 {% if pro.is_upcoming %}
+                                 <div class="coming-soon-note">{{ text_coming_soon_note }}</div>
+                                 {% endif %}
 
                                  {% if pro.description %}
                                  <div class="text-gray yoresel-desc-preview">{{ pro.description|raw }}</div>
@@ -109,7 +115,11 @@
                            <div class="list-card-badge mt-3 order-price-row">
    <small class="food-price yoresel-price">{{ pro.price }}</small>
 
-   {% if can_order %}
+   {% if pro.is_upcoming %}
+   <button type="button" class="order-add-btn order-add-btn-disabled" disabled>
+      {{ text_coming_soon }}
+   </button>
+   {% elseif can_order %}
    <button type="button"
            class="order-add-btn"
            data-product-id="{{ pro.product_id }}">
@@ -135,12 +145,18 @@
                      <div class="encok-image menu-image-zoom"
                           onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}')">
                         <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
+                        {% if product.is_upcoming %}
+                        <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                        {% endif %}
                         
                      </div>
 
                      <div class="encok-content">
                         <div class="encok-top">
                            <h6 class="mb-1">{{ product.name }}</h6>
+                           {% if product.is_upcoming %}
+                           <div class="coming-soon-note">{{ text_coming_soon_note }}</div>
+                           {% endif %}
 
                            {% if product.description %}
                            <div class="encok-desc-wrap">
@@ -173,7 +189,11 @@
  <div class="order-price-row">
       <small class="food-price encok-price">{{ product.price }}</small>
 
-      {% if can_order %}
+      {% if product.is_upcoming %}
+      <button type="button" class="order-add-btn order-add-btn-disabled" disabled>
+         {{ text_coming_soon }}
+      </button>
+      {% elseif can_order %}
       <button type="button"
               class="order-add-btn"
               data-product-id="{{ product.product_id }}">

@@ -42,3 +42,4 @@ $_['text_bill_summary'] = 'This table active order total';
 $_['text_order_history'] = 'Active Orders';
 $_['text_order_sent_to_waiter'] = 'Your order has been sent to the waiter.';
 $_['text_call_waiter'] = 'Call Waiter';
+$_['text_order_coming_soon'] = 'This item is coming soon and cannot be ordered yet.';

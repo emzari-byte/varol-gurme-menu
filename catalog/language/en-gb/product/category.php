@@ -28,3 +28,5 @@ $_['text_menu_home']    = 'Menu Home';
 $_['text_group_card_description'] = 'Tap to browse this subcategory.';
 $_['text_group'] = 'Group';
 $_['text_category'] = 'Category';
+$_['text_coming_soon'] = 'Coming Soon';
+$_['text_coming_soon_note'] = 'This flavor will be available on our menu soon.';

@@ -3241,6 +3241,59 @@ body::before {
    background:linear-gradient(135deg,#4f8f6d,#63a681);
 }
 
+.order-add-btn-disabled,
+.order-add-btn:disabled{
+   background:linear-gradient(135deg,#eef3ef 0%,#e6ece8 100%);
+   color:#6d7d72;
+   box-shadow:none;
+   cursor:not-allowed;
+}
+
+.coming-soon-badge{
+   position:absolute;
+   top:12px;
+   left:12px;
+   z-index:3;
+   display:inline-flex;
+   align-items:center;
+   gap:6px;
+   padding:7px 11px;
+   border-radius:999px;
+   background:rgba(18,58,42,.92);
+   color:#fff;
+   font-size:11px;
+   font-weight:900;
+   letter-spacing:.02em;
+   box-shadow:0 10px 24px rgba(18,58,42,.18);
+   backdrop-filter:blur(8px);
+}
+
+.coming-soon-badge:before{
+   content:'';
+   width:7px;
+   height:7px;
+   border-radius:50%;
+   background:#d6b36a;
+   box-shadow:0 0 0 4px rgba(214,179,106,.18);
+}
+
+.coming-soon-note{
+   display:inline-flex;
+   margin:4px 0 8px;
+   padding:6px 10px;
+   border-radius:12px;
+   background:rgba(214,179,106,.12);
+   color:#6f5a2d;
+   font-size:12px;
+   font-weight:800;
+   line-height:1.35;
+}
+
+.yoresel-image-wrap,
+.encok-image{
+   position:relative;
+}
+
 .menu-order-prep-timer{
    display:grid;
    grid-template-columns:minmax(0,1fr) auto auto;
