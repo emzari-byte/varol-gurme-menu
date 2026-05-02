@@ -1,5 +1,11 @@
 <?php
 class ModelCommonMenuOrder extends Model {
+	private $setting_table_exists = null;
+	private $setting_cache = array();
+	private $table_order_column_ensured = false;
+	private $valid_table_session_cache = null;
+	private $current_table_qr_order_enabled_cache = null;
+
 	private function ensureReviewTable() {
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_review` (
 			`review_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -40,6 +46,12 @@ class ModelCommonMenuOrder extends Model {
 	}
 
 	private function ensureTableOrderColumn() {
+		if ($this->table_order_column_ensured) {
+			return;
+		}
+
+		$this->table_order_column_ensured = true;
+
 		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "restaurant_table` LIKE 'qr_order_enabled'");
 
 		if (!$query->num_rows) {
@@ -115,12 +127,17 @@ class ModelCommonMenuOrder extends Model {
 	}
 
 	private function hasValidTableSession() {
+		if ($this->valid_table_session_cache !== null) {
+			return $this->valid_table_session_cache;
+		}
+
 		if (
 			empty($this->session->data['menu_qr_token']) ||
 			empty($this->session->data['menu_table_id']) ||
 			empty($this->session->data['table_session_token'])
 		) {
-			return false;
+			$this->valid_table_session_cache = false;
+			return $this->valid_table_session_cache;
 		}
 
 		$table_id = (int)$this->session->data['menu_table_id'];
@@ -133,22 +150,30 @@ class ModelCommonMenuOrder extends Model {
 		");
 
 		if (!$query->num_rows || empty($query->row['active_session_token'])) {
-			return false;
+			$this->valid_table_session_cache = false;
+			return $this->valid_table_session_cache;
 		}
 
-		return hash_equals(
+		$this->valid_table_session_cache = hash_equals(
 			(string)$query->row['active_session_token'],
 			(string)$this->session->data['table_session_token']
 		);
+
+		return $this->valid_table_session_cache;
 	}
 
 	private function isCurrentTableQrOrderEnabled() {
+		if ($this->current_table_qr_order_enabled_cache !== null) {
+			return $this->current_table_qr_order_enabled_cache;
+		}
+
 		$table_id = !empty($this->session->data['menu_table_id'])
 			? (int)$this->session->data['menu_table_id']
 			: 0;
 
 		if (!$table_id) {
-			return false;
+			$this->current_table_qr_order_enabled_cache = false;
+			return $this->current_table_qr_order_enabled_cache;
 		}
 
 		$this->ensureTableOrderColumn();
@@ -160,12 +185,14 @@ class ModelCommonMenuOrder extends Model {
 			LIMIT 1");
 
 		if (!$query->num_rows) {
-			return false;
+			$this->current_table_qr_order_enabled_cache = false;
+			return $this->current_table_qr_order_enabled_cache;
 		}
 
 		$this->session->data['menu_table_qr_order_enabled'] = (int)$query->row['qr_order_enabled'];
+		$this->current_table_qr_order_enabled_cache = ((int)$query->row['qr_order_enabled'] === 1);
 
-		return ((int)$query->row['qr_order_enabled'] === 1);
+		return $this->current_table_qr_order_enabled_cache;
 	}
 
 	private function getTableSessionToken($table_id) {
@@ -1279,21 +1306,31 @@ private function sendBillRequestNotification($table_id, $call_id) {
 	public function getRestaurantSettingValue($key, $default = 1) {
 		$table = DB_PREFIX . 'ayarlar';
 
-		$exists = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+		if ($this->setting_table_exists === null) {
+			$exists = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+			$this->setting_table_exists = $exists->num_rows > 0;
+		}
 
-		if (!$exists->num_rows) {
+		if (!$this->setting_table_exists) {
 			return (int)$default;
 		}
 
-		$query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
-			WHERE ayar_key = '" . $this->db->escape($key) . "'
-			LIMIT 1");
+		if (array_key_exists($key, $this->setting_cache)) {
+			$value = $this->setting_cache[$key];
+		} else {
+			$query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
+				WHERE ayar_key = '" . $this->db->escape($key) . "'
+				LIMIT 1");
 
-		if (!$query->num_rows || $query->row['ayar_value'] === '') {
+			$value = $query->num_rows ? $query->row['ayar_value'] : null;
+			$this->setting_cache[$key] = $value;
+		}
+
+		if ($value === null || $value === '') {
 			return (int)$default;
 		}
 
-		return (int)$query->row['ayar_value'];
+		return (int)$value;
 	}
 
 	private function isQrOrderMenuEnabled() {

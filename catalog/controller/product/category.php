@@ -1,5 +1,7 @@
 <?php
 class ControllerProductCategory extends Controller {
+    private $restaurant_allergens_ensured = false;
+
 	public function index() {
         $date = date('Y-m-d');
         $timestamp = strtotime($date);
@@ -268,7 +270,7 @@ class ControllerProductCategory extends Controller {
             return;
         }
 
-        $direct_products = $this->getProductsByCategoryId($category_id, $gun);
+        $direct_products = $this->getProductsByCategoryId($category_id, $gun, $prep_extra_minutes);
 
         if (!empty($direct_products)) {
             $data['categories'][] = array(
@@ -292,7 +294,7 @@ class ControllerProductCategory extends Controller {
                     continue;
                 }
 
-                $child_products = $this->getProductsByCategoryId((int)$child['category_id'], $gun);
+                $child_products = $this->getProductsByCategoryId((int)$child['category_id'], $gun, $prep_extra_minutes);
 
                 if (empty($child_products)) {
                     continue;
@@ -324,7 +326,7 @@ class ControllerProductCategory extends Controller {
 		$this->response->setOutput($this->load->view('product/category', $data));
 	}
 
-    private function getProductsByCategoryId(int $category_id, string $gun): array {
+    private function getProductsByCategoryId(int $category_id, string $gun, int $prep_extra_minutes = 0): array {
         $products = array();
         $this->ensureRestaurantAllergens();
         $show_prices = $this->model_common_menu_order->getRestaurantSettingValue('restaurant_qr_order_menu', 1) === 1;
@@ -339,6 +341,13 @@ class ControllerProductCategory extends Controller {
         );
 
         $results = $this->model_catalog_product->getProducts($filter_data);
+        $product_ids = array();
+
+        foreach ($results as $result) {
+            $product_ids[] = (int)$result['product_id'];
+        }
+
+        $allergens_by_product = $this->getAllergensByProductIds($product_ids);
 
         foreach ($results as $result) {
             if ($gun == 'Sun' && $result['sku'] == '99') {
@@ -378,29 +387,7 @@ class ControllerProductCategory extends Controller {
                 $special = false;
             }
 
-            $options = array();
-
-            if (!empty($this->session->data['language_id'])) {
-                $active_language_id = (int)$this->session->data['language_id'];
-            } else {
-                $active_language_id = (int)$this->config->get('config_language_id');
-            }
-
-            $querya = $this->db->query("
-                SELECT ra.image, ra.name
-                FROM " . DB_PREFIX . "restaurant_product_allergen rpa
-                INNER JOIN " . DB_PREFIX . "restaurant_allergen ra ON (ra.allergen_id = rpa.allergen_id)
-                WHERE rpa.product_id = '" . (int)$result['product_id'] . "'
-                AND ra.status = '1'
-                ORDER BY ra.sort_order ASC, ra.name ASC
-            ");
-
-            foreach ($querya->rows as $resa) {
-                $options[] = array(
-                    'img'  => HTTPS_SERVER . 'image/' . $resa['image'],
-                    'name' => $resa['name']
-                );
-            }
+            $options = isset($allergens_by_product[(int)$result['product_id']]) ? $allergens_by_product[(int)$result['product_id']] : array();
 
             $name_info = $this->normalizeUpcomingProductName($result['name']);
 
@@ -446,6 +433,12 @@ class ControllerProductCategory extends Controller {
     }
 
     private function ensureRestaurantAllergens(): void {
+        if ($this->restaurant_allergens_ensured) {
+            return;
+        }
+
+        $this->restaurant_allergens_ensured = true;
+
         $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "restaurant_allergen` (
             `allergen_id` int(11) NOT NULL AUTO_INCREMENT,
             `old_option_value_id` int(11) NOT NULL DEFAULT '0',
@@ -500,5 +493,38 @@ class ControllerProductCategory extends Controller {
             FROM `" . DB_PREFIX . "product_option_value` pov
             INNER JOIN `" . DB_PREFIX . "restaurant_allergen` ra ON (ra.old_option_value_id = pov.option_value_id)
             WHERE pov.option_id IN (" . $option_id_sql . ")");
+    }
+
+    private function getAllergensByProductIds(array $product_ids): array {
+        $product_ids = array_values(array_unique(array_filter(array_map('intval', $product_ids))));
+        $allergens = array();
+
+        if (!$product_ids) {
+            return $allergens;
+        }
+
+        $query = $this->db->query("
+            SELECT rpa.product_id, ra.image, ra.name
+            FROM " . DB_PREFIX . "restaurant_product_allergen rpa
+            INNER JOIN " . DB_PREFIX . "restaurant_allergen ra ON (ra.allergen_id = rpa.allergen_id)
+            WHERE rpa.product_id IN (" . implode(',', $product_ids) . ")
+            AND ra.status = '1'
+            ORDER BY rpa.product_id ASC, ra.sort_order ASC, ra.name ASC
+        ");
+
+        foreach ($query->rows as $row) {
+            $product_id = (int)$row['product_id'];
+
+            if (!isset($allergens[$product_id])) {
+                $allergens[$product_id] = array();
+            }
+
+            $allergens[$product_id][] = array(
+                'img'  => HTTPS_SERVER . 'image/' . $row['image'],
+                'name' => $row['name']
+            );
+        }
+
+        return $allergens;
     }
 }

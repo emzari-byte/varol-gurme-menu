@@ -1,31 +1,45 @@
 <?php
 class ModelCommonRestaurantSettings extends Model {
+	private $settings_table_exists = null;
+	private $settings_cache = array();
+	private $table_exists_cache = array();
+	private $column_exists_cache = array();
+
 	public function get($key, $default = '') {
 		$table = DB_PREFIX . 'ayarlar';
 
-		$exists = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+		if ($this->settings_table_exists === null) {
+			$exists = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+			$this->settings_table_exists = $exists->num_rows > 0;
+		}
 
-		if (!$exists->num_rows) {
+		if (!$this->settings_table_exists) {
 			return $default;
 		}
 
-		$query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
-			WHERE ayar_key = '" . $this->db->escape($key) . "'
-			LIMIT 1");
+		if (array_key_exists($key, $this->settings_cache)) {
+			$value = $this->settings_cache[$key];
+		} else {
+			$query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
+				WHERE ayar_key = '" . $this->db->escape($key) . "'
+				LIMIT 1");
 
-		if ((!$query->num_rows || $query->row['ayar_value'] === '') && $key === 'restaurant_analytics_code') {
+			$value = $query->num_rows ? $query->row['ayar_value'] : null;
+			$this->settings_cache[$key] = $value;
+		}
+
+		if (($value === null || $value === '') && $key === 'restaurant_analytics_code') {
 			$legacy_code = $this->migrateLegacyAnalyticsCode($table);
 
 			if ($legacy_code !== '') {
+				$this->settings_cache[$key] = $legacy_code;
 				return $legacy_code;
 			}
 		}
 
-		if (!$query->num_rows || $query->row['ayar_value'] === '') {
+		if ($value === null || $value === '') {
 			return $default;
 		}
-
-		$value = $query->row['ayar_value'];
 
 		if ($key === 'restaurant_analytics_code') {
 			$value = html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8');
@@ -156,8 +170,14 @@ class ModelCommonRestaurantSettings extends Model {
 	}
 
 	private function tableExists($table) {
+		if (array_key_exists($table, $this->table_exists_cache)) {
+			return $this->table_exists_cache[$table];
+		}
+
 		$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
-		return $query->num_rows > 0;
+		$this->table_exists_cache[$table] = $query->num_rows > 0;
+
+		return $this->table_exists_cache[$table];
 	}
 
 	private function migrateLegacyAnalyticsCode($table) {
@@ -195,7 +215,15 @@ class ModelCommonRestaurantSettings extends Model {
 	}
 
 	private function columnExists($table, $column) {
+		$key = $table . '.' . $column;
+
+		if (array_key_exists($key, $this->column_exists_cache)) {
+			return $this->column_exists_cache[$key];
+		}
+
 		$query = $this->db->query("SHOW COLUMNS FROM `" . $this->db->escape($table) . "` LIKE '" . $this->db->escape($column) . "'");
-		return $query->num_rows > 0;
+		$this->column_exists_cache[$key] = $query->num_rows > 0;
+
+		return $this->column_exists_cache[$key];
 	}
 }
