@@ -170,6 +170,12 @@ class ControllerProductCategory extends Controller {
             return;
 		}
 
+        $data['category_info'] = array(
+            'category_id' => (int)$category_info['category_id'],
+            'name'        => $category_info['name'],
+            'parent_id'   => (int)$category_info['parent_id']
+        );
+
         $current_top_category_id = 0;
 
         if ((int)$category_info['parent_id'] === 0) {
