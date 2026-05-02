@@ -153,12 +153,38 @@ class ModelExtensionModuleRestaurantReviews extends Model {
 			$where[] = "ro.service_status IN ('paid','completed','served','payment_pending')";
 		}
 
+		$has_history = $this->tableExists(DB_PREFIX . 'restaurant_order_history');
+		$waiter_user_sql = "MAX(ro.waiter_user_id)";
+		$waiter_name_sql = "MAX(COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, ''))";
+		$history_join_sql = "";
+
+		if ($has_history) {
+			$waiter_user_sql = "COALESCE(NULLIF(MAX(ro.waiter_user_id), 0), MAX(approver.user_id), 0)";
+			$waiter_name_sql = "COALESCE(
+					NULLIF(MAX(COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, '')), ''),
+					NULLIF(MAX(COALESCE(NULLIF(TRIM(CONCAT(au.firstname, ' ', au.lastname)), ''), au.username, '')), ''),
+					''
+				)";
+			$history_join_sql = "LEFT JOIN (
+				SELECT restaurant_order_id, MAX(user_id) AS user_id
+				FROM `" . DB_PREFIX . "restaurant_order_history`
+				WHERE user_id > 0
+				AND (
+					new_status = 'in_kitchen'
+					OR (old_status = 'waiting_order' AND new_status IN ('in_kitchen','served'))
+				)
+				GROUP BY restaurant_order_id
+			) approver ON (approver.restaurant_order_id = ro.restaurant_order_id)
+			LEFT JOIN `" . DB_PREFIX . "user` au ON (au.user_id = approver.user_id)";
+		}
+
 		$query = $this->db->query("SELECT
 				GROUP_CONCAT(DISTINCT ro.restaurant_order_id ORDER BY ro.restaurant_order_id ASC SEPARATOR ',') AS order_ids,
-				MAX(ro.waiter_user_id) AS waiter_user_id,
-				MAX(COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, '')) AS waiter_name
+				" . $waiter_user_sql . " AS waiter_user_id,
+				" . $waiter_name_sql . " AS waiter_name
 			FROM `" . DB_PREFIX . "restaurant_order` ro
 			LEFT JOIN `" . DB_PREFIX . "user` u ON (u.user_id = ro.waiter_user_id)
+			" . $history_join_sql . "
 			WHERE " . implode(' AND ', $where));
 
 		if (!$query->num_rows) {

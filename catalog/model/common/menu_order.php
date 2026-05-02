@@ -860,12 +860,41 @@ public function requestWaiter() {
 			);
 		}
 
-		$query = $this->db->query("SELECT ro.waiter_user_id,
-				COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, '') AS waiter_name
+		$has_history = $this->tableExists(DB_PREFIX . 'restaurant_order_history');
+		$waiter_user_sql = "ro.waiter_user_id";
+		$waiter_name_sql = "COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, '')";
+		$history_join_sql = "";
+		$waiter_where_sql = "ro.waiter_user_id > 0";
+
+		if ($has_history) {
+			$waiter_user_sql = "COALESCE(NULLIF(ro.waiter_user_id, 0), approver.user_id, 0)";
+			$waiter_name_sql = "COALESCE(
+					NULLIF(COALESCE(NULLIF(TRIM(CONCAT(u.firstname, ' ', u.lastname)), ''), u.username, ''), ''),
+					NULLIF(COALESCE(NULLIF(TRIM(CONCAT(au.firstname, ' ', au.lastname)), ''), au.username, ''), ''),
+					''
+				)";
+			$history_join_sql = "LEFT JOIN (
+				SELECT restaurant_order_id, MAX(user_id) AS user_id
+				FROM `" . DB_PREFIX . "restaurant_order_history`
+				WHERE user_id > 0
+				AND (
+					new_status = 'in_kitchen'
+					OR (old_status = 'waiting_order' AND new_status IN ('in_kitchen','served'))
+				)
+				GROUP BY restaurant_order_id
+			) approver ON (approver.restaurant_order_id = ro.restaurant_order_id)
+			LEFT JOIN `" . DB_PREFIX . "user` au ON (au.user_id = approver.user_id)";
+			$waiter_where_sql = "(ro.waiter_user_id > 0 OR approver.user_id > 0)";
+		}
+
+		$query = $this->db->query("SELECT
+				" . $waiter_user_sql . " AS resolved_waiter_user_id,
+				" . $waiter_name_sql . " AS waiter_name
 			FROM `" . DB_PREFIX . "restaurant_order` ro
 			LEFT JOIN `" . DB_PREFIX . "user` u ON (u.user_id = ro.waiter_user_id)
+			" . $history_join_sql . "
 			WHERE ro.restaurant_order_id IN (" . implode(',', $order_ids) . ")
-			AND ro.waiter_user_id > 0
+			AND " . $waiter_where_sql . "
 			ORDER BY ro.restaurant_order_id DESC
 			LIMIT 1");
 
@@ -877,7 +906,7 @@ public function requestWaiter() {
 		}
 
 		return array(
-			'waiter_user_id' => (int)$query->row['waiter_user_id'],
+			'waiter_user_id' => (int)$query->row['resolved_waiter_user_id'],
 			'waiter_name' => trim((string)$query->row['waiter_name'])
 		);
 	}
@@ -1196,6 +1225,16 @@ private function sendBillRequestNotification($table_id, $call_id) {
 					active_order_count = '" . (int)$active_order_count . "',
 					total_amount = '" . (float)$total_amount . "',
 					date_modified = NOW()");
+		}
+	}
+
+	private function tableExists($table) {
+		try {
+			$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+
+			return $query->num_rows > 0;
+		} catch (Exception $e) {
+			return false;
 		}
 	}
 

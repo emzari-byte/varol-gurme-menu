@@ -15,7 +15,7 @@
       <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick-theme.min.css?v=20"/>
       <link href="{{ serv }}vendor/icons/feather.css?v=20" rel="stylesheet" type="text/css">
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=20" rel="stylesheet">
-      <link href="{{ serv }}css/style.css?v=33" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=34" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <link href="{{ serv }}vendor/sidebar/demo.css?v=20" rel="stylesheet">
@@ -46,6 +46,11 @@
 
                <div class="px-3 pt-4 pb-3 title d-flex align-items-center">
                   <h6 class="m-0 font-weight-bold">{{ category_info.name }}</h6>
+                  {% if restaurant_wifi_password %}
+                  <button type="button" class="menu-wifi-action ml-auto" onclick="openMenuWifiModal()" aria-label="WiFi şifresi">
+                     <i class="feather-wifi"></i>
+                  </button>
+                  {% endif %}
                </div>
 
                <div class="most_sale px-3 pb-4">
@@ -96,6 +101,11 @@
                {% for category in categories %}
                <div class="px-3 pt-4 pb-3 title d-flex align-items-center">
                   <h6 class="m-0 font-weight-bold">{{ category.name }}</h6>
+                  {% if restaurant_wifi_password %}
+                  <button type="button" class="menu-wifi-action ml-auto" onclick="openMenuWifiModal()" aria-label="WiFi şifresi">
+                     <i class="feather-wifi"></i>
+                  </button>
+                  {% endif %}
                </div>
 
                <div class="most_sale px-3 pb-4">
@@ -282,6 +292,39 @@
                   }
                });
                </script>
+{% if restaurant_wifi_password %}
+<div id="menuWifiModal" class="menu-wifi-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="WiFi şifresi">
+   <div class="menu-wifi-backdrop"></div>
+   <div class="menu-wifi-sheet">
+      <button type="button" class="menu-wifi-close" onclick="closeMenuWifiModal()" aria-label="Kapat">&times;</button>
+      <div class="menu-wifi-icon"><i class="feather-wifi"></i></div>
+      <span>WiFi Şifresi</span>
+      <strong id="menuWifiPassword">{{ restaurant_wifi_password }}</strong>
+      <button type="button" class="menu-wifi-copy" onclick="copyMenuWifiPassword()">Şifreyi Kopyala</button>
+   </div>
+</div>
+<script>
+function openMenuWifiModal(){
+   var modal = document.getElementById('menuWifiModal');
+   if(modal){ modal.style.display = 'flex'; }
+}
+function closeMenuWifiModal(){
+   var modal = document.getElementById('menuWifiModal');
+   if(modal){ modal.style.display = 'none'; }
+}
+function copyMenuWifiPassword(){
+   var value = document.getElementById('menuWifiPassword') ? document.getElementById('menuWifiPassword').textContent : '';
+   if(navigator.clipboard && value){
+      navigator.clipboard.writeText(value);
+   }
+}
+document.addEventListener('click', function(e){
+   if(e.target && e.target.classList && e.target.classList.contains('menu-wifi-backdrop')){
+      closeMenuWifiModal();
+   }
+});
+</script>
+{% endif %}
 {% if can_track_order %}
 <a href="javascript:void(0);"
    id="callWaiterBtn"

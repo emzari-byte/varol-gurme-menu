@@ -4604,3 +4604,117 @@ body.footer-visible:not(.has-order-bar) .floating-waiter-btn{
 .most_sale .encok-meta{
 	gap:10px !important;
 }
+
+.menu-wifi-action{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	width:46px;
+	height:46px;
+	border:0;
+	border-radius:18px;
+	background:rgba(255,255,255,.92);
+	color:#365c48;
+	box-shadow:0 12px 30px rgba(45,79,62,.12), inset 0 0 0 1px rgba(47,111,70,.12);
+	font-size:21px;
+	transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.menu-wifi-action:active{
+	transform:scale(.96);
+}
+
+.menu-wifi-action:hover,
+.menu-wifi-action:focus{
+	background:#ffffff;
+	color:#224333;
+	box-shadow:0 16px 34px rgba(45,79,62,.18), inset 0 0 0 1px rgba(47,111,70,.18);
+	outline:none;
+}
+
+.menu-wifi-modal{
+	position:fixed;
+	inset:0;
+	z-index:12000;
+	align-items:center;
+	justify-content:center;
+	padding:24px;
+}
+
+.menu-wifi-backdrop{
+	position:absolute;
+	inset:0;
+	background:rgba(15,28,22,.45);
+	backdrop-filter:blur(6px);
+}
+
+.menu-wifi-sheet{
+	position:relative;
+	width:min(360px, 100%);
+	padding:28px 24px 24px;
+	border-radius:28px;
+	background:#fff;
+	box-shadow:0 28px 70px rgba(18,38,29,.28);
+	text-align:center;
+	color:#1e3a2e;
+}
+
+.menu-wifi-close{
+	position:absolute;
+	top:14px;
+	right:14px;
+	width:38px;
+	height:38px;
+	border:0;
+	border-radius:50%;
+	background:#eef5f0;
+	color:#274536;
+	font-size:26px;
+	line-height:1;
+}
+
+.menu-wifi-icon{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	width:72px;
+	height:72px;
+	margin-bottom:14px;
+	border-radius:24px;
+	background:linear-gradient(135deg,#143629,#4f8464);
+	color:#fff;
+	font-size:32px;
+	box-shadow:0 14px 28px rgba(45,79,62,.22);
+}
+
+.menu-wifi-sheet span{
+	display:block;
+	color:#77887f;
+	font-size:13px;
+	font-weight:900;
+	text-transform:uppercase;
+	letter-spacing:.08em;
+}
+
+.menu-wifi-sheet strong{
+	display:block;
+	margin:10px 0 18px;
+	padding:14px 16px;
+	border-radius:18px;
+	background:#f5f9f6;
+	color:#173729;
+	font-size:22px;
+	font-weight:950;
+	word-break:break-word;
+}
+
+.menu-wifi-copy{
+	width:100%;
+	border:0;
+	border-radius:18px;
+	padding:14px 16px;
+	background:#d0a64e;
+	color:#fff;
+	font-weight:950;
+	box-shadow:0 12px 24px rgba(208,166,78,.28);
+}

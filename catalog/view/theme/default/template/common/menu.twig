@@ -16,7 +16,7 @@
       <!-- Bootstrap core CSS -->
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
-      <link href="{{ serv }}css/style.css?v=33" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=34" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <!-- Sidebar CSS -->
@@ -46,6 +46,11 @@
 
             <div class="px-3 pt-3 title d-flex align-items-center">
                <h6 class="m-0 font-weight-bold">{{ yoreselname ? yoreselname : text_regional_products }}</h6>
+               {% if restaurant_wifi_password %}
+               <button type="button" class="menu-wifi-action ml-auto" onclick="openMenuWifiModal()" aria-label="WiFi şifresi">
+                  <i class="feather-wifi"></i>
+               </button>
+               {% endif %}
             </div>
 
             <div class="trending-slider">
@@ -132,6 +137,11 @@
 
             <div class="px-3 pt-4 pb-3 title d-flex align-items-center">
                <h6 class="m-0 font-weight-bold">{{ encoktercihname ? encoktercihname : text_most_preferred }}</h6>
+               {% if restaurant_wifi_password %}
+               <button type="button" class="menu-wifi-action ml-auto" onclick="openMenuWifiModal()" aria-label="WiFi şifresi">
+                  <i class="feather-wifi"></i>
+               </button>
+               {% endif %}
             </div>
 
             <div class="most_sale px-3 pb-5">
@@ -218,6 +228,11 @@
             {% if newestpro %}
             <div class="px-3 pt-2 pb-3 title d-flex align-items-center">
                <h6 class="m-0 font-weight-bold">{{ text_newest_products }}</h6>
+               {% if restaurant_wifi_password %}
+               <button type="button" class="menu-wifi-action ml-auto" onclick="openMenuWifiModal()" aria-label="WiFi şifresi">
+                  <i class="feather-wifi"></i>
+               </button>
+               {% endif %}
             </div>
 
             <div class="most_sale px-3 pb-5">
@@ -1179,6 +1194,40 @@ setInterval(function(){
 }, 10000);
 refreshState(false);
 })();
+</script>
+{% endif %}
+
+{% if restaurant_wifi_password %}
+<div id="menuWifiModal" class="menu-wifi-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="WiFi şifresi">
+   <div class="menu-wifi-backdrop"></div>
+   <div class="menu-wifi-sheet">
+      <button type="button" class="menu-wifi-close" onclick="closeMenuWifiModal()" aria-label="Kapat">&times;</button>
+      <div class="menu-wifi-icon"><i class="feather-wifi"></i></div>
+      <span>WiFi Şifresi</span>
+      <strong id="menuWifiPassword">{{ restaurant_wifi_password }}</strong>
+      <button type="button" class="menu-wifi-copy" onclick="copyMenuWifiPassword()">Şifreyi Kopyala</button>
+   </div>
+</div>
+<script>
+function openMenuWifiModal(){
+   var modal = document.getElementById('menuWifiModal');
+   if(modal){ modal.style.display = 'flex'; }
+}
+function closeMenuWifiModal(){
+   var modal = document.getElementById('menuWifiModal');
+   if(modal){ modal.style.display = 'none'; }
+}
+function copyMenuWifiPassword(){
+   var value = document.getElementById('menuWifiPassword') ? document.getElementById('menuWifiPassword').textContent : '';
+   if(navigator.clipboard && value){
+      navigator.clipboard.writeText(value);
+   }
+}
+document.addEventListener('click', function(e){
+   if(e.target && e.target.classList && e.target.classList.contains('menu-wifi-backdrop')){
+      closeMenuWifiModal();
+   }
+});
 </script>
 {% endif %}
 
