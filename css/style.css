@@ -2237,6 +2237,55 @@ body::before {
 	z-index: 2;
 }
 
+.floating-menu-nav,
+.floating-menu-top{
+	overflow:hidden;
+	transition:bottom .2s ease, opacity .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.floating-nav-icon{
+	position:absolute;
+	inset:0;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	transition:opacity .18s ease, transform .18s ease;
+	z-index:2;
+}
+
+.floating-nav-icon svg{
+	width:23px;
+	height:23px;
+}
+
+.floating-nav-up{
+	opacity:0;
+	transform:translateY(12px);
+}
+
+.floating-menu-nav.is-scroll-top .floating-nav-home{
+	opacity:0;
+	transform:translateY(-12px);
+}
+
+.floating-menu-nav.is-scroll-top .floating-nav-up,
+.floating-menu-top .floating-nav-up{
+	opacity:1;
+	transform:translateY(0);
+}
+
+.floating-menu-top{
+	opacity:0;
+	pointer-events:none;
+	transform:translateY(12px) scale(.92);
+}
+
+.floating-menu-top.is-visible{
+	opacity:1;
+	pointer-events:auto;
+	transform:translateY(0) scale(1);
+}
+
 .floating-home-label {
 	display: none;
 }
@@ -4758,4 +4807,21 @@ body.menu-page-leaving .osahan-home-page{
 	background:#2f7d4e;
 	box-shadow:0 12px 24px rgba(47,125,78,.24);
 	transform:translateY(-1px);
+}
+
+.floating-menu-nav,
+.floating-menu-top{
+	transition:bottom .2s ease, opacity .2s ease, transform .2s ease, box-shadow .2s ease !important;
+}
+
+.floating-menu-top{
+	opacity:0 !important;
+	pointer-events:none !important;
+	transform:translateY(12px) scale(.92) !important;
+}
+
+.floating-menu-top.is-visible{
+	opacity:1 !important;
+	pointer-events:auto !important;
+	transform:translateY(0) scale(1) !important;
 }

@@ -440,6 +440,26 @@
                }, 180);
             });
          });
+
+         var floatingTop = document.getElementById('floatingMenuTop');
+
+         if (floatingTop) {
+            var updateFloatingTop = function() {
+               if (window.pageYOffset > 140) {
+                  floatingTop.classList.add('is-visible');
+               } else {
+                  floatingTop.classList.remove('is-visible');
+               }
+            };
+
+            floatingTop.addEventListener('click', function(e) {
+               e.preventDefault();
+               window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            window.addEventListener('scroll', updateFloatingTop, { passive: true });
+            updateFloatingTop();
+         }
       });
 
       document.addEventListener('keydown', function(e) {
@@ -1316,6 +1336,13 @@ document.addEventListener('click', function(e){
    <span>{{ text_call_waiter }}</span>
 </a>
 {% endif %}
+<a href="javascript:void(0);" id="floatingMenuTop" class="floating-home-btn floating-menu-top" aria-label="Sayfanın başına dön">
+   <span class="floating-nav-icon floating-nav-up">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+         <path fill-rule="evenodd" d="M8 3.293 2.646 8.646a.5.5 0 1 0 .708.708L7.5 5.207V13.5a.5.5 0 0 0 1 0V5.207l4.146 4.147a.5.5 0 0 0 .708-.708z"/>
+      </svg>
+   </span>
+</a>
 <div id="vvMenuFooterWatch">
    {{ menu_footer }}
 </div>

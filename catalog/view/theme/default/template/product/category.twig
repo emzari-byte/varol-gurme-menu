@@ -332,6 +332,30 @@
                         }, 180);
                      });
                   });
+
+                  var floatingNav = document.getElementById('floatingMenuNav');
+
+                  if (floatingNav) {
+                     var updateFloatingNav = function() {
+                        if (window.pageYOffset > 80) {
+                           floatingNav.classList.add('is-scroll-top');
+                           floatingNav.setAttribute('aria-label', 'Sayfanın başına dön');
+                        } else {
+                           floatingNav.classList.remove('is-scroll-top');
+                           floatingNav.setAttribute('aria-label', '{{ text_menu_home|e('js') }}');
+                        }
+                     };
+
+                     floatingNav.addEventListener('click', function(e) {
+                        if (floatingNav.classList.contains('is-scroll-top')) {
+                           e.preventDefault();
+                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                     });
+
+                     window.addEventListener('scroll', updateFloatingNav, { passive: true });
+                     updateFloatingNav();
+                  }
                });
 
                document.addEventListener('keydown', function(e) {
@@ -411,10 +435,17 @@ document.addEventListener('click', function(e){
    <span>{{ text_call_waiter }}</span>
 </a>
 {% endif %}
-               <a href="{{ menu_home|default('index.php?route=common/menu') }}" class="floating-home-btn" aria-label="{{ text_menu_home }}">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-                     <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 2 8h1v5a1 1 0 0 0 1 1h3V10h2v4h3a1 1 0 0 0 1-1V8h1a.5.5 0 0 0 .354-.854z"/>
-                  </svg>
+               <a href="{{ menu_home|default('index.php?route=common/menu') }}" id="floatingMenuNav" class="floating-home-btn floating-menu-nav" aria-label="{{ text_menu_home }}">
+                  <span class="floating-nav-icon floating-nav-home">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 2 8h1v5a1 1 0 0 0 1 1h3V10h2v4h3a1 1 0 0 0 1-1V8h1a.5.5 0 0 0 .354-.854z"/>
+                     </svg>
+                  </span>
+                  <span class="floating-nav-icon floating-nav-up">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3.293 2.646 8.646a.5.5 0 1 0 .708.708L7.5 5.207V13.5a.5.5 0 0 0 1 0V5.207l4.146 4.147a.5.5 0 0 0 .708-.708z"/>
+                     </svg>
+                  </span>
                </a>
 
             </div>
