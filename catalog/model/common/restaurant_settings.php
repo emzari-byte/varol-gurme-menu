@@ -13,6 +13,14 @@ class ModelCommonRestaurantSettings extends Model {
 			WHERE ayar_key = '" . $this->db->escape($key) . "'
 			LIMIT 1");
 
+		if ((!$query->num_rows || $query->row['ayar_value'] === '') && $key === 'restaurant_analytics_code') {
+			$legacy_code = $this->migrateLegacyAnalyticsCode($table);
+
+			if ($legacy_code !== '') {
+				return $legacy_code;
+			}
+		}
+
 		if (!$query->num_rows || $query->row['ayar_value'] === '') {
 			return $default;
 		}
@@ -144,6 +152,40 @@ class ModelCommonRestaurantSettings extends Model {
 	private function tableExists($table) {
 		$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
 		return $query->num_rows > 0;
+	}
+
+	private function migrateLegacyAnalyticsCode($table) {
+		$marker_query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
+			WHERE ayar_key = 'restaurant_analytics_legacy_migrated'
+			LIMIT 1");
+
+		if ($marker_query->num_rows && (int)$marker_query->row['ayar_value'] === 1) {
+			return '';
+		}
+
+		$legacy_code = $this->getLegacyAnalyticsCode();
+
+		$this->db->query("INSERT INTO `" . $table . "`
+			SET ayar_key = 'restaurant_analytics_code',
+				ayar_value = '" . $this->db->escape($legacy_code) . "',
+				date_modified = NOW()
+			ON DUPLICATE KEY UPDATE
+				ayar_value = '" . $this->db->escape($legacy_code) . "',
+				date_modified = NOW()");
+
+		$this->db->query("INSERT INTO `" . $table . "`
+			SET ayar_key = 'restaurant_analytics_legacy_migrated',
+				ayar_value = '1',
+				date_modified = NOW()
+			ON DUPLICATE KEY UPDATE
+				ayar_value = '1',
+				date_modified = NOW()");
+
+		return $legacy_code;
+	}
+
+	private function getLegacyAnalyticsCode() {
+		return "<!-- Google tag (gtag.js) -->\n<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-T44CKLX9SY\"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n\n  gtag('config', 'G-T44CKLX9SY');\n</script>";
 	}
 
 	private function columnExists($table, $column) {

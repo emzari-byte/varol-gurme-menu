@@ -18,6 +18,8 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 					ayar_value = '" . $this->db->escape($value) . "',
 					date_modified = NOW()");
 		}
+
+		$this->migrateLegacyAnalyticsCode();
 	}
 
 	public function getSettings() {
@@ -64,6 +66,7 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			'restaurant_bill_request_reset_minutes' => '5',
 			'restaurant_medium_density_prep_extra_minutes' => '10',
 			'restaurant_high_density_prep_extra_minutes' => '20',
+			'restaurant_wifi_name' => '',
 			'restaurant_wifi_password' => '',
 			'restaurant_openai_api_key' => defined('OPENAI_API_KEY') ? (string)OPENAI_API_KEY : '',
 			'restaurant_weatherapi_key' => defined('WEATHERAPI_KEY') ? (string)WEATHERAPI_KEY : '',
@@ -78,6 +81,7 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			'restaurant_mail_from_email' => 'emzari@varoltekstil.com.tr',
 			'restaurant_mail_from_name' => 'Varol Gurme Sikayet & Oneri',
 			'restaurant_analytics_code' => '',
+			'restaurant_analytics_legacy_migrated' => '0',
 			'restaurant_akinsoft_enabled' => '0',
 			'restaurant_akinsoft_mode' => 'bridge_agent',
 			'restaurant_akinsoft_host' => 'localhost',
@@ -92,6 +96,42 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			'restaurant_akinsoft_user' => 'SYSDBA',
 			'restaurant_akinsoft_pass' => 'masterkey'
 		);
+	}
+
+	private function migrateLegacyAnalyticsCode() {
+		$code_query = $this->db->query("SELECT ayar_value FROM `" . DB_PREFIX . $this->table . "`
+			WHERE ayar_key = 'restaurant_analytics_code'
+			LIMIT 1");
+		$marker_query = $this->db->query("SELECT ayar_value FROM `" . DB_PREFIX . $this->table . "`
+			WHERE ayar_key = 'restaurant_analytics_legacy_migrated'
+			LIMIT 1");
+
+		$code = $code_query->num_rows ? trim((string)$code_query->row['ayar_value']) : '';
+		$migrated = $marker_query->num_rows ? (int)$marker_query->row['ayar_value'] : 0;
+
+		if ($code !== '' || $migrated === 1) {
+			return;
+		}
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . $this->table . "`
+			SET ayar_key = 'restaurant_analytics_code',
+				ayar_value = '" . $this->db->escape($this->getLegacyAnalyticsCode()) . "',
+				date_modified = NOW()
+			ON DUPLICATE KEY UPDATE
+				ayar_value = '" . $this->db->escape($this->getLegacyAnalyticsCode()) . "',
+				date_modified = NOW()");
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . $this->table . "`
+			SET ayar_key = 'restaurant_analytics_legacy_migrated',
+				ayar_value = '1',
+				date_modified = NOW()
+			ON DUPLICATE KEY UPDATE
+				ayar_value = '1',
+				date_modified = NOW()");
+	}
+
+	private function getLegacyAnalyticsCode() {
+		return "<!-- Google tag (gtag.js) -->\n<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-T44CKLX9SY\"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n\n  gtag('config', 'G-T44CKLX9SY');\n</script>";
 	}
 
 	public function getProductionChecks() {

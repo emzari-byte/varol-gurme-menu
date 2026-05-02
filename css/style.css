@@ -4719,6 +4719,12 @@ body.footer-visible:not(.has-order-bar) .floating-waiter-btn{
 	word-break:break-word;
 }
 
+.menu-wifi-sheet .menu-wifi-name{
+	margin-bottom:16px;
+	background:#fffaf0;
+	color:#6f5524;
+}
+
 .menu-wifi-copy{
 	width:100%;
 	border:0;

@@ -354,10 +354,18 @@
               </div>
 
               <div class="form-group">
+                <label class="col-sm-3 control-label">WiFi Adı</label>
+                <div class="col-sm-9">
+                  <input type="text" name="restaurant_wifi_name" value="{{ restaurant_wifi_name }}" class="form-control" style="max-width:420px;" placeholder="Örn: Varol Veranda Misafir">
+                  <p class="help-block">Müşteri WiFi penceresinde bağlanması gereken ağ adı olarak gösterilir.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
                 <label class="col-sm-3 control-label">WiFi Şifresi</label>
                 <div class="col-sm-9">
                   <input type="text" name="restaurant_wifi_password" value="{{ restaurant_wifi_password }}" class="form-control" style="max-width:420px;" placeholder="Örn: Veranda2026">
-                  <p class="help-block">Doluysa müşteri menü ve kategori ekranlarında WiFi simgesine dokunarak şifreyi görebilir.</p>
+                  <p class="help-block">Doluysa müşteri menü ve kategori ekranlarında WiFi simgesine dokunarak ağ adını ve şifreyi görebilir. Kopyala düğmesi sadece şifreyi kopyalar.</p>
                 </div>
               </div>
 
@@ -516,6 +524,7 @@
               <div class="form-group">
                 <label class="col-sm-3 control-label">Analytics Kodu</label>
                 <div class="col-sm-9">
+                  <input type="hidden" name="restaurant_analytics_legacy_migrated" value="{{ restaurant_analytics_legacy_migrated }}">
                   <textarea name="restaurant_analytics_code" rows="7" class="form-control" placeholder="Google Analytics / Pixel / özel takip kodu">{{ restaurant_analytics_code }}</textarea>
                   <p class="help-block">Bu kod müşteri QR home, menü ve kategori sayfalarının head alanına eklenir.</p>
                 </div>

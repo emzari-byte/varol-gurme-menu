@@ -16,7 +16,7 @@
       <!-- Bootstrap core CSS -->
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
-      <link href="{{ serv }}css/style.css?v=36" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=37" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <!-- Sidebar CSS -->
@@ -1193,6 +1193,10 @@ refreshState(false);
    <div class="menu-wifi-sheet">
       <button type="button" class="menu-wifi-close" onclick="closeMenuWifiModal()" aria-label="Kapat">&times;</button>
       <div class="menu-wifi-icon"><i class="feather-wifi"></i></div>
+      {% if restaurant_wifi_name %}
+      <span>WiFi Ağı</span>
+      <strong class="menu-wifi-name">{{ restaurant_wifi_name }}</strong>
+      {% endif %}
       <span>WiFi Şifresi</span>
       <strong id="menuWifiPassword">{{ restaurant_wifi_password }}</strong>
       <button type="button" id="menuWifiCopyBtn" class="menu-wifi-copy" onclick="copyMenuWifiPassword()">Şifreyi Kopyala</button>

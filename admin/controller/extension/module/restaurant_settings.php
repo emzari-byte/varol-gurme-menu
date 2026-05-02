@@ -24,8 +24,10 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 				$this->request->post['restaurant_high_density_prep_extra_minutes'] = max(0, min(120, (int)$this->request->post['restaurant_high_density_prep_extra_minutes']));
 			}
 
-			if (isset($this->request->post['restaurant_wifi_password'])) {
-				$this->request->post['restaurant_wifi_password'] = trim((string)$this->request->post['restaurant_wifi_password']);
+			foreach (array('restaurant_wifi_name', 'restaurant_wifi_password') as $key) {
+				if (isset($this->request->post[$key])) {
+					$this->request->post[$key] = trim((string)$this->request->post[$key]);
+				}
 			}
 
 			if (isset($this->request->post['restaurant_whatsapp_phone'])) {
