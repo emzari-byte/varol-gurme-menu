@@ -98,7 +98,11 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 
 		$settings = $this->getSettings();
 		$checks = array();
-		$active_token_count = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_table_status` WHERE active_session_token IS NOT NULL AND active_session_token <> ''");
+		$active_token_count = 0;
+
+		if ($this->tableExists(DB_PREFIX . 'restaurant_table_status') && $this->columnExists(DB_PREFIX . 'restaurant_table_status', 'active_session_token')) {
+			$active_token_count = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_table_status` WHERE active_session_token IS NOT NULL AND active_session_token <> ''");
+		}
 
 		$checks[] = $this->buildCheck(
 			'QR token aktif mi?',
@@ -119,11 +123,20 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			((int)$settings['restaurant_kitchen_panel'] === 1) ? 'Mutfak paneli aktif.' : 'Mutfak paneli kapal&#305;.'
 		);
 
-		$waiter_count = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_waiter` WHERE status = '1'");
-		$assigned_waiter_count = $this->countRows("SELECT COUNT(DISTINCT rw.waiter_id) AS total
-			FROM `" . DB_PREFIX . "restaurant_waiter` rw
-			INNER JOIN `" . DB_PREFIX . "restaurant_waiter_table` rwt ON (rwt.waiter_id = rw.waiter_id)
-			WHERE rw.status = '1'");
+		$waiter_count = 0;
+		$assigned_waiter_count = 0;
+
+		if ($this->tableExists(DB_PREFIX . 'restaurant_waiter')) {
+			$waiter_count = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_waiter` WHERE status = '1'");
+		}
+
+		if ($this->tableExists(DB_PREFIX . 'restaurant_waiter') && $this->tableExists(DB_PREFIX . 'restaurant_waiter_table')) {
+			$assigned_waiter_count = $this->countRows("SELECT COUNT(DISTINCT rw.waiter_id) AS total
+				FROM `" . DB_PREFIX . "restaurant_waiter` rw
+				INNER JOIN `" . DB_PREFIX . "restaurant_waiter_table` rwt ON (rwt.waiter_id = rw.waiter_id)
+				WHERE rw.status = '1'");
+		}
+
 		$unassigned_waiter_count = max(0, $waiter_count - $assigned_waiter_count);
 
 		$checks[] = $this->buildCheck(
@@ -143,8 +156,13 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			$sound_ok ? 'ok' : 'error'
 		);
 
-		$open_waiter_calls = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_call` WHERE call_type = 'waiter_call' AND status IN ('new','seen')");
-		$open_bill_requests = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_call` WHERE call_type = 'bill_request' AND status IN ('new','seen')");
+		$open_waiter_calls = 0;
+		$open_bill_requests = 0;
+
+		if ($this->tableExists(DB_PREFIX . 'restaurant_call') && $this->columnExists(DB_PREFIX . 'restaurant_call', 'call_type') && $this->columnExists(DB_PREFIX . 'restaurant_call', 'status')) {
+			$open_waiter_calls = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_call` WHERE call_type = 'waiter_call' AND status IN ('new','seen')");
+			$open_bill_requests = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_call` WHERE call_type = 'bill_request' AND status IN ('new','seen')");
+		}
 
 		$checks[] = $this->buildCheck(
 			'A&ccedil;&#305;k hesap/garson &ccedil;a&#287;r&#305;s&#305; var m&#305;?',
@@ -153,7 +171,12 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			($open_waiter_calls + $open_bill_requests) > 0 ? 'warning' : 'ok'
 		);
 
-		$active_orders = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_order` WHERE service_status IN ('waiting_order','in_kitchen','ready_for_service','out_for_service','served')");
+		$active_orders = 0;
+
+		if ($this->tableExists(DB_PREFIX . 'restaurant_order') && $this->columnExists(DB_PREFIX . 'restaurant_order', 'service_status')) {
+			$active_orders = $this->countRows("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "restaurant_order` WHERE service_status IN ('waiting_order','in_kitchen','ready_for_service','out_for_service','served')");
+		}
+
 		$late_orders = $this->countLateKitchenOrders();
 
 		$checks[] = $this->buildCheck(
@@ -191,6 +214,14 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 
 	private function countLateKitchenOrders() {
 		try {
+			if (!$this->tableExists(DB_PREFIX . 'restaurant_order') || !$this->tableExists(DB_PREFIX . 'restaurant_order_product') || !$this->tableExists(DB_PREFIX . 'product_description')) {
+				return 0;
+			}
+
+			if (!$this->columnExists(DB_PREFIX . 'restaurant_order', 'service_status') || !$this->columnExists(DB_PREFIX . 'restaurant_order', 'date_modified') || !$this->columnExists(DB_PREFIX . 'product_description', 'tag')) {
+				return 0;
+			}
+
 			$language_id = (int)$this->config->get('config_language_id');
 			$orders = $this->db->query("SELECT ro.restaurant_order_id, ro.date_modified
 				FROM `" . DB_PREFIX . "restaurant_order` ro
@@ -220,6 +251,30 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			return $late;
 		} catch (Exception $e) {
 			return 0;
+		}
+	}
+
+	private function tableExists($table) {
+		try {
+			$query = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+
+			return $query->num_rows > 0;
+		} catch (Exception $e) {
+			return false;
+		}
+	}
+
+	private function columnExists($table, $column) {
+		try {
+			if (!$this->tableExists($table)) {
+				return false;
+			}
+
+			$query = $this->db->query("SHOW COLUMNS FROM `" . $this->db->escape($table) . "` LIKE '" . $this->db->escape($column) . "'");
+
+			return $query->num_rows > 0;
+		} catch (Exception $e) {
+			return false;
 		}
 	}
 }
