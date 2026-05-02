@@ -4576,6 +4576,28 @@ body.footer-visible:not(.has-order-bar) .floating-waiter-btn{
 	bottom:110px !important;
 }
 
+.osahan-home-page{
+	animation:menuPageEnter .28s ease both;
+	transition:opacity .18s ease, transform .18s ease, filter .18s ease;
+}
+
+body.menu-page-leaving .osahan-home-page{
+	opacity:0;
+	transform:translateY(12px) scale(.992);
+	filter:blur(2px);
+}
+
+@keyframes menuPageEnter{
+	from{
+		opacity:0;
+		transform:translateY(10px);
+	}
+	to{
+		opacity:1;
+		transform:translateY(0);
+	}
+}
+
 /* Home product cards: keep title, description and actions in a natural rhythm. */
 .most_sale .encok-content{
 	justify-content:flex-start !important;

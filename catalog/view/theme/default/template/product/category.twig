@@ -15,7 +15,7 @@
       <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick-theme.min.css?v=20"/>
       <link href="{{ serv }}vendor/icons/feather.css?v=20" rel="stylesheet" type="text/css">
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=20" rel="stylesheet">
-      <link href="{{ serv }}css/style.css?v=38" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=39" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <link href="{{ serv }}vendor/sidebar/demo.css?v=20" rel="stylesheet">
@@ -29,7 +29,7 @@
                   <div class="cat-slider">
                      {% for item in top_menu_categories %}
                      <div class="cat-item{% if item.active %} active{% endif %}"{% if item.active %} id="activeTopCategory"{% endif %}>
-                        <a href="{{ item.href }}">
+                        <a href="{{ item.href }}" class="menu-transition-link" data-category-id="{{ item.category_id }}" data-category-name="{{ item.name }}">
                            <span class="cat-thumb-ring">
                               <span class="cat-thumb-inner">
                                  <img src="{{ item.thumb }}?v=20" alt="{{ item.name }}">
@@ -57,7 +57,7 @@
                   <div class="encok-grid">
 
                      {% for group in group_categories %}
-                     <a href="{{ group.href }}" class="encok-card text-decoration-none">
+                     <a href="{{ group.href }}" class="encok-card text-decoration-none menu-transition-link" data-category-id="{{ group.category_id }}" data-category-name="{{ group.name }}">
                         <div class="encok-image">
                            <img src="{{ group.thumb }}?v=20" alt="{{ group.name }}">
                         </div>
@@ -112,10 +112,14 @@
                   <div class="encok-grid">
 
                      {% for product in category.products %}
-                     <div class="encok-card category-product-card">
+                     <div class="encok-card category-product-card"
+                          data-product-id="{{ product.product_id }}"
+                          data-product-name="{{ product.name|e }}"
+                          data-category-id="{{ category.category_id }}"
+                          data-category-name="{{ category.name|e }}">
 
                         <div class="encok-image menu-image-zoom"
-                             onclick="openMenuLightbox('{{ product.thumb }}?v=20', '{{ product.name|e('js') }}')">
+                             onclick="openMenuLightbox('{{ product.thumb }}?v=20', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ category.name|e('js') }}')">
                            <img src="{{ product.thumb }}?v=20" alt="{{ product.name }}">
                            {% if product.is_upcoming %}
                            <span class="coming-soon-badge">{{ text_coming_soon }}</span>
@@ -209,11 +213,23 @@
                <script src="{{ serv }}js/osahan.js?v=20"></script>
 
                <script>
-               function openMenuLightbox(src, alt) {
+               function trackMenuAnalytics(eventName, params) {
+                  if (typeof gtag === 'function') {
+                     gtag('event', eventName, params || {});
+                  }
+               }
+
+               function openMenuLightbox(src, alt, productId, categoryName) {
                   var lightbox = document.getElementById('menuLightbox');
                   var img = document.getElementById('menuLightboxImg');
 
                   if (!lightbox || !img) return;
+
+                  trackMenuAnalytics('product_view', {
+                     product_id: productId || '',
+                     product_name: alt || '',
+                     category_name: categoryName || '{{ category_info.name|e('js') }}'
+                  });
 
                   img.src = src;
                   img.alt = alt || '';
@@ -256,6 +272,12 @@
                }
 
                document.addEventListener('DOMContentLoaded', function() {
+                  trackMenuAnalytics('category_view', {
+                     category_id: '{{ category_info.category_id }}',
+                     category_name: '{{ category_info.name|e('js') }}',
+                     category_path: '{{ category_info.path|e('js') }}'
+                  });
+
                   var wraps = document.querySelectorAll('.encok-desc-wrap');
 
                   wraps.forEach(function(wrap) {
@@ -284,6 +306,32 @@
                         slider.scrollLeft = Math.max(0, targetScroll);
                      });
                   }
+
+                  document.querySelectorAll('a.menu-transition-link').forEach(function(link) {
+                     link.addEventListener('click', function(e) {
+                        if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || link.target === '_blank') {
+                           return;
+                        }
+
+                        var href = link.getAttribute('href');
+
+                        if (!href || href === '#') {
+                           return;
+                        }
+
+                        trackMenuAnalytics('category_select', {
+                           category_id: link.getAttribute('data-category-id') || '',
+                           category_name: link.getAttribute('data-category-name') || ''
+                        });
+
+                        e.preventDefault();
+                        document.body.classList.add('menu-page-leaving');
+
+                        setTimeout(function() {
+                           window.location.href = href;
+                        }, 180);
+                     });
+                  });
                });
 
                document.addEventListener('keydown', function(e) {
@@ -993,6 +1041,7 @@ function updateWaiterCallButton(state) {
    $(document).on('click', '.order-add-btn', function() {
       var btn = $(this);
       var productId = btn.data('product-id');
+      var card = btn.closest('.encok-card');
 
       $.post(addEndpoint, { product_id: productId }, function(resp) {
          if (!resp || !resp.success) {
@@ -1008,6 +1057,12 @@ function updateWaiterCallButton(state) {
 
          applyState(resp.state);
          toast(resp.message || menuOrderLocale.orderItemAdded);
+         trackMenuAnalytics('add_to_order', {
+            product_id: productId || '',
+            product_name: card.data('product-name') || '',
+            category_id: card.data('category-id') || '',
+            category_name: card.data('category-name') || ''
+         });
       }, 'json');
    });
 

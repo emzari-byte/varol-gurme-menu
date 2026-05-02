@@ -16,7 +16,7 @@
       <!-- Bootstrap core CSS -->
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
-      <link href="{{ serv }}css/style.css?v=38" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=39" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <!-- Sidebar CSS -->
@@ -32,7 +32,7 @@
             <div class="cat-slider border-bottom">
                {% for category in categories %}
                <div class="cat-item">
-                  <a href="{{ category.href }}" class="{% if category.is_ai_menu %}ai-menu-link{% endif %}">
+                  <a href="{{ category.href }}" class="menu-transition-link{% if category.is_ai_menu %} ai-menu-link{% endif %}" data-category-id="{{ category.category_id }}" data-category-name="{{ category.name }}">
                      <span class="cat-thumb-ring">
                         <span class="cat-thumb-inner">
                            <img src="{{ category.thumb }}?v=2" alt="{{ category.name }}">
@@ -56,10 +56,13 @@
             <div class="trending-slider">
                {% for pro in yoreselpro %}
                <div class="osahan-slider-item py-3 px-1">
-                  <div class="list-card yoresel-card bg-white h-100 rounded overflow-hidden position-relative shadow-sm">
+                  <div class="list-card yoresel-card bg-white h-100 rounded overflow-hidden position-relative shadow-sm"
+                       data-product-id="{{ pro.product_id }}"
+                       data-product-name="{{ pro.name|e }}"
+                       data-section-name="{{ yoreselname ? yoreselname|e : text_regional_products|e }}">
                      <div class="yoresel-card-inner">
                         <div class="list-card-image yoresel-image-wrap menu-image-zoom"
-                             onclick="openMenuLightbox('{{ pro.thumb }}', '{{ pro.name|e('js') }}')">
+                             onclick="openMenuLightbox('{{ pro.thumb }}', '{{ pro.name|e('js') }}', '{{ pro.product_id }}', '{{ yoreselname ? yoreselname|e('js') : text_regional_products|e('js') }}')">
                           
                            <img src="{{ pro.thumb }}" class="img-fluid item-img w-100" alt="{{ pro.name }}"/>
                            {% if pro.is_upcoming %}
@@ -142,9 +145,12 @@
             <div class="most_sale px-3 pb-5">
                <div class="encok-grid">
                   {% for product in encoktercihpro %}
-                  <div class="encok-card">
+                  <div class="encok-card"
+                       data-product-id="{{ product.product_id }}"
+                       data-product-name="{{ product.name|e }}"
+                       data-section-name="{{ encoktercihname ? encoktercihname|e : text_most_preferred|e }}">
                      <div class="encok-image menu-image-zoom"
-                          onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}')">
+                          onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ encoktercihname ? encoktercihname|e('js') : text_most_preferred|e('js') }}')">
                         <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
                         {% if product.is_upcoming %}
                         <span class="coming-soon-badge">{{ text_coming_soon }}</span>
@@ -228,9 +234,12 @@
             <div class="most_sale px-3 pb-5">
                <div class="encok-grid">
                   {% for product in newestpro %}
-                  <div class="encok-card">
+                  <div class="encok-card"
+                       data-product-id="{{ product.product_id }}"
+                       data-product-name="{{ product.name|e }}"
+                       data-section-name="{{ text_newest_products|e }}">
                      <div class="encok-image menu-image-zoom"
-                          onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}')">
+                          onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ text_newest_products|e('js') }}')">
                         <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
                         {% if product.is_upcoming %}
                         <span class="coming-soon-badge">{{ text_coming_soon }}</span>
@@ -328,11 +337,23 @@
       <script src="{{ serv }}js/osahan.js?v=2"></script>
 
       <script>
-      function openMenuLightbox(src, alt) {
+      function trackMenuAnalytics(eventName, params) {
+         if (typeof gtag === 'function') {
+            gtag('event', eventName, params || {});
+         }
+      }
+
+      function openMenuLightbox(src, alt, productId, sectionName) {
          var lightbox = document.getElementById('menuLightbox');
          var img = document.getElementById('menuLightboxImg');
 
          if (!lightbox || !img) return;
+
+         trackMenuAnalytics('product_view', {
+            product_id: productId || '',
+            product_name: alt || '',
+            section_name: sectionName || ''
+         });
 
          img.src = src;
          img.alt = alt || '';
@@ -375,6 +396,10 @@
       }
 
       document.addEventListener('DOMContentLoaded', function() {
+         trackMenuAnalytics('menu_home_view', {
+            page_name: 'QR Menu Home'
+         });
+
          var wraps = document.querySelectorAll('.encok-desc-wrap');
 
          wraps.forEach(function(wrap) {
@@ -388,6 +413,32 @@
                   btn.style.display = 'inline-block';
                }
             }, 50);
+         });
+
+         document.querySelectorAll('a.menu-transition-link').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+               if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || link.target === '_blank') {
+                  return;
+               }
+
+               var href = link.getAttribute('href');
+
+               if (!href || href === '#') {
+                  return;
+               }
+
+               trackMenuAnalytics('category_select', {
+                  category_id: link.getAttribute('data-category-id') || '',
+                  category_name: link.getAttribute('data-category-name') || ''
+               });
+
+               e.preventDefault();
+               document.body.classList.add('menu-page-leaving');
+
+               setTimeout(function() {
+                  window.location.href = href;
+               }, 180);
+            });
          });
       });
 
@@ -1019,6 +1070,7 @@ function updateWaiterCallButton(state) {
    $(document).on('click', '.order-add-btn', function() {
       var btn = $(this);
       var productId = btn.data('product-id');
+      var card = btn.closest('.encok-card, .list-card');
 
       $.post(addEndpoint, { product_id: productId }, function(resp) {
          if (!resp || !resp.success) {
@@ -1034,6 +1086,11 @@ function updateWaiterCallButton(state) {
 
          applyState(resp.state);
          toast(resp.message || menuOrderLocale.orderItemAdded);
+         trackMenuAnalytics('add_to_order', {
+            product_id: productId || '',
+            product_name: card.data('product-name') || '',
+            section_name: card.data('section-name') || ''
+         });
       }, 'json');
    });
 

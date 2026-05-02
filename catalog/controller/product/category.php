@@ -174,7 +174,8 @@ class ControllerProductCategory extends Controller {
         $data['category_info'] = array(
             'category_id' => (int)$category_info['category_id'],
             'name'        => $category_info['name'],
-            'parent_id'   => (int)$category_info['parent_id']
+            'parent_id'   => (int)$category_info['parent_id'],
+            'path'        => isset($this->request->get['path']) ? (string)$this->request->get['path'] : (string)(int)$category_info['category_id']
         );
 
         $current_top_category_id = 0;
@@ -271,6 +272,7 @@ class ControllerProductCategory extends Controller {
 
         if (!empty($direct_products)) {
             $data['categories'][] = array(
+                'category_id' => (int)$category_info['category_id'],
                 'name'     => $category_info['name'],
                 'products' => $direct_products,
                 'thumb'    => !empty($category_info['image'])
@@ -309,6 +311,7 @@ class ControllerProductCategory extends Controller {
                 }
 
                 $data['categories'][] = array(
+                    'category_id' => (int)$child_info['category_id'],
                     'name'     => $child_info['name'],
                     'products' => $child_products,
                     'thumb'    => $child_thumb,
