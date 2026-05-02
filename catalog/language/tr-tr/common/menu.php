@@ -7,3 +7,4 @@ $_['text_view_more'] = 'Devamını Gör';
 $_['text_view_less'] = 'Daha Az Göster';
 $_['text_coming_soon'] = 'Çok Yakında';
 $_['text_coming_soon_note'] = 'Bu lezzet çok yakında menümüzde olacak.';
+$_['text_newest_products'] = 'En Yeniler';

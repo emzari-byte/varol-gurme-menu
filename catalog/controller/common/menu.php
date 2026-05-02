@@ -8,6 +8,7 @@ class ControllerCommonMenu extends Controller {
 		$data['text_view_less'] = $this->language->get('text_view_less');
 		$data['text_coming_soon'] = $this->language->get('text_coming_soon');
 		$data['text_coming_soon_note'] = $this->language->get('text_coming_soon_note');
+		$data['text_newest_products'] = $this->language->get('text_newest_products');
 
 		$this->load->model('common/restaurant_settings');
 		$data['title'] = $this->config->get('config_meta_title');
@@ -156,6 +157,9 @@ class ControllerCommonMenu extends Controller {
 		$data['encoktercihname'] = $popular_section['name'];
 		$data['encoktercihpro'] = $this->buildHomeProducts($popular_section['products'], $gun, $active_language_id, $show_prices, 150, 110, true, $prep_extra_minutes);
 
+		$newest_product_ids = $this->getRandomNewestProductIds(30, 5);
+		$data['newestpro'] = $this->buildHomeProducts($newest_product_ids, $gun, $active_language_id, $show_prices, 150, 110, true, $prep_extra_minutes);
+
 		$data['home'] = $this->url->link('common/home', $qr_param, true);
 		$data['serv'] = HTTPS_SERVER;
 		$data['menu_footer'] = $this->load->controller('common/menu_footer');
@@ -254,6 +258,33 @@ class ControllerCommonMenu extends Controller {
 		}
 
 		return $products;
+	}
+
+	private function getRandomNewestProductIds($pool_limit = 30, $display_limit = 5) {
+		$pool_limit = max(5, min(60, (int)$pool_limit));
+		$display_limit = max(1, min(12, (int)$display_limit));
+
+		$query = $this->db->query("SELECT DISTINCT p.product_id
+			FROM `" . DB_PREFIX . "product` p
+			INNER JOIN `" . DB_PREFIX . "product_to_store` p2s ON (p2s.product_id = p.product_id)
+			WHERE p.status = '1'
+			AND p.date_available <= NOW()
+			AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'
+			ORDER BY p.date_added DESC, p.product_id DESC
+			LIMIT " . (int)$pool_limit);
+
+		$product_ids = array();
+
+		foreach ($query->rows as $row) {
+			$product_ids[] = (int)$row['product_id'];
+		}
+
+		if (count($product_ids) > $display_limit) {
+			shuffle($product_ids);
+			$product_ids = array_slice($product_ids, 0, $display_limit);
+		}
+
+		return $product_ids;
 	}
 
 	private function normalizeUpcomingProductName($name) {

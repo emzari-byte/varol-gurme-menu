@@ -215,6 +215,93 @@
                </div>
             </div>
 
+            {% if newestpro %}
+            <div class="px-3 pt-2 pb-3 title d-flex align-items-center">
+               <h6 class="m-0 font-weight-bold">{{ text_newest_products }}</h6>
+            </div>
+
+            <div class="most_sale px-3 pb-5">
+               <div class="encok-grid">
+                  {% for product in newestpro %}
+                  <div class="encok-card">
+                     <div class="encok-image menu-image-zoom"
+                          onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}')">
+                        <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
+                        {% if product.is_upcoming %}
+                        <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                        {% endif %}
+                     </div>
+
+                     <div class="encok-content">
+                        <div class="encok-top">
+                           <h6 class="mb-1">{{ product.name }}</h6>
+                           {% if product.is_upcoming %}
+                           <div class="coming-soon-note">{{ text_coming_soon_note }}</div>
+                           {% endif %}
+
+                           {% if product.description %}
+                           <div class="encok-desc-wrap">
+                              <div class="text-gray encok-desc js-encok-desc">{{ product.description|raw }}</div>
+                              <button type="button" class="encok-desc-toggle" onclick="toggleEncokDesc(this)">{{ text_view_more }}</button>
+                           </div>
+                           {% endif %}
+                        </div>
+
+                        <div class="encok-bottom">
+                           <div class="encok-meta">
+                              <div class="encok-tags">
+                                 {% if product.tag %}
+                                 <span class="food-chip">
+                                    <i class="feather-clock"></i>&nbsp;{{ product.tag }}
+                                 </span>
+                                 {% endif %}
+
+                                 {% if product.upc %}
+                                 <span class="food-chip">
+                                    <i class="feather-fire"></i>&nbsp;
+                                    <img src="image/kcal.png" width="14" alt="kcal">
+                                    {{ product.upc }} <b>Kcal</b>
+                                    {% if product.ean %}&nbsp;<b>P</b>&nbsp;{{ product.ean }}{% endif %}
+                                    {% if product.jan %}&nbsp;<b>C</b>&nbsp;{{ product.jan }}{% endif %}
+                                    {% if product.isbn %}&nbsp;<b>F</b>&nbsp;{{ product.isbn }}{% endif %}
+                                 </span>
+                                 {% endif %}
+                              </div>
+
+                              <div class="order-price-row">
+                                 <small class="food-price encok-price">{{ product.price }}</small>
+
+                                 {% if can_order and not product.is_upcoming %}
+                                 <button type="button"
+                                         class="order-add-btn"
+                                         data-product-id="{{ product.product_id }}">
+                                    {{ text_menu_add }}
+                                 </button>
+                                 {% endif %}
+                              </div>
+                           </div>
+
+                           {% if product.options %}
+                           <div class="encok-options">
+                              {% for opt in product.options %}
+                              <img
+                                 data-toggle="tooltip"
+                                 src="{{ opt.img }}"
+                                 title="{{ opt.name }}"
+                                 alt="{{ opt.name }}"
+                                 class="img-fluid item-img"
+                              >
+                              {% endfor %}
+                           </div>
+                           {% endif %}
+                        </div>
+                     </div>
+                  </div>
+                  {% endfor %}
+               </div>
+            </div>
+            {% endif %}
+
          </div>
       </div>
 
