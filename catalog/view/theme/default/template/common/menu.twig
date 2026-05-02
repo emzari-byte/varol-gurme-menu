@@ -16,7 +16,7 @@
       <!-- Bootstrap core CSS -->
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
-      <link href="{{ serv }}css/style.css?v=39" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=40" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <!-- Sidebar CSS -->
@@ -1264,7 +1264,11 @@ function openMenuWifiModal(){
    var modal = document.getElementById('menuWifiModal');
    var button = document.getElementById('menuWifiCopyBtn');
    if(button){ button.textContent = 'Şifreyi Kopyala'; button.classList.remove('is-copied'); }
-   if(modal){ modal.classList.remove('is-closing'); modal.style.display = 'flex'; }
+   if(modal){
+      if(modal.parentNode !== document.body){ document.body.appendChild(modal); }
+      modal.classList.remove('is-closing');
+      modal.style.display = 'flex';
+   }
 }
 function closeMenuWifiModal(){
    var modal = document.getElementById('menuWifiModal');

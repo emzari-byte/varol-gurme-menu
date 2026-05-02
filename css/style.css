@@ -4577,24 +4577,20 @@ body.footer-visible:not(.has-order-bar) .floating-waiter-btn{
 }
 
 .osahan-home-page{
-	animation:menuPageEnter .28s ease both;
-	transition:opacity .18s ease, transform .18s ease, filter .18s ease;
+	animation:menuPageEnter .18s ease both;
+	transition:opacity .14s ease;
 }
 
 body.menu-page-leaving .osahan-home-page{
 	opacity:0;
-	transform:translateY(12px) scale(.992);
-	filter:blur(2px);
 }
 
 @keyframes menuPageEnter{
 	from{
 		opacity:0;
-		transform:translateY(10px);
 	}
 	to{
 		opacity:1;
-		transform:translateY(0);
 	}
 }
 
@@ -4678,7 +4674,6 @@ body.menu-page-leaving .osahan-home-page{
 	position:absolute;
 	inset:0;
 	background:rgba(15,28,22,.45);
-	backdrop-filter:blur(6px);
 }
 
 .menu-wifi-sheet{
