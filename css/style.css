@@ -4641,6 +4641,17 @@ body.footer-visible:not(.has-order-bar) .floating-waiter-btn{
 	padding:24px;
 }
 
+.menu-wifi-modal.is-closing .menu-wifi-backdrop{
+	opacity:0;
+	transition:opacity .24s ease;
+}
+
+.menu-wifi-modal.is-closing .menu-wifi-sheet{
+	opacity:0;
+	transform:translateY(18px) scale(.96);
+	transition:opacity .24s ease, transform .24s ease;
+}
+
 .menu-wifi-backdrop{
 	position:absolute;
 	inset:0;
@@ -4717,4 +4728,11 @@ body.footer-visible:not(.has-order-bar) .floating-waiter-btn{
 	color:#fff;
 	font-weight:950;
 	box-shadow:0 12px 24px rgba(208,166,78,.28);
+	transition:background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.menu-wifi-copy.is-copied{
+	background:#2f7d4e;
+	box-shadow:0 12px 24px rgba(47,125,78,.24);
+	transform:translateY(-1px);
 }

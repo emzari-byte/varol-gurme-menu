@@ -16,7 +16,7 @@
       <!-- Bootstrap core CSS -->
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
-      <link href="{{ serv }}css/style.css?v=34" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=35" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <!-- Sidebar CSS -->
@@ -46,11 +46,6 @@
 
             <div class="px-3 pt-3 title d-flex align-items-center">
                <h6 class="m-0 font-weight-bold">{{ yoreselname ? yoreselname : text_regional_products }}</h6>
-               {% if restaurant_wifi_password %}
-               <button type="button" class="menu-wifi-action ml-auto" onclick="openMenuWifiModal()" aria-label="WiFi şifresi">
-                  <i class="feather-wifi"></i>
-               </button>
-               {% endif %}
             </div>
 
             <div class="trending-slider">
@@ -228,11 +223,6 @@
             {% if newestpro %}
             <div class="px-3 pt-2 pb-3 title d-flex align-items-center">
                <h6 class="m-0 font-weight-bold">{{ text_newest_products }}</h6>
-               {% if restaurant_wifi_password %}
-               <button type="button" class="menu-wifi-action ml-auto" onclick="openMenuWifiModal()" aria-label="WiFi şifresi">
-                  <i class="feather-wifi"></i>
-               </button>
-               {% endif %}
             </div>
 
             <div class="most_sale px-3 pb-5">
@@ -1205,22 +1195,43 @@ refreshState(false);
       <div class="menu-wifi-icon"><i class="feather-wifi"></i></div>
       <span>WiFi Şifresi</span>
       <strong id="menuWifiPassword">{{ restaurant_wifi_password }}</strong>
-      <button type="button" class="menu-wifi-copy" onclick="copyMenuWifiPassword()">Şifreyi Kopyala</button>
+      <button type="button" id="menuWifiCopyBtn" class="menu-wifi-copy" onclick="copyMenuWifiPassword()">Şifreyi Kopyala</button>
    </div>
 </div>
 <script>
 function openMenuWifiModal(){
    var modal = document.getElementById('menuWifiModal');
-   if(modal){ modal.style.display = 'flex'; }
+   var button = document.getElementById('menuWifiCopyBtn');
+   if(button){ button.textContent = 'Şifreyi Kopyala'; button.classList.remove('is-copied'); }
+   if(modal){ modal.classList.remove('is-closing'); modal.style.display = 'flex'; }
 }
 function closeMenuWifiModal(){
    var modal = document.getElementById('menuWifiModal');
-   if(modal){ modal.style.display = 'none'; }
+   if(modal){ modal.classList.remove('is-closing'); modal.style.display = 'none'; }
+}
+function closeMenuWifiModalAnimated(){
+   var modal = document.getElementById('menuWifiModal');
+   if(!modal){ return; }
+   modal.classList.add('is-closing');
+   setTimeout(function(){ closeMenuWifiModal(); }, 260);
+}
+function markWifiCopied(){
+   var button = document.getElementById('menuWifiCopyBtn');
+   if(button){ button.textContent = 'Kopyalandı'; button.classList.add('is-copied'); }
+   setTimeout(function(){ closeMenuWifiModalAnimated(); }, 2000);
 }
 function copyMenuWifiPassword(){
    var value = document.getElementById('menuWifiPassword') ? document.getElementById('menuWifiPassword').textContent : '';
    if(navigator.clipboard && value){
-      navigator.clipboard.writeText(value);
+      navigator.clipboard.writeText(value).then(markWifiCopied).catch(markWifiCopied);
+   } else if(value) {
+      var temp = document.createElement('textarea');
+      temp.value = value;
+      document.body.appendChild(temp);
+      temp.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(temp);
+      markWifiCopied();
    }
 }
 document.addEventListener('click', function(e){
