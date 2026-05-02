@@ -1950,10 +1950,10 @@ body::before {
 	text-align: left !important;
 	text-wrap: pretty;
 	display: -webkit-box;
-	-webkit-line-clamp: 2;
+	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
-	min-height: 52px;
+	min-height: 78px;
 }
 
 .yoresel-desc-preview *,
@@ -2076,11 +2076,11 @@ body::before {
 	text-align: left !important;
 	text-wrap: pretty;
 	display: -webkit-box;
-	-webkit-line-clamp: 2;
+	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 	max-width: 100%;
-	min-height: 40px;
+	min-height: 60px;
 	word-spacing: normal;
 	letter-spacing: 0;
 }
@@ -2184,7 +2184,7 @@ body::before {
 }
 
 .category-product-card .encok-desc {
-	min-height: 40px;
+	min-height: 60px;
 }
 
 .category-product-card .encok-bottom {
@@ -2652,7 +2652,7 @@ body::before {
 		font-size: 14px;
 		line-height: 1.65;
 		max-width: 95%;
-		min-height: 46px;
+		min-height: 70px;
 	}
 
 	.encok-desc-toggle {
@@ -2710,8 +2710,8 @@ body::before {
 	.category-product-card .encok-desc {
 		font-size: 15px;
 		line-height: 1.55;
-		min-height: 48px;
-		-webkit-line-clamp: 2;
+		min-height: 72px;
+		-webkit-line-clamp: 3;
 	}
 
 	.category-product-card .encok-desc-toggle {
@@ -2887,7 +2887,7 @@ body::before {
 		font-size: 13px;
 		line-height: 1.55;
 		max-width: 100%;
-		min-height: 40px;
+		min-height: 60px;
 	}
 
 	.encok-price,
@@ -2953,8 +2953,8 @@ body::before {
 	.category-product-card .encok-desc {
 		font-size: 15px;
 		line-height: 1.55;
-		min-height: 48px;
-		-webkit-line-clamp: 2;
+		min-height: 72px;
+		-webkit-line-clamp: 3;
 	}
 
 	.category-product-card .encok-desc-toggle {
@@ -3493,14 +3493,14 @@ body::before {
 	font-size: 19px;
 	line-height: 1.26;
 	margin-bottom: 12px !important;
-	-webkit-line-clamp: 2;
+	-webkit-line-clamp: 3;
 }
 
 .category-product-card .encok-desc {
 	font-size: 14px;
 	line-height: 1.55;
-	min-height: 44px;
-	-webkit-line-clamp: 2;
+	min-height: 66px;
+	-webkit-line-clamp: 3;
 }
 
 .category-product-card .encok-desc-toggle {
@@ -3646,7 +3646,7 @@ body::before {
 	.category-product-card .encok-desc {
 		font-size: 13px;
 		line-height: 1.55;
-		min-height: 40px;
+		min-height: 60px;
 	}
 
 	.category-product-card .encok-desc-toggle {
