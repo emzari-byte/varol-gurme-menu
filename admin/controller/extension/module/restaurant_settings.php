@@ -38,6 +38,10 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 				$this->request->post['restaurant_feedback_email'] = trim((string)$this->request->post['restaurant_feedback_email']);
 			}
 
+			if (isset($this->request->post['restaurant_analytics_code'])) {
+				$this->request->post['restaurant_analytics_code'] = html_entity_decode((string)$this->request->post['restaurant_analytics_code'], ENT_QUOTES, 'UTF-8');
+			}
+
 			foreach (array('restaurant_menu_logo', 'restaurant_admin_logo', 'restaurant_brand_logo', 'restaurant_akinsoft_host', 'restaurant_akinsoft_port', 'restaurant_akinsoft_db_path', 'restaurant_akinsoft_charset', 'restaurant_akinsoft_bridge_url', 'restaurant_akinsoft_bridge_token', 'restaurant_akinsoft_company', 'restaurant_akinsoft_branch', 'restaurant_akinsoft_user', 'restaurant_mail_host', 'restaurant_mail_username', 'restaurant_mail_port', 'restaurant_mail_from_email', 'restaurant_mail_from_name') as $key) {
 				if (isset($this->request->post[$key])) {
 					$this->request->post[$key] = trim((string)$this->request->post[$key]);
@@ -79,6 +83,10 @@ class ControllerExtensionModuleRestaurantSettings extends Controller {
 			} else {
 				$data[$key] = $default;
 			}
+		}
+
+		if (isset($data['restaurant_analytics_code'])) {
+			$data['restaurant_analytics_code'] = html_entity_decode((string)$data['restaurant_analytics_code'], ENT_QUOTES, 'UTF-8');
 		}
 
 		$data['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';

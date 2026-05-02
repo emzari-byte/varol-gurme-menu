@@ -25,7 +25,13 @@ class ModelCommonRestaurantSettings extends Model {
 			return $default;
 		}
 
-		return $query->row['ayar_value'];
+		$value = $query->row['ayar_value'];
+
+		if ($key === 'restaurant_analytics_code') {
+			$value = html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8');
+		}
+
+		return $value;
 	}
 
 	public function getOccupancyLoad() {
