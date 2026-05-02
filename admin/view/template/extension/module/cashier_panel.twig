@@ -352,6 +352,26 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
+  function normalizeArea(area) {
+    area = $.trim(String(area || ''));
+
+    if (!area) {
+      return 'Salon';
+    }
+
+    var key = area.toLocaleLowerCase('tr-TR');
+
+    if (key.indexOf('bah') === 0 && (key.indexOf('?') !== -1 || key.indexOf('ç') !== -1 || key.indexOf('c') !== -1)) {
+      return 'Bahçe';
+    }
+
+    if (key === 'salon') {
+      return 'Salon';
+    }
+
+    return area;
+  }
+
   function toast(message, type) {
     var $toast = $('#cashierToast');
     $toast.removeClass('error success').addClass(type || '').text(message).stop(true, true).fadeIn(120);
@@ -414,12 +434,12 @@
 
   function renderAreas() {
     var areas = {};
-    tables.forEach(function(table){ areas[table.area || 'Salon'] = true; });
+    tables.forEach(function(table){ areas[normalizeArea(table.area)] = true; });
     var openCount = tables.filter(isOccupied).length;
     var html = '<button type="button" class="area-tab ' + (selectedArea === '__open' ? 'active' : '') + '" data-area="__open">Açık Masalar <span>(' + openCount + ')</span></button>';
     html += '<button type="button" class="area-tab ' + (selectedArea === '' ? 'active' : '') + '" data-area="">Tümü <span>(' + tables.length + ')</span></button>';
     Object.keys(areas).forEach(function(area) {
-      var areaCount = tables.filter(function(table){ return (table.area || 'Salon') === area; }).length;
+      var areaCount = tables.filter(function(table){ return normalizeArea(table.area) === area; }).length;
       html += '<button type="button" class="area-tab ' + (selectedArea === area ? 'active' : '') + '" data-area="' + escapeHtml(area) + '">' + escapeHtml(area) + ' <span>(' + areaCount + ')</span></button>';
     });
     $('#areaTabs').html(html);
@@ -430,7 +450,7 @@
     renderSummary();
     var filtered = tables.filter(function(table){
       if (selectedArea === '__open') return isOccupied(table);
-      return !selectedArea || (table.area || 'Salon') === selectedArea;
+      return !selectedArea || normalizeArea(table.area) === selectedArea;
     });
     var html = '';
     filtered.forEach(function(table) {
@@ -443,13 +463,17 @@
       var billNew = parseInt(table.bill_request_new || 0, 10);
       var stateLabel = billPending ? 'Hesap istiyor' : (pending ? 'Ödeme' : (inKitchen ? 'Mutfakta' : (ready ? 'Servise hazır' : (served ? 'Servis edildi' : (occupied ? 'Dolu' : 'Boş')))));
       var classes = (occupied ? 'occupied ' : '') + (pending ? 'pending ' : '') + (inKitchen ? 'in-kitchen ' : '') + (ready ? 'ready ' : '') + (served ? 'served ' : '') + (billPending ? 'bill ' : '') + (billNew ? 'new-bill' : '');
+      var areaLabel = normalizeArea(table.area);
       html += '<button type="button" class="pos-table ' + classes + '" data-table-id="' + table.table_id + '">';
       html += '<div class="mini-meta">' + (billPending ? '<span title="Hesap talebi"><i class="fa fa-bell"></i></span>' : '') + '</div>';
-      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(table.area || 'Salon') + '</div><div class="waiter-line">' + escapeHtml(table.waiter_name || 'Kasadan yönetiliyor') + '</div><div class="bill-label"><i class="fa fa-bell"></i> Müşteri hesap istiyor</div>' + (table.bill_payment_note ? '<div class="bill-method">' + escapeHtml(table.bill_payment_note) + '</div>' : '') + '</div>';
+      html += '<div><div class="table-no">Masa ' + escapeHtml(table.table_no) + '</div><div class="table-area">' + escapeHtml(areaLabel) + '</div>' + (table.waiter_name ? '<div class="waiter-line">' + escapeHtml(table.waiter_name) + '</div>' : '') + '<div class="bill-label"><i class="fa fa-bell"></i> Müşteri hesap istiyor</div>' + (table.bill_payment_note ? '<div class="bill-method">' + escapeHtml(table.bill_payment_note) + '</div>' : '') + '</div>';
       html += '<div class="table-bottom"><span class="state">' + stateLabel + '</span><span class="amount">' + (occupied ? money(table.total_amount) : '') + '</span></div>';
       html += '</button>';
     });
     $('#tableGrid').html(html || '<div class="empty-state">Bu filtrede masa bulunamadı.</div>');
+    $('#tableGrid .table-area').each(function(){
+      $(this).text(normalizeArea($(this).text()));
+    });
   }
 
   function renderCategories() {
