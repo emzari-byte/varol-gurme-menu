@@ -68,6 +68,7 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			'restaurant_high_density_prep_extra_minutes' => '20',
 			'restaurant_wifi_name' => '',
 			'restaurant_wifi_password' => '',
+			'restaurant_google_place_id' => '',
 			'restaurant_openai_api_key' => defined('OPENAI_API_KEY') ? (string)OPENAI_API_KEY : '',
 			'restaurant_weatherapi_key' => defined('WEATHERAPI_KEY') ? (string)WEATHERAPI_KEY : '',
 			'restaurant_weather_lat' => defined('MENU_WEATHER_LAT') ? (string)MENU_WEATHER_LAT : '37.766670',

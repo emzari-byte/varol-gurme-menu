@@ -488,6 +488,18 @@
               </div>
 
               <div class="form-group">
+                <label class="col-sm-3 control-label">Google Place ID</label>
+                <div class="col-sm-9">
+                  <input type="text" name="restaurant_google_place_id" value="{{ restaurant_google_place_id }}" placeholder="Örn: ChIJ..." class="form-control">
+                  <p class="help-block">
+                    Kasa fişinin altında Google yorum QR kodu göstermek için kullanılır.
+                    <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener">Google Place ID Finder</a>
+                    ile işletmeyi arayıp Place ID değerini kopyalayabilirsiniz.
+                  </p>
+                </div>
+              </div>
+
+              <div class="form-group">
                 <label class="col-sm-3 control-label">SMTP Sunucu</label>
                 <div class="col-sm-5">
                   <input type="text" name="restaurant_mail_host" value="{{ restaurant_mail_host }}" placeholder="smtp.domain.com" class="form-control">

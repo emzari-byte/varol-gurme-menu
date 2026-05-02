@@ -1223,8 +1223,12 @@ class ModelExtensionModuleCashierPanel extends Model {
 			return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 		};
 
+		$google_place_id = trim((string)$this->getRestaurantSettingValue('restaurant_google_place_id', ''));
+		$google_review_url = $google_place_id !== '' ? 'https://search.google.com/local/writereview?placeid=' . rawurlencode($google_place_id) : '';
+		$google_qr_url = $google_review_url !== '' ? 'https://api.qrserver.com/v1/create-qr-code/?size=170x170&margin=8&data=' . rawurlencode($google_review_url) : '';
+
 		$html = '<!doctype html><html><head><meta charset="utf-8"><title>Fiş</title>';
-		$html .= '<style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;color:#111;font-size:12px}.print-actions{position:sticky;top:0;margin:0 -4px 8px;padding:8px;background:#fff;border-bottom:1px solid #ddd;text-align:center}.print-actions button{width:100%;height:36px;border:0;border-radius:6px;background:#143629;color:#fff;font-weight:bold}.center{text-align:center}.line{border-top:1px dashed #111;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.item{margin:5px 0}.total{font-weight:bold;font-size:14px}@media print{.print-actions{display:none}body{width:72mm}}</style>';
+		$html .= '<style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;color:#111;font-size:12px}.print-actions{position:sticky;top:0;margin:0 -4px 8px;padding:8px;background:#fff;border-bottom:1px solid #ddd;text-align:center}.print-actions button{width:100%;height:36px;border:0;border-radius:6px;background:#143629;color:#fff;font-weight:bold}.center{text-align:center}.line{border-top:1px dashed #111;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.item{margin:5px 0}.total{font-weight:bold;font-size:14px}.review-box{margin-top:10px;padding-top:10px;border-top:1px dashed #111;text-align:center}.review-box img{width:34mm;height:34mm;display:block;margin:6px auto}.review-title{font-weight:bold;font-size:13px;margin-bottom:3px}.review-text{font-size:11px;line-height:1.35;color:#222}@media print{.print-actions{display:none}body{width:72mm}.review-box img{width:34mm;height:34mm}}</style>';
 		$html .= '</head><body>';
 		$html .= '<div class="print-actions"><button type="button" onclick="window.print()">Yazdır</button></div>';
 		$html .= '<div class="center"><h3>Varol Veranda</h3><div>Afiyet olsun</div></div><div class="line"></div>';
@@ -1239,10 +1243,39 @@ class ModelExtensionModuleCashierPanel extends Model {
 		$html .= '<div class="line"></div>';
 		$html .= '<div class="row total"><span>Toplam</span><strong>' . number_format((float)$detail['subtotal_amount'], 2, ',', '.') . ' TL</strong></div>';
 		$html .= '<div class="line"></div><div class="center">Teşekkür ederiz</div>';
+
+		if ($google_qr_url !== '') {
+			$html .= '<div class="review-box">';
+			$html .= '<div class="review-title">Bizi Google’da değerlendirin</div>';
+			$html .= '<div class="review-text">Memnun kaldıysanız birkaç kelimeyle bizi desteklemeniz bizi çok mutlu eder.</div>';
+			$html .= '<img src="' . $escape($google_qr_url) . '" alt="Google yorum QR">';
+			$html .= '<div class="review-text">QR kodu telefonunuzla okutarak yorum sayfamıza ulaşabilirsiniz.</div>';
+			$html .= '</div>';
+		}
+
 		$html .= '<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},350);};</script>';
 		$html .= '</body></html>';
 
 		return $html;
+	}
+
+	private function getRestaurantSettingValue($key, $default = '') {
+		$table = DB_PREFIX . 'ayarlar';
+		$exists = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+
+		if (!$exists->num_rows) {
+			return $default;
+		}
+
+		$query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
+			WHERE ayar_key = '" . $this->db->escape($key) . "'
+			LIMIT 1");
+
+		if (!$query->num_rows || $query->row['ayar_value'] === '') {
+			return $default;
+		}
+
+		return $query->row['ayar_value'];
 	}
 
 	public function publishDraftOrders($table_id, $user_id = 0) {
