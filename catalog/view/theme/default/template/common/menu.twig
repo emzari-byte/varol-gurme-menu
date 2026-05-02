@@ -143,7 +143,10 @@
                            <h6 class="mb-1">{{ product.name }}</h6>
 
                            {% if product.description %}
-                           <div class="text-gray encok-desc">{{ product.description|raw }}</div>
+                           <div class="encok-desc-wrap">
+                              <div class="text-gray encok-desc js-encok-desc">{{ product.description|raw }}</div>
+                              <button type="button" class="encok-desc-toggle" onclick="toggleEncokDesc(this)">{{ text_view_more }}</button>
+                           </div>
                            {% endif %}
                         </div>
 
@@ -250,6 +253,39 @@
          img.alt = '';
          document.body.style.overflow = '';
       }
+
+      function toggleEncokDesc(button) {
+         var wrap = button.closest('.encok-desc-wrap');
+         if (!wrap) return;
+
+         var desc = wrap.querySelector('.js-encok-desc');
+         if (!desc) return;
+
+         if (desc.classList.contains('expanded')) {
+            desc.classList.remove('expanded');
+            button.innerText = '{{ text_view_more|e('js') }}';
+         } else {
+            desc.classList.add('expanded');
+            button.innerText = '{{ text_view_less|e('js') }}';
+         }
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+         var wraps = document.querySelectorAll('.encok-desc-wrap');
+
+         wraps.forEach(function(wrap) {
+            var desc = wrap.querySelector('.js-encok-desc');
+            var btn = wrap.querySelector('.encok-desc-toggle');
+
+            if (!desc || !btn) return;
+
+            setTimeout(function() {
+               if (desc.scrollHeight > desc.clientHeight + 4) {
+                  btn.style.display = 'inline-block';
+               }
+            }, 50);
+         });
+      });
 
       document.addEventListener('keydown', function(e) {
          if (e.key === 'Escape') {

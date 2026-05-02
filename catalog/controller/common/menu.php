@@ -4,6 +4,8 @@ class ControllerCommonMenu extends Controller {
 		$this->load->language('common/menu');
 		$data['text_regional_products'] = $this->language->get('text_regional_products');
 		$data['text_most_preferred'] = $this->language->get('text_most_preferred');
+		$data['text_view_more'] = $this->language->get('text_view_more');
+		$data['text_view_less'] = $this->language->get('text_view_less');
 
 		$this->load->model('common/restaurant_settings');
 		$data['title'] = $this->config->get('config_meta_title');
