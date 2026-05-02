@@ -115,11 +115,7 @@
                            <div class="list-card-badge mt-3 order-price-row">
    <small class="food-price yoresel-price">{{ pro.price }}</small>
 
-   {% if pro.is_upcoming %}
-   <button type="button" class="order-add-btn order-add-btn-disabled" disabled>
-      {{ text_coming_soon }}
-   </button>
-   {% elseif can_order %}
+   {% if can_order and not pro.is_upcoming %}
    <button type="button"
            class="order-add-btn"
            data-product-id="{{ pro.product_id }}">
@@ -189,11 +185,7 @@
  <div class="order-price-row">
       <small class="food-price encok-price">{{ product.price }}</small>
 
-      {% if product.is_upcoming %}
-      <button type="button" class="order-add-btn order-add-btn-disabled" disabled>
-         {{ text_coming_soon }}
-      </button>
-      {% elseif can_order %}
+      {% if can_order and not product.is_upcoming %}
       <button type="button"
               class="order-add-btn"
               data-product-id="{{ product.product_id }}">
