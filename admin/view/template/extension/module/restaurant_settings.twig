@@ -208,8 +208,6 @@
             <li><a href="#tab-allergens" data-toggle="tab">Alerjen Tanımları</a></li>
             <li><a href="#tab-recommendation" data-toggle="tab">Menü Öneri Motoru</a></li>
             <li><a href="#tab-production" data-toggle="tab">Production Test</a></li>
-            <li><a href="#tab-orders" data-toggle="tab">Siparişler</a></li>
-            <li><a href="#tab-activity" data-toggle="tab">Hareket Geçmişi</a></li>
             <li><a href="#tab-integrations" data-toggle="tab">AI & İletişim</a></li>
             <li><a href="#tab-erp" data-toggle="tab">ERP</a></li>
           </ul>
@@ -428,82 +426,6 @@
                 .production-warning{border-left:5px solid #d29922;}
                 .production-error{border-left:5px solid #a94442;}
               </style>
-            </div>
-
-            <div class="tab-pane" id="tab-orders">
-              <p class="restaurant-embed-note">Son siparişler, masa, durum, ödeme ve ürün özetiyle birlikte burada izlenir.</p>
-              <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                  <thead>
-                    <tr>
-                      <th style="width:80px;">No</th>
-                      <th style="width:110px;">Masa</th>
-                      <th style="width:110px;">Alan</th>
-                      <th style="width:140px;">Durum</th>
-                      <th style="width:120px;">Ödeme</th>
-                      <th style="width:130px;" class="text-right">Toplam</th>
-                      <th>Ürün Özeti</th>
-                      <th style="width:150px;">Tarih</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% if restaurant_orders %}
-                      {% for order in restaurant_orders %}
-                        <tr>
-                          <td><strong>#{{ order.order_id }}</strong></td>
-                          <td>{{ order.table }}</td>
-                          <td>{{ order.area }}</td>
-                          <td>{{ order.status }}</td>
-                          <td>{{ order.payment_status }}{% if order.payment_type != '-' %} / {{ order.payment_type }}{% endif %}</td>
-                          <td class="text-right"><strong>{{ order.total_amount|number_format(2, ',', '.') }} TL</strong></td>
-                          <td>{% if order.product_names %}{{ order.product_names }}{% else %}-{% endif %}</td>
-                          <td>{{ order.date_added }}</td>
-                        </tr>
-                      {% endfor %}
-                    {% else %}
-                      <tr>
-                        <td colspan="8" class="text-center">Henüz sipariş bulunmuyor.</td>
-                      </tr>
-                    {% endif %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="tab-pane" id="tab-activity">
-              <p class="restaurant-embed-note">Son sipariş, masa, hesap, garson çağrısı ve mola hareketleri.</p>
-              <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                  <thead>
-                    <tr>
-                      <th style="width:150px;">Tarih</th>
-                      <th style="width:170px;">İşlem</th>
-                      <th style="width:90px;">Masa</th>
-                      <th style="width:90px;">Sipariş</th>
-                      <th style="width:140px;">Kullanıcı</th>
-                      <th>Detay</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% if activities %}
-                      {% for activity in activities %}
-                        <tr>
-                          <td>{{ activity.date_added }}</td>
-                          <td><strong>{{ activity.type }}</strong></td>
-                          <td>{{ activity.table }}</td>
-                          <td>{% if activity.order_id %}#{{ activity.order_id }}{% else %}-{% endif %}</td>
-                          <td>{{ activity.user }}</td>
-                          <td>{{ activity.detail }}</td>
-                        </tr>
-                      {% endfor %}
-                    {% else %}
-                      <tr>
-                        <td colspan="6" class="text-center">Henüz hareket bulunmuyor.</td>
-                      </tr>
-                    {% endif %}
-                  </tbody>
-                </table>
-              </div>
             </div>
 
             <div class="tab-pane" id="tab-integrations">

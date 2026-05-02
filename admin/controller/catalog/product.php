@@ -551,7 +551,7 @@ class ControllerCatalogProduct extends Controller {
 			foreach ($this->model_catalog_category->getCategories(array('sort' => 'name', 'order' => 'ASC')) as $category) {
 				$json['categories'][] = array(
 					'category_id' => (int)$category['category_id'],
-					'name'        => html_entity_decode($category['name'], ENT_QUOTES, 'UTF-8')
+					'name'        => $this->normalizeCategoryPathName(isset($category['name']) ? $category['name'] : '')
 				);
 			}
 		}
@@ -726,6 +726,10 @@ class ControllerCatalogProduct extends Controller {
 		$this->load->model('catalog/category');
 		$this->load->model('localisation/language');
 		$data['filter_categories'] = $this->model_catalog_category->getCategories(array('sort' => 'name', 'order' => 'ASC'));
+		foreach ($data['filter_categories'] as &$filter_category) {
+			$filter_category['name'] = $this->normalizeCategoryPathName(isset($filter_category['name']) ? $filter_category['name'] : '');
+		}
+		unset($filter_category);
 		$data['placeholder'] = $this->model_tool_image->resize('no_image.png', 120, 120);
 		$data['quick_languages'] = $this->model_localisation_language->getLanguages();
 		usort($data['quick_languages'], function($a, $b) {
@@ -930,10 +934,7 @@ class ControllerCatalogProduct extends Controller {
 		$map = array();
 
 		foreach ($categories as $category) {
-			$name = isset($category['name']) ? html_entity_decode($category['name'], ENT_QUOTES, 'UTF-8') : '';
-			$name = preg_replace('/\s+/', ' ', strip_tags($name));
-			$name = preg_replace('/\s*>\s*/', ' > ', $name);
-			$name = trim($name);
+			$name = $this->normalizeCategoryPathName(isset($category['name']) ? $category['name'] : '');
 
 			if ($name !== '') {
 				$map[(int)$category['category_id']] = $name;
@@ -941,6 +942,26 @@ class ControllerCatalogProduct extends Controller {
 		}
 
 		return $map;
+	}
+
+	private function normalizeCategoryPathName($name) {
+		$name = (string)$name;
+
+		for ($i = 0; $i < 3; $i++) {
+			$decoded = html_entity_decode($name, ENT_QUOTES, 'UTF-8');
+
+			if ($decoded === $name) {
+				break;
+			}
+
+			$name = $decoded;
+		}
+
+		$name = str_replace("\xC2\xA0", ' ', $name);
+		$name = preg_replace('/\s+/', ' ', strip_tags($name));
+		$name = preg_replace('/\s*>\s*/', ' > ', $name);
+
+		return trim($name);
 	}
 
 	private function getProductAllergenBadges($product_id) {

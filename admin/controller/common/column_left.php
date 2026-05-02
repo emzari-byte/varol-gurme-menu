@@ -138,6 +138,14 @@ class ControllerCommonColumnLeft extends Controller {
 
 		$reports = array();
 
+		if ($this->user->hasPermission('access', 'extension/module/restaurant_orders') || $this->user->hasPermission('access', 'extension/module/restaurant_settings')) {
+			$reports[] = array(
+				'name'     => 'Siparişler',
+				'href'     => $this->url->link('extension/module/restaurant_orders', 'user_token=' . $this->session->data['user_token'], true),
+				'children' => array()
+			);
+		}
+
 		if ($this->user->hasPermission('access', 'extension/module/restaurant_reviews')) {
 			$reports[] = array(
 				'name'     => 'Değerlendirme',
@@ -209,6 +217,7 @@ class ControllerCommonColumnLeft extends Controller {
 			'extension/module/restaurant_tables',
 			'extension/module/restaurant_waiters',
 			'extension/module/restaurant_home_products',
+			'extension/module/restaurant_orders',
 			'extension/module/restaurant_reviews',
 			'catalog/product',
 			'catalog/category',

@@ -1,0 +1,192 @@
+{{ header }}{{ column_left }}
+<div id="content" class="restaurant-orders-report">
+  <div class="page-header orders-page-header">
+    <div class="container-fluid">
+      <h1>Sipariş Raporları</h1>
+      <p>Masa siparişleri, ödeme durumu ve operasyon hareketlerini tek ekranda izleyin.</p>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+          <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    <div class="orders-stat-grid">
+      <div class="orders-stat-card hero">
+        <span>Toplam Sipariş</span>
+        <strong>{{ stats.order_count }}</strong>
+        <em>Seçili tarih aralığı</em>
+      </div>
+      <div class="orders-stat-card">
+        <span>Toplam Tutar</span>
+        <strong>{{ stats.total_amount|number_format(2, ',', '.') }} TL</strong>
+        <em>Adisyon toplamı</em>
+      </div>
+      <div class="orders-stat-card">
+        <span>Tahsilat</span>
+        <strong>{{ stats.paid_amount|number_format(2, ',', '.') }} TL</strong>
+        <em>Ödenen siparişler</em>
+      </div>
+      <div class="orders-stat-card">
+        <span>Açık / Kapalı</span>
+        <strong>{{ stats.open_count }} / {{ stats.paid_count }}</strong>
+        <em>Operasyon durumu</em>
+      </div>
+    </div>
+
+    <form action="{{ action }}" method="get" class="orders-filter-panel">
+      <input type="hidden" name="route" value="extension/module/restaurant_orders">
+      <input type="hidden" name="user_token" value="{{ user_token }}">
+      <div>
+        <label>Başlangıç</label>
+        <input type="date" name="date_from" value="{{ filter.date_from }}" class="form-control">
+      </div>
+      <div>
+        <label>Bitiş</label>
+        <input type="date" name="date_to" value="{{ filter.date_to }}" class="form-control">
+      </div>
+      <div>
+        <label>Sipariş Durumu</label>
+        <select name="status" class="form-control">
+          {% for key, label in statuses %}
+            <option value="{{ key }}" {% if filter.status == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Ödeme</label>
+        <select name="payment_status" class="form-control">
+          {% for key, label in payment_statuses %}
+            <option value="{{ key }}" {% if filter.payment_status == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Masa</label>
+        <input type="text" name="table" value="{{ filter.table }}" class="form-control" placeholder="Masa no / ad">
+      </div>
+      <div>
+        <label>Garson</label>
+        <input type="text" name="waiter" value="{{ filter.waiter }}" class="form-control" placeholder="Kullanıcı adı">
+      </div>
+      <div>
+        <label>Limit</label>
+        <input type="number" name="limit" value="{{ filter.limit }}" min="20" max="300" class="form-control">
+      </div>
+      <div class="orders-filter-actions">
+        <button type="submit" class="btn btn-primary"><i class="fa fa-filter"></i> Filtrele</button>
+        <a href="{{ clear }}" class="btn btn-default">Temizle</a>
+      </div>
+    </form>
+
+    <div class="orders-report-grid">
+      <section class="orders-panel orders-panel-main">
+        <div class="orders-panel-head">
+          <div>
+            <h3>Sipariş Listesi</h3>
+            <p>En yeni siparişler üstte olacak şekilde listelenir.</p>
+          </div>
+        </div>
+        <div class="orders-list">
+          {% for order in orders %}
+            <article class="order-report-card">
+              <div class="order-card-top">
+                <div>
+                  <strong>#{{ order.order_id }}</strong>
+                  <span>{{ order.table }}{% if order.area %} · {{ order.area }}{% endif %}</span>
+                </div>
+                <div class="order-card-total">{{ order.total_amount|number_format(2, ',', '.') }} TL</div>
+              </div>
+              <div class="order-card-badges">
+                <span class="status status-{{ order.raw_status|replace({'_':'-'}) }}">{{ order.status }}</span>
+                <span class="payment payment-{{ order.raw_payment_status }}">{{ order.payment_status }}</span>
+                {% if order.payment_type != '-' %}<span>{{ order.payment_type }}</span>{% endif %}
+              </div>
+              <div class="order-card-products">
+                {% if order.product_names %}{{ order.product_names }}{% else %}Ürün kaydı yok{% endif %}
+              </div>
+              <div class="order-card-foot">
+                <span><i class="fa fa-user"></i> {{ order.waiter }}</span>
+                <span><i class="fa fa-clock-o"></i> {{ order.date_added }}</span>
+                {% if order.paid_at %}<span><i class="fa fa-check-circle"></i> {{ order.paid_at }}</span>{% endif %}
+              </div>
+            </article>
+          {% else %}
+            <div class="orders-empty">Bu filtrelerde sipariş bulunamadı.</div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <aside class="orders-panel orders-panel-side">
+        <div class="orders-panel-head">
+          <div>
+            <h3>Hareket Akışı</h3>
+            <p>Sipariş durum değişimleri</p>
+          </div>
+        </div>
+        <div class="orders-timeline">
+          {% for item in activity %}
+            <div class="timeline-item">
+              <span class="dot"></span>
+              <strong>#{{ item.order_id }} · {{ item.table }}</strong>
+              <em>{{ item.date_added }}</em>
+              <p>{{ item.from }} → {{ item.to }}</p>
+              {% if item.detail %}<small>{{ item.detail }}</small>{% endif %}
+            </div>
+          {% else %}
+            <div class="orders-empty compact">Hareket bulunamadı.</div>
+          {% endfor %}
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <style>
+    .restaurant-orders-report{background:#f5f7f6;min-height:100vh;}
+    .orders-page-header{background:#fff;border-bottom:1px solid #e5ebe7;margin-bottom:18px;}
+    .orders-page-header h1{margin-bottom:4px;color:#18362a;font-weight:900;}
+    .orders-page-header p{margin:0 0 8px;color:#6f7f77;}
+    .orders-stat-grid{display:grid;grid-template-columns:1.15fr repeat(3,1fr);gap:14px;margin-bottom:16px;}
+    .orders-stat-card{padding:18px;border:1px solid #dfe8e2;border-radius:14px;background:#fff;box-shadow:0 12px 28px rgba(28,55,42,.06);}
+    .orders-stat-card span{display:block;color:#6d7e75;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;}
+    .orders-stat-card strong{display:block;margin-top:7px;color:#1d3329;font-size:28px;font-weight:900;line-height:1.1;}
+    .orders-stat-card em{display:block;margin-top:7px;color:#7b8982;font-style:normal;}
+    .orders-stat-card.hero{background:linear-gradient(135deg,#143629,#2f6b4e);border-color:#143629;}
+    .orders-stat-card.hero span,.orders-stat-card.hero em{color:#d9eadf;}
+    .orders-stat-card.hero strong{color:#fff;font-size:38px;}
+    .orders-filter-panel{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) auto;gap:12px;align-items:end;margin-bottom:16px;padding:16px;border:1px solid #dfe8e2;border-radius:14px;background:#fff;}
+    .orders-filter-panel label{display:block;margin-bottom:6px;color:#30463b;font-weight:900;}
+    .orders-filter-actions{display:flex;gap:8px;white-space:nowrap;}
+    .orders-report-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;}
+    .orders-panel{border:1px solid #dfe8e2;border-radius:14px;background:#fff;box-shadow:0 14px 34px rgba(28,55,42,.055);overflow:hidden;}
+    .orders-panel-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #edf2ef;background:linear-gradient(180deg,#fff,#fbfdfc);}
+    .orders-panel-head h3{margin:0;color:#1d3329;font-size:20px;font-weight:900;}
+    .orders-panel-head p{margin:3px 0 0;color:#7a8982;}
+    .orders-list{display:grid;gap:12px;padding:16px;}
+    .order-report-card{padding:16px;border:1px solid #e1ebe5;border-radius:13px;background:#fff;}
+    .order-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
+    .order-card-top strong{display:block;color:#173629;font-size:20px;}
+    .order-card-top span{color:#72827a;font-weight:700;}
+    .order-card-total{color:#173629;font-size:20px;font-weight:900;white-space:nowrap;}
+    .order-card-badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+    .order-card-badges span{display:inline-flex;padding:6px 10px;border-radius:999px;background:#f1f6f3;color:#50665a;font-size:12px;font-weight:900;}
+    .order-card-badges .payment-paid,.order-card-badges .status-paid,.order-card-badges .status-completed{background:#e5f7eb;color:#22743c;}
+    .order-card-badges .payment-unpaid,.order-card-badges .status-cancelled{background:#fdecec;color:#a13b36;}
+    .order-card-badges .status-in-kitchen,.order-card-badges .status-payment-pending{background:#fff5dd;color:#8a5d17;}
+    .order-card-products{color:#3d5148;line-height:1.5;}
+    .order-card-foot{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid #edf2ef;color:#72827a;font-weight:700;}
+    .orders-timeline{position:relative;display:grid;gap:0;padding:14px 18px 18px;}
+    .timeline-item{position:relative;padding:10px 0 12px 24px;border-left:2px solid #e0ebe5;}
+    .timeline-item .dot{position:absolute;left:-6px;top:15px;width:10px;height:10px;border-radius:50%;background:#2f6b4e;box-shadow:0 0 0 4px #e6f3eb;}
+    .timeline-item strong{display:block;color:#1d3329;}
+    .timeline-item em{display:block;color:#829089;font-size:12px;font-style:normal;}
+    .timeline-item p{margin:5px 0;color:#40574c;font-weight:800;}
+    .timeline-item small{color:#7a8982;}
+    .orders-empty{padding:34px;text-align:center;border:1px dashed #cfdcd4;border-radius:12px;background:#fff;color:#819089;font-weight:900;}
+    .orders-empty.compact{padding:22px;}
+    @media (max-width:1199px){.orders-stat-grid,.orders-filter-panel,.orders-report-grid{grid-template-columns:1fr;}.orders-filter-actions{justify-content:flex-start;}}
+  </style>
+</div>
+{{ footer }}
