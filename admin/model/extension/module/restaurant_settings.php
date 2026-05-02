@@ -19,7 +19,6 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 					date_modified = NOW()");
 		}
 
-		$this->migrateLegacyAnalyticsCode();
 	}
 
 	public function getSettings() {
@@ -97,42 +96,6 @@ class ModelExtensionModuleRestaurantSettings extends Model {
 			'restaurant_akinsoft_user' => 'SYSDBA',
 			'restaurant_akinsoft_pass' => 'masterkey'
 		);
-	}
-
-	private function migrateLegacyAnalyticsCode() {
-		$code_query = $this->db->query("SELECT ayar_value FROM `" . DB_PREFIX . $this->table . "`
-			WHERE ayar_key = 'restaurant_analytics_code'
-			LIMIT 1");
-		$marker_query = $this->db->query("SELECT ayar_value FROM `" . DB_PREFIX . $this->table . "`
-			WHERE ayar_key = 'restaurant_analytics_legacy_migrated'
-			LIMIT 1");
-
-		$code = $code_query->num_rows ? trim((string)$code_query->row['ayar_value']) : '';
-		$migrated = $marker_query->num_rows ? (int)$marker_query->row['ayar_value'] : 0;
-
-		if ($code !== '' || $migrated === 1) {
-			return;
-		}
-
-		$this->db->query("INSERT INTO `" . DB_PREFIX . $this->table . "`
-			SET ayar_key = 'restaurant_analytics_code',
-				ayar_value = '" . $this->db->escape($this->getLegacyAnalyticsCode()) . "',
-				date_modified = NOW()
-			ON DUPLICATE KEY UPDATE
-				ayar_value = '" . $this->db->escape($this->getLegacyAnalyticsCode()) . "',
-				date_modified = NOW()");
-
-		$this->db->query("INSERT INTO `" . DB_PREFIX . $this->table . "`
-			SET ayar_key = 'restaurant_analytics_legacy_migrated',
-				ayar_value = '1',
-				date_modified = NOW()
-			ON DUPLICATE KEY UPDATE
-				ayar_value = '1',
-				date_modified = NOW()");
-	}
-
-	private function getLegacyAnalyticsCode() {
-		return "<!-- Google tag (gtag.js) -->\n<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-T44CKLX9SY\"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n\n  gtag('config', 'G-T44CKLX9SY');\n</script>";
 	}
 
 	public function getProductionChecks() {

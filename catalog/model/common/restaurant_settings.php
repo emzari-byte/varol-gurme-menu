@@ -28,21 +28,12 @@ class ModelCommonRestaurantSettings extends Model {
 			$this->settings_cache[$key] = $value;
 		}
 
-		if (($value === null || $value === '') && $key === 'restaurant_analytics_code') {
-			$legacy_code = $this->migrateLegacyAnalyticsCode($table);
-
-			if ($legacy_code !== '') {
-				$this->settings_cache[$key] = $legacy_code;
-				return $legacy_code;
-			}
-		}
-
 		if ($value === null || $value === '') {
 			return $default;
 		}
 
 		if ($key === 'restaurant_analytics_code') {
-			$value = html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8');
+			$value = $this->normalizeAnalyticsCode($value);
 		}
 
 		return $value;
@@ -180,40 +171,6 @@ class ModelCommonRestaurantSettings extends Model {
 		return $this->table_exists_cache[$table];
 	}
 
-	private function migrateLegacyAnalyticsCode($table) {
-		$marker_query = $this->db->query("SELECT ayar_value FROM `" . $table . "`
-			WHERE ayar_key = 'restaurant_analytics_legacy_migrated'
-			LIMIT 1");
-
-		if ($marker_query->num_rows && (int)$marker_query->row['ayar_value'] === 1) {
-			return '';
-		}
-
-		$legacy_code = $this->getLegacyAnalyticsCode();
-
-		$this->db->query("INSERT INTO `" . $table . "`
-			SET ayar_key = 'restaurant_analytics_code',
-				ayar_value = '" . $this->db->escape($legacy_code) . "',
-				date_modified = NOW()
-			ON DUPLICATE KEY UPDATE
-				ayar_value = '" . $this->db->escape($legacy_code) . "',
-				date_modified = NOW()");
-
-		$this->db->query("INSERT INTO `" . $table . "`
-			SET ayar_key = 'restaurant_analytics_legacy_migrated',
-				ayar_value = '1',
-				date_modified = NOW()
-			ON DUPLICATE KEY UPDATE
-				ayar_value = '1',
-				date_modified = NOW()");
-
-		return $legacy_code;
-	}
-
-	private function getLegacyAnalyticsCode() {
-		return "<!-- Google tag (gtag.js) -->\n<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-T44CKLX9SY\"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n\n  gtag('config', 'G-T44CKLX9SY');\n</script>";
-	}
-
 	private function columnExists($table, $column) {
 		$key = $table . '.' . $column;
 
@@ -225,5 +182,67 @@ class ModelCommonRestaurantSettings extends Model {
 		$this->column_exists_cache[$key] = $query->num_rows > 0;
 
 		return $this->column_exists_cache[$key];
+	}
+
+	private function normalizeAnalyticsCode($value) {
+		$value = $this->decodeRepeatedHtml($value);
+		$value = trim($value);
+
+		if ($value === '') {
+			return '';
+		}
+
+		$gtag_id = $this->extractGtagId($value);
+
+		if ($gtag_id !== '') {
+			return $this->buildGtagLoader($gtag_id);
+		}
+
+		if (stripos($value, '<script') === false && stripos($value, '<noscript') === false) {
+			return '';
+		}
+
+		$value = preg_replace('#<(iframe|object|embed)[^>]*>.*?</\1>#is', '', $value);
+		$value = preg_replace('/\s+on[a-z]+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $value);
+
+		return trim($value);
+	}
+
+	private function decodeRepeatedHtml($value) {
+		$value = (string)$value;
+
+		for ($i = 0; $i < 8; $i++) {
+			$decoded = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
+
+			if ($decoded === $value) {
+				break;
+			}
+
+			$value = $decoded;
+		}
+
+		return $value;
+	}
+
+	private function extractGtagId($value) {
+		if (preg_match('/\bG-[A-Z0-9]+\b/i', $value, $match)) {
+			return strtoupper($match[0]);
+		}
+
+		if (preg_match('/\bAW-[A-Z0-9]+\b/i', $value, $match)) {
+			return strtoupper($match[0]);
+		}
+
+		return '';
+	}
+
+	private function buildGtagLoader($gtag_id) {
+		$gtag_id = preg_replace('/[^A-Z0-9\-]/i', '', (string)$gtag_id);
+
+		if ($gtag_id === '') {
+			return '';
+		}
+
+		return "<script>\n(function(w,d,id){\n  w.dataLayer=w.dataLayer||[];\n  w.gtag=w.gtag||function(){w.dataLayer.push(arguments);};\n  w.gtag('js', new Date());\n  w.gtag('config', id);\n  var s=d.createElement('script');\n  s.async=true;\n  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);\n  s.onerror=function(){};\n  (d.head||d.documentElement).appendChild(s);\n})(window,document,'" . $gtag_id . "');\n</script>";
 	}
 }
