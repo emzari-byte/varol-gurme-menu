@@ -4,5 +4,14 @@ deployment:
     - export DEPLOYPATH=/home/varolver/public_html/menu/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/rm -rf /home/varolver/public_html/Api/WebEnt9
-    - /bin/cp -R admin catalog css image img js sound storage system vendor $DEPLOYPATH
+    - /usr/bin/rsync -a --exclude='cache/' --exclude='logs/' --exclude='modification/' --exclude='session/' --exclude='upload/' admin/ $DEPLOYPATH/admin/
+    - /usr/bin/rsync -a --exclude='cache/' --exclude='logs/' --exclude='modification/' --exclude='session/' --exclude='upload/' catalog/ $DEPLOYPATH/catalog/
+    - /usr/bin/rsync -a css/ $DEPLOYPATH/css/
+    - /usr/bin/rsync -a --exclude='cache/' image/ $DEPLOYPATH/image/
+    - /usr/bin/rsync -a img/ $DEPLOYPATH/img/
+    - /usr/bin/rsync -a js/ $DEPLOYPATH/js/
+    - /usr/bin/rsync -a sound/ $DEPLOYPATH/sound/
+    - /usr/bin/rsync -a --exclude='cache/' --exclude='logs/' --exclude='modification/' --exclude='session/' --exclude='upload/' storage/ $DEPLOYPATH/storage/
+    - /usr/bin/rsync -a --exclude='storage/cache/' --exclude='storage/logs/' --exclude='storage/modification/' --exclude='storage/session/' --exclude='storage/upload/' system/ $DEPLOYPATH/system/
+    - /usr/bin/rsync -a vendor/ $DEPLOYPATH/vendor/
     - /bin/cp -f .htaccess favicon.ico index.php robots.txt akinsoft_api.php config.example.php $DEPLOYPATH
