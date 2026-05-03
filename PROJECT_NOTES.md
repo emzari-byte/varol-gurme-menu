@@ -45,7 +45,9 @@ Main active modules:
 - Allergen definitions
 - Menu recommendation engine
 - Production test panel
-- Akınsoft ERP integration
+- Akınsoft bridge integration
+
+The standalone restaurant ERP direction was abandoned. Keep the project focused on QR menu, waiter, kitchen, cashier/POS, table sessions, reviews and the Akınsoft bridge. Do not add `/erp` panels or new ERP-owned modules unless the product direction changes again.
 
 The admin menu has been simplified around restaurant operations.
 
@@ -141,7 +143,7 @@ Important settings areas:
 
 - Menu settings
 - AI and communication
-- ERP
+- Akınsoft bridge
 - Waiter call reset duration
 - Bill request reset duration
 - WhatsApp phone
@@ -152,7 +154,7 @@ Important settings areas:
 
 Do not keep secrets in Git.
 
-## Akınsoft ERP Integration
+## Akınsoft Bridge Integration
 
 There are two remaining integration modes:
 
@@ -234,13 +236,7 @@ It deploys:
 
 ## Known Caution
 
-There is an unowned local git status item:
-
-```text
-D bridge/akinsoft_bridge_config.example.php
-```
-
-Do not revert or stage it unless the user explicitly asks.
+Local secret config files and logs must stay out of Git. Keep `bridge/akinsoft_bridge_config.php` local-only; commit only the sanitized example config.
 
 ## Next Tasks
 
@@ -249,7 +245,7 @@ Do not revert or stage it unless the user explicitly asks.
 3. Test local Firebird receipt write from the bridge agent.
 4. Later, sync paid/closed status from Akinsoft back to restaurant table/session state.
 5. Move remaining footer feedback email and logo settings if not fully completed.
-6. Continue polishing customer menu UX after ERP flow is stable.
+6. Continue polishing customer menu UX after the cashier/kitchen/waiter flow is stable.
 
 ## New Chat Startup Prompt
 

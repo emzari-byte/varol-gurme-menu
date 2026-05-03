@@ -2,6 +2,7 @@
 class ControllerApiWaiter extends Controller {
 
 	private $api_key = 'VAROL_GARSON_2026';
+	private $active_service_statuses = array('waiting_order', 'cashier_draft', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served', 'payment_pending');
 
 	private function setJsonHeaders() {
 		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
@@ -66,6 +67,30 @@ class ControllerApiWaiter extends Controller {
 		return '';
 	}
 
+	private function getRestaurantSetting($key, $default = '') {
+		$query = $this->db->query("SELECT ayar_value FROM `" . DB_PREFIX . "ayarlar`
+			WHERE ayar_key = '" . $this->db->escape($key) . "'
+			LIMIT 1");
+
+		return $query->num_rows ? (string)$query->row['ayar_value'] : $default;
+	}
+
+	private function getApiKey() {
+		$setting_key = trim($this->getRestaurantSetting('restaurant_waiter_api_key', ''));
+
+		return $setting_key !== '' ? $setting_key : $this->api_key;
+	}
+
+	private function getActiveServiceStatusSql() {
+		$statuses = array();
+
+		foreach ($this->active_service_statuses as $status) {
+			$statuses[] = "'" . $this->db->escape($status) . "'";
+		}
+
+		return implode(',', $statuses);
+	}
+
 	private function authenticate() {
 		if (($this->request->server['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 			$this->setJsonHeaders();
@@ -75,7 +100,7 @@ class ControllerApiWaiter extends Controller {
 
 		$api_key = $this->getHeaderApiKey();
 
-		if ($api_key !== $this->api_key) {
+		if ($api_key !== $this->getApiKey()) {
 			$this->jsonResponse(array(
 				'success' => false,
 				'message' => 'Geçersiz API anahtarı'
@@ -114,7 +139,7 @@ class ControllerApiWaiter extends Controller {
 				COALESCE(SUM(total_amount), 0) AS total_amount
 			FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE table_id = '" . $table_id . "'
-			AND service_status IN ('waiting_order','in_kitchen','served')");
+			AND service_status IN (" . $this->getActiveServiceStatusSql() . ")");
 
 		$active_order_count = (int)$active_query->row['active_order_count'];
 		$total_amount = (float)$active_query->row['total_amount'];
@@ -122,7 +147,7 @@ class ControllerApiWaiter extends Controller {
 		$latest_query = $this->db->query("SELECT service_status
 			FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE table_id = '" . $table_id . "'
-			AND service_status IN ('waiting_order','in_kitchen','served')
+			AND service_status IN (" . $this->getActiveServiceStatusSql() . ")
 			ORDER BY restaurant_order_id DESC
 			LIMIT 1");
 
@@ -191,7 +216,7 @@ class ControllerApiWaiter extends Controller {
 		foreach ($tables as $table) {
 			$summary['total_tables']++;
 
-			if (in_array($table['service_status'], array('waiting_order', 'in_kitchen', 'served'))) {
+			if (in_array($table['service_status'], $this->active_service_statuses, true)) {
 				$summary['active_tables']++;
 			}
 
@@ -242,7 +267,7 @@ class ControllerApiWaiter extends Controller {
 				ro.date_modified
 			FROM `" . DB_PREFIX . "restaurant_order` ro
 			WHERE ro.table_id = '" . $table_id . "'
-			AND ro.service_status IN ('waiting_order', 'in_kitchen', 'served')
+			AND ro.service_status IN (" . $this->getActiveServiceStatusSql() . ")
 			ORDER BY ro.restaurant_order_id DESC");
 
 		$orders = $query->rows;
@@ -265,7 +290,7 @@ class ControllerApiWaiter extends Controller {
 		$restaurant_order_id = (int)$this->getRequestValue('restaurant_order_id', 0);
 		$service_status = trim((string)$this->getRequestValue('service_status', ''));
 
-		$allowed = array('waiting_order', 'in_kitchen', 'served', 'paid', 'cancelled');
+		$allowed = array('waiting_order', 'cashier_draft', 'in_kitchen', 'ready_for_service', 'out_for_service', 'served', 'payment_pending', 'paid', 'cancelled');
 
 		if (!$restaurant_order_id || !in_array($service_status, $allowed)) {
 			$this->jsonResponse(array(
@@ -296,6 +321,11 @@ class ControllerApiWaiter extends Controller {
 		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
 			SET service_status = '" . $this->db->escape($service_status) . "',
 				is_paid = '" . (int)$is_paid . "',
+				payment_status = IF('" . $this->db->escape($service_status) . "' = 'paid', 'paid', payment_status),
+				payment_type = IF('" . $this->db->escape($service_status) . "' = 'paid', 'waiter_api', payment_type),
+				payment_total = IF('" . $this->db->escape($service_status) . "' = 'paid', total_amount, payment_total),
+				paid_at = IF('" . $this->db->escape($service_status) . "' = 'paid', NOW(), paid_at),
+				locked = IF('" . $this->db->escape($service_status) . "' = 'paid', '1', locked),
 				date_modified = NOW()
 			WHERE restaurant_order_id = '" . $restaurant_order_id . "'");
 

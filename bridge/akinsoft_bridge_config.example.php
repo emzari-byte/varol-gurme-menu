@@ -1,14 +1,14 @@
 <?php
 return array(
 	'site_base_url' => 'https://varolveranda.com/menu/',
-	'bridge_token' => 'RESTORAN_AYARLARI_ERP_BRIDGE_TOKEN',
+	'bridge_token' => 'RESTAURANT_AKINSOFT_BRIDGE_TOKEN',
 	'poll_seconds' => 5,
 	'limit' => 20,
 
 	'firebird' => array(
-		'host' => 'localhost',
+		'host' => '127.0.0.1',
 		'port' => '3050',
-		'path' => 'C:\\AKINSOFT\\Wolvox9\\Database_FB\\DEMOWOLVOX\\2026\\WOLVOX.FDB',
+		'path' => 'C:\\AKINSOFT\\Wolvox9\\Database_FB\\004\\2026\\WOLVOX.FDB',
 		'charset' => 'WIN1254',
 		'user' => 'SYSDBA',
 		'pass' => 'masterkey'

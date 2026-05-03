@@ -484,7 +484,7 @@ class ModelExtensionModuleAkinsoft extends Model {
 			return false;
 		}
 
-		$order_query = $this->db->query("SELECT service_status
+		$order_query = $this->db->query("SELECT service_status, total_amount
 			FROM `" . DB_PREFIX . "restaurant_order`
 			WHERE restaurant_order_id = '" . $restaurant_order_id . "'
 			LIMIT 1");
@@ -499,6 +499,11 @@ class ModelExtensionModuleAkinsoft extends Model {
 		$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
 			SET service_status = 'paid',
 				is_paid = '1',
+				payment_status = 'paid',
+				payment_type = 'akinsoft',
+				payment_total = total_amount,
+				paid_at = NOW(),
+				locked = '1',
 				integration_message = '" . $this->db->escape($message) . "',
 				integration_date = NOW(),
 				date_modified = NOW()

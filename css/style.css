@@ -2441,6 +2441,31 @@ body::before {
 	filter: drop-shadow(0 3px 8px rgba(62,109,86,0.08));
 }
 
+.veranda-logo-frame {
+	width: 244px;
+	height: auto;
+	margin-bottom: 18px;
+}
+
+.veranda-logo-frame::before {
+	display: none;
+}
+
+.veranda-logo-frame .logo-ring {
+	display: none;
+}
+
+.veranda-logo-frame .logo-ring::before {
+	display: none;
+}
+
+.veranda-logo {
+	width: 232px;
+	height: auto;
+	max-height: 118px;
+	object-fit: contain;
+}
+
 .brand-tags {
 	margin: 0 auto 14px;
 	font-size: 12px;

@@ -15,6 +15,7 @@ class ModelExtensionModuleCashierPanel extends Model {
 		}
 
 		if ($this->tableExists(DB_PREFIX . 'restaurant_table_status')) {
+			$this->db->query("ALTER TABLE `" . DB_PREFIX . "restaurant_table_status` MODIFY `service_status` VARCHAR(32) NOT NULL DEFAULT 'empty'");
 			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_table_status', 'waiter_name', "VARCHAR(128) NOT NULL DEFAULT ''");
 			$this->addColumnIfMissing(DB_PREFIX . 'restaurant_table_status', 'note', "TEXT NULL");
 		}
@@ -1082,6 +1083,12 @@ class ModelExtensionModuleCashierPanel extends Model {
 			$this->db->query("UPDATE `" . DB_PREFIX . "restaurant_order`
 				SET service_status = 'paid',
 					is_paid = '1',
+					payment_status = 'paid',
+					payment_type = '" . $this->db->escape($payment_method) . "',
+					payment_total = total_amount,
+					paid_at = NOW(),
+					cashier_user_id = '" . $user_id . "',
+					locked = '1',
 					date_modified = NOW()
 				WHERE restaurant_order_id = '" . $order_id . "'");
 
