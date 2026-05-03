@@ -4,14 +4,4 @@ deployment:
     - export DEPLOYPATH=/home/varolver/public_html/menu/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/rm -rf /home/varolver/public_html/Api/WebEnt9
-    - /usr/bin/rsync -a --exclude='cache/' --exclude='logs/' --exclude='modification/' --exclude='session/' --exclude='upload/' admin/ $DEPLOYPATH/admin/
-    - /usr/bin/rsync -a --exclude='cache/' --exclude='logs/' --exclude='modification/' --exclude='session/' --exclude='upload/' catalog/ $DEPLOYPATH/catalog/
-    - /usr/bin/rsync -a css/ $DEPLOYPATH/css/
-    - /usr/bin/rsync -a --exclude='cache/' image/ $DEPLOYPATH/image/
-    - /usr/bin/rsync -a img/ $DEPLOYPATH/img/
-    - /usr/bin/rsync -a js/ $DEPLOYPATH/js/
-    - /usr/bin/rsync -a sound/ $DEPLOYPATH/sound/
-    - /usr/bin/rsync -a --exclude='cache/' --exclude='logs/' --exclude='modification/' --exclude='session/' --exclude='upload/' storage/ $DEPLOYPATH/storage/
-    - /usr/bin/rsync -a --exclude='storage/cache/' --exclude='storage/logs/' --exclude='storage/modification/' --exclude='storage/session/' --exclude='storage/upload/' system/ $DEPLOYPATH/system/
-    - /usr/bin/rsync -a vendor/ $DEPLOYPATH/vendor/
-    - /bin/cp -f .htaccess favicon.ico index.php robots.txt akinsoft_api.php config.example.php $DEPLOYPATH
+    - /bin/bash -lc 'cd /home/varolver/varol-gurme-menu && /usr/bin/git diff-tree --no-commit-id --name-only -r -z HEAD | while IFS= read -r -d "" file; do case "$file" in .cpanel.yml|.gitignore|PROJECT_NOTES.md|ERP_START_NOTES.md|config.php|admin/config.php|bridge/akinsoft_bridge_config.php|php.ini|test.php|fcm_test.php|error_log|admin/error_log|catalog/error_log|hinstall/*|*.sql|*.log|*.tmp|*.zip|*.tar|*.tar.gz|*.bak|*.old) continue ;; image/cache/*|storage/cache/*|storage/logs/*|storage/modification/*|storage/session/*|storage/upload/*|system/storage/cache/*|system/storage/logs/*|system/storage/modification/*|system/storage/session/*|system/storage/upload/*) continue ;; esac; if [ -f "$file" ]; then /bin/mkdir -p "$DEPLOYPATH/$(/usr/bin/dirname "$file")" && /bin/cp -p "$file" "$DEPLOYPATH/$file"; elif [ ! -e "$file" ]; then /bin/rm -rf "$DEPLOYPATH/$file"; fi; done'
