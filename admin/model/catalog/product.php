@@ -365,6 +365,11 @@ class ModelCatalogProduct extends Model {
 				SET price = '" . (float)$value . "',
 					date_modified = NOW()
 				WHERE product_id = '" . (int)$product_id . "'");
+		} elseif ($field == 'location') {
+			$this->db->query("UPDATE " . DB_PREFIX . "product
+				SET location = '" . $this->db->escape($value) . "',
+					date_modified = NOW()
+				WHERE product_id = '" . (int)$product_id . "'");
 		} elseif ($field == 'status') {
 			$this->db->query("UPDATE " . DB_PREFIX . "product
 				SET status = '" . (int)$value . "',

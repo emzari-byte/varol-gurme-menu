@@ -211,9 +211,7 @@ class ControllerCommonMenu extends Controller {
 				$special = false;
 			}
 
-			if (!empty($product_info['location'])) {
-				$price = $product_info['location'];
-			}
+			$price = $this->applyPricePrefix($price, $product_info['location']);
 
 			if (!$show_prices) {
 				$price = false;
@@ -306,5 +304,19 @@ class ControllerCommonMenu extends Controller {
 			'name' => $clean_name !== '' ? $clean_name : $name,
 			'is_upcoming' => $is_upcoming
 		);
+	}
+
+	private function applyPricePrefix($price, $prefix) {
+		$prefix = trim((string)$prefix);
+
+		if ($price === false || $prefix === '') {
+			return $price;
+		}
+
+		if (preg_match('/\d/u', $prefix)) {
+			return $prefix;
+		}
+
+		return $prefix . ' ' . $price;
 	}
 }

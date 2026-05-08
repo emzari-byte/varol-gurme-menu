@@ -118,7 +118,7 @@
                 {% endfor %}</div>
               <div class="restaurant-form-section">
                 <h3>Ürün Bilgileri</h3>
-                <p class="restaurant-section-note">Kod, kategori, fiyat ve yayın durumunu tek ekrandan yönetin.</p>
+                <p class="restaurant-section-note">Kod, kategori, fiyat önü yazısı, fiyat ve yayın durumunu tek ekrandan yönetin.</p>
                 <div id="restaurant-product-core-fields" class="restaurant-core-grid"></div>
               </div>
             </div>
@@ -167,10 +167,11 @@
                   <input type="text" name="mpn" value="{{ mpn }}" placeholder="{{ entry_mpn }}" id="input-mpn" class="form-control"/>
                 </div>
               </div>
-              <div class="form-group" style="display:none;">
-                <label class="col-sm-2 control-label" for="input-location">{{ entry_location }}</label>
+              <div class="form-group">
+                <label class="col-sm-2 control-label" for="input-location">Fiyat Ön Yazısı</label>
                 <div class="col-sm-10">
-                  <input type="text" name="location" value="{{ location }}" placeholder="{{ entry_location }}" id="input-location" class="form-control"/>
+                  <input type="text" name="location" value="{{ location }}" placeholder="Örn: Kişi başı" id="input-location" class="form-control"/>
+                  <p class="help-block">Bu alana yazılan metin menüde fiyatın önünde görünür. Boş bırakılırsa sadece fiyat gösterilir.</p>
                 </div>
               </div>
               <div class="form-group">
@@ -1213,7 +1214,7 @@
     var $core = $('#restaurant-product-core-fields');
 
     if ($core.length) {
-      $('#input-model,#input-category,#input-price,#input-status,#input-sort-order').each(function() {
+      $('#input-model,#input-category,#input-location,#input-price,#input-status,#input-sort-order').each(function() {
         var $group = $(this).closest('.form-group');
 
         if ($group.length && !$group.data('restaurant-moved')) {

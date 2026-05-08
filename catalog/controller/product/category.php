@@ -378,9 +378,7 @@ class ControllerProductCategory extends Controller {
                 $special = false;
             }
 
-            if (!empty($result['location'])) {
-                $price = $result['location'];
-            }
+            $price = $this->applyPricePrefix($price, $result['location']);
 
             if (!$show_prices) {
                 $price = false;
@@ -526,5 +524,19 @@ class ControllerProductCategory extends Controller {
         }
 
         return $allergens;
+    }
+
+    private function applyPricePrefix($price, $prefix) {
+        $prefix = trim((string)$prefix);
+
+        if ($price === false || $prefix === '') {
+            return $price;
+        }
+
+        if (preg_match('/\d/u', $prefix)) {
+            return $prefix;
+        }
+
+        return $prefix . ' ' . $price;
     }
 }
