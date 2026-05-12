@@ -7,6 +7,9 @@
       <meta name="author" content="Varol Veranda">
       <link rel="icon" type="image/png" href="{{ logo }}">
       <title>{{ title }}</title>
+      {% if canonical %}
+      <link rel="canonical" href="{{ canonical }}">
+      {% endif %}
 
       <!-- Slick Slider -->
       <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick.min.css"/>

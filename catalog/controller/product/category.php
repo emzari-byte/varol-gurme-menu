@@ -180,6 +180,27 @@ class ControllerProductCategory extends Controller {
             'path'        => isset($this->request->get['path']) ? (string)$this->request->get['path'] : (string)(int)$category_info['category_id']
         );
 
+        $seo_category_name = trim((string)$category_info['name']);
+        $seo_meta_title = !empty($category_info['meta_title']) ? trim((string)$category_info['meta_title']) : '';
+        $seo_title_base = $seo_meta_title !== '' && $seo_meta_title !== $this->config->get('config_meta_title') ? $seo_meta_title : $seo_category_name;
+        $seo_title_base = $seo_title_base !== '' ? $seo_title_base : $this->config->get('config_meta_title');
+
+        if (stripos($seo_title_base, 'varol veranda') !== false) {
+            $data['title'] = $seo_title_base;
+        } else {
+            $data['title'] = $seo_title_base . ' | Varol Veranda Menü';
+        }
+
+        if (!empty($category_info['meta_description'])) {
+            $data['description'] = trim((string)$category_info['meta_description']);
+        } elseif ($data['language_code'] === 'en-gb') {
+            $data['description'] = 'Explore ' . $seo_category_name . ' options on the Varol Veranda menu with fresh dishes, coffee and a relaxed garden atmosphere.';
+        } else {
+            $data['description'] = $seo_category_name . ' seçeneklerini Varol Veranda menüsünde inceleyin. Kahvaltı, kahve ve gün boyu lezzetlerle ferah bahçe deneyimi.';
+        }
+
+        $data['canonical'] = $this->url->link('product/category', 'path=' . $data['category_info']['path'], true);
+
         $current_top_category_id = 0;
 
         if ((int)$category_info['parent_id'] === 0) {

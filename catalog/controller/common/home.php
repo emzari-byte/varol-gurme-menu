@@ -9,9 +9,10 @@ class ControllerCommonHome extends Controller {
 			$this->document->addLink($this->config->get('config_url'), 'canonical');
 		}
 
-		$data['title'] = $this->config->get('config_meta_title');
-		$data['description'] = $this->config->get('config_meta_description');
+		$data['title'] = 'Varol Veranda Menü';
+		$data['description'] = $this->getMenuDescription();
 		$data['keywords'] = $this->config->get('config_meta_keyword');
+		$data['canonical'] = $this->getMenuBaseUrl();
 
 		if ($this->request->server['HTTPS']) {
 			$server = $this->config->get('config_ssl');
@@ -153,5 +154,17 @@ class ControllerCommonHome extends Controller {
 		}
 
 		return $session_token;
+	}
+
+	private function getMenuBaseUrl() {
+		$base_url = $this->request->server['HTTPS'] ? $this->config->get('config_ssl') : $this->config->get('config_url');
+
+		return rtrim((string)$base_url, '/') . '/';
+	}
+
+	private function getMenuDescription() {
+		$description = trim((string)$this->config->get('config_meta_description'));
+
+		return $description !== '' ? $description : 'Varol Veranda dijital menüsü: kahvaltı, kahve, içecek ve gün boyu lezzet seçeneklerini inceleyin.';
 	}
 }

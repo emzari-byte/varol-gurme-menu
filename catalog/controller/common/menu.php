@@ -11,9 +11,10 @@ class ControllerCommonMenu extends Controller {
 		$data['text_newest_products'] = $this->language->get('text_newest_products');
 
 		$this->load->model('common/restaurant_settings');
-		$data['title'] = $this->config->get('config_meta_title');
-		$data['description'] = $this->config->get('config_meta_description');
+		$data['title'] = 'Varol Veranda Menü';
+		$data['description'] = $this->getMenuDescription();
 		$data['keywords'] = $this->config->get('config_meta_keyword');
+		$data['canonical'] = $this->getMenuBaseUrl();
 		$brand_logo = (string)$this->model_common_restaurant_settings->get('restaurant_menu_logo', $this->model_common_restaurant_settings->get('restaurant_brand_logo', $this->config->get('config_logo')));
 
 		if (is_file(DIR_IMAGE . $brand_logo)) {
@@ -304,6 +305,18 @@ class ControllerCommonMenu extends Controller {
 			'name' => $clean_name !== '' ? $clean_name : $name,
 			'is_upcoming' => $is_upcoming
 		);
+	}
+
+	private function getMenuBaseUrl() {
+		$base_url = $this->request->server['HTTPS'] ? $this->config->get('config_ssl') : $this->config->get('config_url');
+
+		return rtrim((string)$base_url, '/') . '/';
+	}
+
+	private function getMenuDescription() {
+		$description = trim((string)$this->config->get('config_meta_description'));
+
+		return $description !== '' ? $description : 'Varol Veranda dijital menüsü: kahvaltı, kahve, içecek ve gün boyu lezzet seçeneklerini inceleyin.';
 	}
 
 	private function applyPricePrefix($price, $prefix) {

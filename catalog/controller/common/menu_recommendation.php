@@ -3,12 +3,13 @@ class ControllerCommonMenuRecommendation extends Controller {
 	public function index() {
 		$this->load->language('common/menu');
 
-		$data['title'] = $this->isEnglishLanguage() ? 'What Should I Eat Today?' : 'Kararsızım';
-		$data['description'] = $this->config->get('config_meta_description');
+		$data['title'] = $this->isEnglishLanguage() ? 'What Should I Eat Today? | Varol Veranda Menu' : 'Kararsızım | Varol Veranda Menü';
+		$data['description'] = $this->isEnglishLanguage() ? 'Get a quick menu recommendation from Varol Veranda based on the time of day and menu options.' : 'Varol Veranda menüsünden günün saatine ve seçeneklere göre hızlı bir öneri alın.';
 		if (!$this->isEnglishLanguage()) {
-			$data['title'] = html_entity_decode('Karars&#305;z&#305;m', ENT_QUOTES, 'UTF-8');
+			$data['title'] = html_entity_decode('Karars&#305;z&#305;m | Varol Veranda Men&#252;', ENT_QUOTES, 'UTF-8');
 		}
 		$data['keywords'] = $this->config->get('config_meta_keyword');
+		$data['canonical'] = $this->url->link('common/menu_recommendation', '', true);
 		$data['logo'] = HTTPS_SERVER . 'image/' . $this->config->get('config_logo');
 		$data['serv'] = HTTPS_SERVER;
 

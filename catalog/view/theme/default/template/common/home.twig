@@ -3,7 +3,11 @@
 <head>
    <meta charset="utf-8">
    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+   <meta name="description" content="{{ description }}">
    <title>{{ title }}</title>
+   {% if canonical %}
+   <link rel="canonical" href="{{ canonical }}">
+   {% endif %}
 
    <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=5" rel="stylesheet">
    <link href="{{ serv }}vendor/icons/feather.css?v=5" rel="stylesheet">

@@ -10,6 +10,9 @@
       <meta http-equiv="Expires" content="0">
       <link rel="icon" type="image/png" href="{{ logo }}?v=20">
       <title>{{ title }}</title>
+      {% if canonical %}
+      <link rel="canonical" href="{{ canonical }}">
+      {% endif %}
 
       <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick.min.css?v=20"/>
       <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick-theme.min.css?v=20"/>
