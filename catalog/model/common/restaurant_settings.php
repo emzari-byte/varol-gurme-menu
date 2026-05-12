@@ -192,10 +192,10 @@ class ModelCommonRestaurantSettings extends Model {
 			return '';
 		}
 
-		$gtag_id = $this->extractGtagId($value);
+		$gtag_ids = $this->extractGtagIds($value);
 
-		if ($gtag_id !== '') {
-			return $this->buildGtagLoader($gtag_id);
+		if ($gtag_ids) {
+			return $this->buildGtagLoader($gtag_ids);
 		}
 
 		if (stripos($value, '<script') === false && stripos($value, '<noscript') === false) {
@@ -224,25 +224,45 @@ class ModelCommonRestaurantSettings extends Model {
 		return $value;
 	}
 
-	private function extractGtagId($value) {
-		if (preg_match('/\bG-[A-Z0-9]+\b/i', $value, $match)) {
-			return strtoupper($match[0]);
+	private function extractGtagIds($value) {
+		if (!preg_match_all('/\b(?:G|AW)-[A-Z0-9]+\b/i', $value, $matches)) {
+			return array();
 		}
 
-		if (preg_match('/\bAW-[A-Z0-9]+\b/i', $value, $match)) {
-			return strtoupper($match[0]);
+		$ids = array();
+
+		foreach ($matches[0] as $match) {
+			$id = strtoupper(preg_replace('/[^A-Z0-9\-]/i', '', (string)$match));
+
+			if ($id !== '' && !in_array($id, $ids, true)) {
+				$ids[] = $id;
+			}
 		}
 
-		return '';
+		return $ids;
 	}
 
-	private function buildGtagLoader($gtag_id) {
-		$gtag_id = preg_replace('/[^A-Z0-9\-]/i', '', (string)$gtag_id);
+	private function buildGtagLoader($gtag_ids) {
+		if (!is_array($gtag_ids)) {
+			$gtag_ids = array($gtag_ids);
+		}
 
-		if ($gtag_id === '') {
+		$ids = array();
+
+		foreach ($gtag_ids as $gtag_id) {
+			$gtag_id = preg_replace('/[^A-Z0-9\-]/i', '', (string)$gtag_id);
+
+			if ($gtag_id !== '' && !in_array($gtag_id, $ids, true)) {
+				$ids[] = $gtag_id;
+			}
+		}
+
+		if (!$ids) {
 			return '';
 		}
 
-		return "<script>\n(function(w,d,id){\n  w.dataLayer=w.dataLayer||[];\n  w.gtag=w.gtag||function(){w.dataLayer.push(arguments);};\n  w.gtag('js', new Date());\n  w.gtag('config', id);\n  var s=d.createElement('script');\n  s.async=true;\n  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);\n  s.onerror=function(){};\n  (d.head||d.documentElement).appendChild(s);\n})(window,document,'" . $gtag_id . "');\n</script>";
+		$json_ids = json_encode($ids);
+
+		return "<script>\n(function(w,d,ids){\n  if(!ids||!ids.length){return;}\n  w.dataLayer=w.dataLayer||[];\n  w.gtag=w.gtag||function(){w.dataLayer.push(arguments);};\n  w.gtag('js', new Date());\n  for(var i=0;i<ids.length;i++){w.gtag('config', ids[i]);}\n  var s=d.createElement('script');\n  s.async=true;\n  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(ids[0]);\n  s.onerror=function(){};\n  (d.head||d.documentElement).appendChild(s);\n})(window,document," . $json_ids . ");\n</script>";
 	}
 }
