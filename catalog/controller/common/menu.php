@@ -151,14 +151,16 @@ class ControllerCommonMenu extends Controller {
 			);
 		}
 
-		$regional_section = $this->model_common_restaurant_home_products->getSection('regional', $active_language_id);
-		$popular_section = $this->model_common_restaurant_home_products->getSection('popular', $active_language_id);
+		$popular_section = $this->model_common_restaurant_home_products->getSection('regional', $active_language_id);
+		$share_section = $this->model_common_restaurant_home_products->getSection('popular', $active_language_id);
 
-		$data['yoreselname'] = $regional_section['name'];
-		$data['yoreselpro'] = $this->buildHomeProducts($regional_section['products'], $gun, $active_language_id, $show_prices, 750, 550, false, $prep_extra_minutes);
+		$share_default_name = $data['language_code'] === 'en-gb' ? 'Sharing Menu' : 'Paylaşmalık Menü';
 
-		$data['encoktercihname'] = $popular_section['name'];
-		$data['encoktercihpro'] = $this->buildHomeProducts($popular_section['products'], $gun, $active_language_id, $show_prices, 150, 110, true, $prep_extra_minutes);
+		$data['yoreselname'] = $popular_section['name'] ? $popular_section['name'] : $data['text_most_preferred'];
+		$data['yoreselpro'] = $this->buildHomeProducts($popular_section['products'], $gun, $active_language_id, $show_prices, 750, 550, false, $prep_extra_minutes);
+
+		$data['encoktercihname'] = $share_section['name'] ? $share_section['name'] : $share_default_name;
+		$data['encoktercihpro'] = $this->buildHomeProducts($share_section['products'], $gun, $active_language_id, $show_prices, 150, 110, true, $prep_extra_minutes);
 
 		$newest_product_ids = $this->getRandomNewestProductIds(30, 5);
 		$data['newestpro'] = $this->buildHomeProducts($newest_product_ids, $gun, $active_language_id, $show_prices, 150, 110, true, $prep_extra_minutes);

@@ -4,10 +4,10 @@
     <div class="container-fluid">
       <div class="pull-right">
         <button type="submit" form="form-restaurant-home-products" data-toggle="tooltip" title="Kaydet" class="btn btn-primary"><i class="fa fa-save"></i></button>
-        <a href="{{ cancel }}" data-toggle="tooltip" title="Vazge&#231;" class="btn btn-default"><i class="fa fa-reply"></i></a>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="Vazgeç" class="btn btn-default"><i class="fa fa-reply"></i></a>
       </div>
       <h1>Ana Sayfa Vitrini</h1>
-      <p>QR men&#252; ana ekran&#305;nda g&#246;r&#252;necek &#252;r&#252;n gruplar&#305;n&#305; buradan y&#246;netin.</p>
+      <p>QR menü ana ekranında görünecek popüler ve paylaşmalık ürün gruplarını saat dilimine göre yönetin.</p>
       <ul class="breadcrumb">
         {% for breadcrumb in breadcrumbs %}
           <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
@@ -29,9 +29,9 @@
           <section class="home-section-card" id="section-card-{{ code }}">
             <header class="home-section-head">
               <div>
-                <span class="home-section-kicker">{% if code == 'regional' %}Yerel vitrin{% else %}Pop&#252;ler vitrin{% endif %}</span>
+                <span class="home-section-kicker">{% if code == 'regional' %}Popüler vitrin{% else %}Paylaşmalık vitrin{% endif %}</span>
                 <h2>{{ section.name }}</h2>
-                <p>{% if code == 'regional' %}Markaya &#246;zel, imza veya y&#246;resel &#252;r&#252;nleri &#246;ne &#231;&#305;kar&#305;r.{% else %}En &#231;ok sat&#305;lan veya h&#305;zl&#305; karar verdirecek &#252;r&#252;nleri listeler.{% endif %}</p>
+                <p>{% if code == 'regional' %}Popüler ürünleri günün saatine göre otomatik değiştirir.{% else %}Paylaşılacak ürünleri sabah, öğlen ve akşam için ayrı seçin.{% endif %}</p>
               </div>
               <label class="home-toggle">
                 <input type="checkbox" name="sections[{{ code }}][status]" value="1" {% if section.status %}checked{% endif %}>
@@ -41,7 +41,7 @@
 
             <div class="home-section-body">
               <div class="home-field">
-                <label>B&#246;l&#252;m ba&#351;l&#305;&#287;&#305;</label>
+                <label>Bölüm başlığı</label>
                 <div class="home-language-stack">
                   {% for language in languages %}
                     <div class="input-group restaurant-title-input">
@@ -54,31 +54,42 @@
                 </div>
               </div>
 
-              <div class="home-field">
-                <label>&#220;r&#252;n ekle</label>
-                <div class="home-search-row">
-                  <i class="fa fa-search"></i>
-                  <input type="text" name="product_search_{{ code }}" value="" placeholder="&#220;r&#252;n ad&#305; yaz&#305;n..." id="input-product-{{ code }}" class="form-control restaurant-product-search" data-section="{{ code }}">
-                </div>
-              </div>
-
-              <div class="home-product-board">
-                <div class="home-board-title">
-                  <strong>Se&#231;ili &#252;r&#252;nler</strong>
-                  <span>S&#305;ralama, ekleme s&#305;ras&#305;na g&#246;re uygulan&#305;r.</span>
-                </div>
-                <div id="section-products-{{ code }}" class="restaurant-selected-products">
-                  {% for product in section.products %}
-                    <div id="section-product-{{ code }}-{{ product.product_id }}" class="restaurant-selected-product">
-                      <button type="button" class="remove-product" title="Kald&#305;r"><i class="fa fa-times"></i></button>
-                      <span>{{ product.name }}</span>
-                      <input type="hidden" name="sections[{{ code }}][products][]" value="{{ product.product_id }}">
+              <div class="home-period-grid">
+                {% for period_code, period in section.periods %}
+                  <div class="home-period-card">
+                    <div class="home-period-head">
+                      <strong>{{ period.label }}</strong>
+                      <span>{{ period.range }}</span>
                     </div>
-                  {% endfor %}
-                  {% if not section.products %}
-                    <div class="home-empty-state">Hen&#252;z &#252;r&#252;n se&#231;ilmedi.</div>
-                  {% endif %}
-                </div>
+
+                    <div class="home-field home-period-search">
+                      <label>Ürün ekle</label>
+                      <div class="home-search-row">
+                        <i class="fa fa-search"></i>
+                        <input type="text" name="product_search_{{ code }}_{{ period_code }}" value="" placeholder="Ürün adı yazın..." id="input-product-{{ code }}-{{ period_code }}" class="form-control restaurant-product-search" data-section="{{ code }}" data-period="{{ period_code }}">
+                      </div>
+                    </div>
+
+                    <div class="home-product-board">
+                      <div class="home-board-title">
+                        <strong>Seçili ürünler</strong>
+                        <span>Sıralama, ekleme sırasına göre uygulanır.</span>
+                      </div>
+                      <div id="section-products-{{ code }}-{{ period_code }}" class="restaurant-selected-products">
+                        {% for product in period.products %}
+                          <div id="section-product-{{ code }}-{{ period_code }}-{{ product.product_id }}" class="restaurant-selected-product">
+                            <button type="button" class="remove-product" title="Kaldır"><i class="fa fa-times"></i></button>
+                            <span>{{ product.name }}</span>
+                            <input type="hidden" name="sections[{{ code }}][periods][{{ period_code }}][products][]" value="{{ product.product_id }}">
+                          </div>
+                        {% endfor %}
+                        {% if not period.products %}
+                          <div class="home-empty-state">Henüz ürün seçilmedi.</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
               </div>
             </div>
           </section>
@@ -91,7 +102,7 @@
     .restaurant-page-header{background:#fff;border-bottom:1px solid #e5ebe7;margin-bottom:18px;}
     .restaurant-page-header h1{font-weight:700;color:#1d3329;margin-bottom:4px;}
     .restaurant-page-header p{margin:0 0 8px;color:#6b7b73;}
-    .home-section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
+    .home-section-grid{display:grid;grid-template-columns:1fr;gap:18px;}
     .home-section-card{background:#fff;border:1px solid #dfe8e2;border-radius:10px;box-shadow:0 12px 28px rgba(28,55,42,.06);overflow:hidden;}
     .home-section-head{display:flex;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #edf2ef;background:#fbfdfb;}
     .home-section-kicker{display:block;margin-bottom:6px;color:#2f6b4e;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;}
@@ -102,14 +113,20 @@
     .home-section-body{padding:20px 22px;}
     .home-field{margin-bottom:18px;}
     .home-field>label{display:block;margin-bottom:8px;color:#263c32;font-weight:800;}
-    .home-language-stack{display:grid;gap:8px;}
+    .home-language-stack{display:grid;gap:8px;max-width:620px;}
     .restaurant-title-input .input-group-addon{background:#f8fbf9;border-color:#dfe8e2;}
     .restaurant-title-input .form-control,.home-search-row .form-control{border-color:#d8e3dd;box-shadow:none;}
+    .home-period-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+    .home-period-card{border:1px solid #dfe8e2;border-radius:10px;background:#fbfdfb;overflow:hidden;}
+    .home-period-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;border-bottom:1px solid #e7eee9;background:#f3faf5;}
+    .home-period-head strong{color:#1f3d30;font-size:15px;}
+    .home-period-head span{color:#66776e;font-size:12px;font-weight:700;}
+    .home-period-search{padding:14px 14px 0;margin-bottom:14px;}
     .home-search-row{position:relative;}
     .home-search-row .fa{position:absolute;left:12px;top:10px;color:#809087;z-index:2;}
     .home-search-row .form-control{height:38px;padding-left:34px;}
-    .home-product-board{border:1px solid #dfe8e2;border-radius:10px;overflow:hidden;}
-    .home-board-title{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:#f8fbf9;border-bottom:1px solid #e7eee9;color:#243b31;}
+    .home-product-board{margin:0 14px 14px;border:1px solid #dfe8e2;border-radius:10px;overflow:hidden;background:#fff;}
+    .home-board-title{display:grid;gap:2px;padding:12px 14px;background:#f8fbf9;border-bottom:1px solid #e7eee9;color:#243b31;}
     .home-board-title span{color:#7a8982;font-size:12px;}
     .restaurant-selected-products{min-height:184px;max-height:260px;overflow:auto;padding:10px;background:#fff;}
     .restaurant-selected-product{display:flex;align-items:center;gap:10px;padding:9px 10px;margin-bottom:8px;border:1px solid #edf1ee;border-radius:8px;background:#fbfcfb;}
@@ -117,7 +134,7 @@
     .restaurant-selected-product span{font-weight:700;color:#304239;}
     .remove-product{width:26px;height:26px;border:0;border-radius:50%;background:#f4dedb;color:#b94235;line-height:26px;text-align:center;}
     .home-empty-state{padding:22px 12px;text-align:center;color:#8b9892;border:1px dashed #d4dfd8;border-radius:8px;background:#fbfdfb;}
-    @media (max-width:1199px){.home-section-grid{grid-template-columns:1fr;}}
+    @media (max-width:1399px){.home-period-grid{grid-template-columns:1fr;}}
   </style>
   <script type="text/javascript"><!--
 function restaurantEscapeHtml(text) {
@@ -132,6 +149,7 @@ function restaurantEscapeHtml(text) {
 $('.restaurant-product-search').each(function() {
 	var input = $(this);
 	var section = input.data('section');
+	var period = input.data('period');
 
 	input.autocomplete({
 		source: function(request, response) {
@@ -149,15 +167,17 @@ $('.restaurant-product-search').each(function() {
 			});
 		},
 		select: function(item) {
+			var board = $('#section-products-' + section + '-' + period);
+
 			input.val('');
 
-			$('#section-product-' + section + '-' + item['value']).remove();
-			$('#section-products-' + section + ' .home-empty-state').remove();
-			$('#section-products-' + section).append(
-				'<div id="section-product-' + section + '-' + item['value'] + '" class="restaurant-selected-product">' +
+			$('#section-product-' + section + '-' + period + '-' + item['value']).remove();
+			board.find('.home-empty-state').remove();
+			board.append(
+				'<div id="section-product-' + section + '-' + period + '-' + item['value'] + '" class="restaurant-selected-product">' +
 				'<button type="button" class="remove-product" title="Kaldir"><i class="fa fa-times"></i></button>' +
 				'<span>' + restaurantEscapeHtml(item['label']) + '</span>' +
-				'<input type="hidden" name="sections[' + section + '][products][]" value="' + item['value'] + '">' +
+				'<input type="hidden" name="sections[' + section + '][periods][' + period + '][products][]" value="' + item['value'] + '">' +
 				'</div>'
 			);
 		}

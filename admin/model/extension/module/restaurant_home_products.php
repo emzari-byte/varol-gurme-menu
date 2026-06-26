@@ -1,6 +1,20 @@
 <?php
 class ModelExtensionModuleRestaurantHomeProducts extends Model {
 	private $table = 'restaurant_home_section';
+	private $periods = array(
+		'morning' => array(
+			'label' => 'Sabah',
+			'range' => '08:30 - 12:00'
+		),
+		'noon' => array(
+			'label' => 'Öğlen',
+			'range' => '12:01 - 21:30'
+		),
+		'evening' => array(
+			'label' => 'Akşam',
+			'range' => '21:31 - 08:29'
+		)
+	);
 
 	public function install() {
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . $this->table . "` (
@@ -8,6 +22,7 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 			`name` varchar(255) NOT NULL DEFAULT '',
 			`title_json` text NOT NULL,
 			`products` text NOT NULL,
+			`products_by_period` text NOT NULL,
 			`status` tinyint(1) NOT NULL DEFAULT '1',
 			`sort_order` int(11) NOT NULL DEFAULT '0',
 			`date_modified` datetime NOT NULL,
@@ -15,8 +30,10 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 
 		$this->ensureColumn('title_json', "ALTER TABLE `" . DB_PREFIX . $this->table . "` ADD `title_json` text NOT NULL AFTER `name`");
-		$this->seedSection('regional', 'Yöresel Ürünler', 2, 1);
-		$this->seedSection('popular', 'En Çok Tercih Edilenler', 7, 2);
+		$this->ensureColumn('products_by_period', "ALTER TABLE `" . DB_PREFIX . $this->table . "` ADD `products_by_period` text NOT NULL AFTER `products`");
+		$this->seedSection('regional', 'Popüler Ürünler', 2, 1);
+		$this->seedSection('popular', 'Paylaşmalık Menü', 7, 2);
+		$this->backfillPeriodProducts();
 	}
 
 	public function getSections() {
@@ -25,17 +42,19 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 		$sections = array(
 			'regional' => array(
 				'section_code' => 'regional',
-				'name'         => 'Yöresel Ürünler',
+				'name'         => 'Popüler Ürünler',
 				'titles'       => array(),
 				'status'       => 1,
-				'products'     => array()
+				'products'     => array(),
+				'periods'      => $this->buildEmptyPeriods()
 			),
 			'popular' => array(
 				'section_code' => 'popular',
-				'name'         => 'En Çok Tercih Edilenler',
+				'name'         => 'Paylaşmalık Menü',
 				'titles'       => array(),
 				'status'       => 1,
-				'products'     => array()
+				'products'     => array(),
+				'periods'      => $this->buildEmptyPeriods()
 			)
 		);
 
@@ -46,14 +65,16 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 				continue;
 			}
 
-			$product_ids = $this->decodeProducts($row['products']);
+			$legacy_product_ids = $this->decodeProducts($row['products']);
+			$period_products = $this->decodePeriodProducts(isset($row['products_by_period']) ? $row['products_by_period'] : '', $legacy_product_ids);
 
 			$sections[$row['section_code']] = array(
 				'section_code' => $row['section_code'],
 				'name'         => $row['name'],
 				'titles'       => $this->decodeTitles($row),
 				'status'       => (int)$row['status'],
-				'products'     => $this->getProductsByIds($product_ids)
+				'products'     => $this->getProductsByIds($legacy_product_ids),
+				'periods'      => $this->hydratePeriods($period_products)
 			);
 		}
 
@@ -70,7 +91,7 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 
 		foreach ($allowed as $code => $sort_order) {
 			$section = isset($sections[$code]) ? $sections[$code] : array();
-			$default_name = $code == 'regional' ? 'Yöresel Ürünler' : 'En Çok Tercih Edilenler';
+			$default_name = $code == 'regional' ? 'Popüler Ürünler' : 'Paylaşmalık Menü';
 			$titles = array();
 
 			if (!empty($section['titles']) && is_array($section['titles'])) {
@@ -86,16 +107,20 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 
 			$name = $this->getFirstTitle($titles, $default_name);
 			$status = !empty($section['status']) ? 1 : 0;
-			$product_ids = array();
+			$period_product_ids = array();
 
-			if (!empty($section['products']) && is_array($section['products'])) {
-				foreach ($section['products'] as $product_id) {
-					$product_id = (int)$product_id;
+			foreach ($this->periods as $period_code => $period) {
+				$period_product_ids[$period_code] = array();
 
-					if ($product_id > 0 && !in_array($product_id, $product_ids)) {
-						$product_ids[] = $product_id;
-					}
+				if (!empty($section['periods'][$period_code]['products']) && is_array($section['periods'][$period_code]['products'])) {
+					$period_product_ids[$period_code] = $this->normaliseProductIds($section['periods'][$period_code]['products']);
 				}
+			}
+
+			$product_ids = $this->getFirstPeriodProductIds($period_product_ids);
+
+			if (!$product_ids && !empty($section['products']) && is_array($section['products'])) {
+				$product_ids = $this->normaliseProductIds($section['products']);
 			}
 
 			$this->db->query("REPLACE INTO `" . DB_PREFIX . $this->table . "`
@@ -103,6 +128,7 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 					name = '" . $this->db->escape($name) . "',
 					title_json = '" . $this->db->escape(json_encode($titles)) . "',
 					products = '" . $this->db->escape(json_encode($product_ids)) . "',
+					products_by_period = '" . $this->db->escape(json_encode($period_product_ids)) . "',
 					status = '" . (int)$status . "',
 					sort_order = '" . (int)$sort_order . "',
 					date_modified = NOW()");
@@ -138,9 +164,67 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 				name = '" . $this->db->escape($name) . "',
 				title_json = '" . $this->db->escape(json_encode(array((int)$this->config->get('config_language_id') => $name))) . "',
 				products = '" . $this->db->escape(json_encode($product_ids)) . "',
+				products_by_period = '" . $this->db->escape(json_encode(array(
+					'morning' => $product_ids,
+					'noon' => $product_ids,
+					'evening' => $product_ids
+				))) . "',
 				status = '1',
 				sort_order = '" . (int)$sort_order . "',
 				date_modified = NOW()");
+	}
+
+	private function backfillPeriodProducts() {
+		$query = $this->db->query("SELECT section_code, products, products_by_period FROM `" . DB_PREFIX . $this->table . "`");
+
+		foreach ($query->rows as $row) {
+			if (trim((string)$row['products_by_period']) !== '') {
+				continue;
+			}
+
+			$product_ids = $this->decodeProducts($row['products']);
+			$period_products = array();
+
+			foreach ($this->periods as $period_code => $period) {
+				$period_products[$period_code] = $product_ids;
+			}
+
+			$this->db->query("UPDATE `" . DB_PREFIX . $this->table . "`
+				SET products_by_period = '" . $this->db->escape(json_encode($period_products)) . "'
+				WHERE section_code = '" . $this->db->escape($row['section_code']) . "'");
+		}
+	}
+
+	private function buildEmptyPeriods() {
+		$periods = array();
+
+		foreach ($this->periods as $period_code => $period) {
+			$periods[$period_code] = array(
+				'code'     => $period_code,
+				'label'    => $period['label'],
+				'range'    => $period['range'],
+				'products' => array()
+			);
+		}
+
+		return $periods;
+	}
+
+	private function hydratePeriods($period_product_ids) {
+		$periods = array();
+
+		foreach ($this->periods as $period_code => $period) {
+			$product_ids = isset($period_product_ids[$period_code]) ? $period_product_ids[$period_code] : array();
+
+			$periods[$period_code] = array(
+				'code'     => $period_code,
+				'label'    => $period['label'],
+				'range'    => $period['range'],
+				'products' => $this->getProductsByIds($product_ids)
+			);
+		}
+
+		return $periods;
 	}
 
 	private function getProductsByIds($product_ids) {
@@ -177,17 +261,58 @@ class ModelExtensionModuleRestaurantHomeProducts extends Model {
 			$decoded = array_filter(array_map('trim', explode(',', (string)$value)));
 		}
 
+		return $this->normaliseProductIds($decoded);
+	}
+
+	private function decodePeriodProducts($value, $legacy_product_ids = array()) {
+		$decoded = json_decode((string)$value, true);
+		$has_period_data = false;
+		$period_products = array();
+
+		foreach ($this->periods as $period_code => $period) {
+			if (is_array($decoded) && array_key_exists($period_code, $decoded)) {
+				$has_period_data = true;
+				$period_products[$period_code] = $this->normaliseProductIds($decoded[$period_code]);
+			} else {
+				$period_products[$period_code] = $legacy_product_ids;
+			}
+		}
+
+		if (!$has_period_data) {
+			foreach ($this->periods as $period_code => $period) {
+				$period_products[$period_code] = $legacy_product_ids;
+			}
+		}
+
+		return $period_products;
+	}
+
+	private function normaliseProductIds($products) {
 		$product_ids = array();
 
-		foreach ($decoded as $product_id) {
+		if (!is_array($products)) {
+			return $product_ids;
+		}
+
+		foreach ($products as $product_id) {
 			$product_id = (int)$product_id;
 
-			if ($product_id > 0) {
+			if ($product_id > 0 && !in_array($product_id, $product_ids)) {
 				$product_ids[] = $product_id;
 			}
 		}
 
 		return $product_ids;
+	}
+
+	private function getFirstPeriodProductIds($period_product_ids) {
+		foreach ($this->periods as $period_code => $period) {
+			if (!empty($period_product_ids[$period_code])) {
+				return $period_product_ids[$period_code];
+			}
+		}
+
+		return array();
 	}
 
 	private function decodeTitles($row) {
