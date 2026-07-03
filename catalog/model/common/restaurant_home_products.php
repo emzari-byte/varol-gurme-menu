@@ -8,10 +8,18 @@ class ModelCommonRestaurantHomeProducts extends Model {
 		),
 		'noon' => array(
 			'label' => 'Öğlen',
-			'range' => '12:01 - 21:30'
+			'range' => '12:01 - 15:00'
+		),
+		'afternoon' => array(
+			'label' => 'İkindi',
+			'range' => '15:01 - 18:00'
 		),
 		'evening' => array(
 			'label' => 'Akşam',
+			'range' => '18:01 - 21:30'
+		),
+		'night' => array(
+			'label' => 'Gece',
 			'range' => '21:31 - 08:29'
 		)
 	);
@@ -96,7 +104,9 @@ class ModelCommonRestaurantHomeProducts extends Model {
 				products_by_period = '" . $this->db->escape(json_encode(array(
 					'morning' => $product_ids,
 					'noon' => $product_ids,
-					'evening' => $product_ids
+					'afternoon' => $product_ids,
+					'evening' => $product_ids,
+					'night' => $product_ids
 				))) . "',
 				status = '1',
 				sort_order = '" . (int)$sort_order . "',
@@ -107,15 +117,39 @@ class ModelCommonRestaurantHomeProducts extends Model {
 		$query = $this->db->query("SELECT section_code, products, products_by_period FROM `" . DB_PREFIX . $this->table . "`");
 
 		foreach ($query->rows as $row) {
-			if (trim((string)$row['products_by_period']) !== '') {
+			$decoded = json_decode((string)$row['products_by_period'], true);
+			$needs_update = !is_array($decoded);
+
+			if (!is_array($decoded)) {
+				$decoded = array();
+			}
+
+			foreach ($this->periods as $period_code => $period) {
+				if (!array_key_exists($period_code, $decoded)) {
+					$needs_update = true;
+					break;
+				}
+			}
+
+			if (!$needs_update) {
 				continue;
 			}
 
 			$product_ids = $this->decodeProducts($row['products']);
+			$legacy_noon_products = isset($decoded['noon']) ? $this->decodeProducts(json_encode($decoded['noon'])) : $product_ids;
+			$legacy_evening_products = isset($decoded['evening']) ? $this->decodeProducts(json_encode($decoded['evening'])) : $product_ids;
 			$period_products = array();
 
 			foreach ($this->periods as $period_code => $period) {
-				$period_products[$period_code] = $product_ids;
+				if (array_key_exists($period_code, $decoded)) {
+					$period_products[$period_code] = $this->decodeProducts(json_encode($decoded[$period_code]));
+				} elseif ($period_code === 'afternoon' || $period_code === 'evening') {
+					$period_products[$period_code] = $legacy_noon_products;
+				} elseif ($period_code === 'night') {
+					$period_products[$period_code] = $legacy_evening_products;
+				} else {
+					$period_products[$period_code] = $product_ids;
+				}
 			}
 
 			$this->db->query("UPDATE `" . DB_PREFIX . $this->table . "`
@@ -175,10 +209,20 @@ class ModelCommonRestaurantHomeProducts extends Model {
 		}
 
 		if ($time >= 1201 && $time <= 2130) {
-			return 'noon';
+			if ($time <= 1500) {
+				return 'noon';
+			}
+
+			if ($time <= 1800) {
+				return 'afternoon';
+			}
+
+			if ($time <= 2130) {
+				return 'evening';
+			}
 		}
 
-		return 'evening';
+		return 'night';
 	}
 
 	private function getTitle($row, $language_id) {

@@ -31,7 +31,7 @@
               <div>
                 <span class="home-section-kicker">{% if code == 'regional' %}Popüler vitrin{% else %}Paylaşmalık vitrin{% endif %}</span>
                 <h2>{{ section.name }}</h2>
-                <p>{% if code == 'regional' %}Popüler ürünleri günün saatine göre otomatik değiştirir.{% else %}Paylaşılacak ürünleri sabah, öğlen ve akşam için ayrı seçin.{% endif %}</p>
+                <p>{% if code == 'regional' %}Popüler ürünleri günün saatine göre otomatik değiştirir.{% else %}Paylaşılacak ürünleri günün beş zaman dilimi için ayrı seçin.{% endif %}</p>
               </div>
               <label class="home-toggle">
                 <input type="checkbox" name="sections[{{ code }}][status]" value="1" {% if section.status %}checked{% endif %}>
@@ -116,7 +116,7 @@
     .home-language-stack{display:grid;gap:8px;max-width:620px;}
     .restaurant-title-input .input-group-addon{background:#f8fbf9;border-color:#dfe8e2;}
     .restaurant-title-input .form-control,.home-search-row .form-control{border-color:#d8e3dd;box-shadow:none;}
-    .home-period-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+    .home-period-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
     .home-period-card{border:1px solid #dfe8e2;border-radius:10px;background:#fbfdfb;overflow:hidden;}
     .home-period-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;border-bottom:1px solid #e7eee9;background:#f3faf5;}
     .home-period-head strong{color:#1f3d30;font-size:15px;}
@@ -134,7 +134,7 @@
     .restaurant-selected-product span{font-weight:700;color:#304239;}
     .remove-product{width:26px;height:26px;border:0;border-radius:50%;background:#f4dedb;color:#b94235;line-height:26px;text-align:center;}
     .home-empty-state{padding:22px 12px;text-align:center;color:#8b9892;border:1px dashed #d4dfd8;border-radius:8px;background:#fbfdfb;}
-    @media (max-width:1399px){.home-period-grid{grid-template-columns:1fr;}}
+    @media (max-width:767px){.home-period-grid{grid-template-columns:1fr;}}
   </style>
   <script type="text/javascript"><!--
 function restaurantEscapeHtml(text) {
