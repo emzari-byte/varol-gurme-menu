@@ -19,7 +19,7 @@
       <!-- Bootstrap core CSS -->
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
-      <link href="{{ serv }}css/style.css?v=40" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=50" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <!-- Sidebar CSS -->
@@ -64,14 +64,27 @@
                        data-product-name="{{ pro.name|e }}"
                        data-section-name="{{ yoreselname ? yoreselname|e : text_regional_products|e }}">
                      <div class="yoresel-card-inner">
-                        <div class="list-card-image yoresel-image-wrap menu-image-zoom"
-                             onclick="openMenuLightbox('{{ pro.thumb }}', '{{ pro.name|e('js') }}', '{{ pro.product_id }}', '{{ yoreselname ? yoreselname|e('js') : text_regional_products|e('js') }}')">
-                          
-                           <img src="{{ pro.thumb }}" class="img-fluid item-img w-100" alt="{{ pro.name }}"/>
-                           {% if pro.is_upcoming %}
-                           <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                        <div class="yoresel-media">
+                           <div class="list-card-image yoresel-image-wrap menu-image-zoom"
+                                onclick="openMenuLightbox('{{ pro.thumb }}', '{{ pro.name|e('js') }}', '{{ pro.product_id }}', '{{ yoreselname ? yoreselname|e('js') : text_regional_products|e('js') }}')">
+                              <img src="{{ pro.thumb }}" class="img-fluid item-img w-100" alt="{{ pro.name }}"/>
+                              {% if pro.is_upcoming %}
+                              <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                              {% endif %}
+                           </div>
+
+                           {% if pro.upc or pro.ean or pro.jan or pro.isbn %}
+                           <div class="nutrition-under-image" aria-label="Besin bilgisi">
+                              {% if pro.upc %}<span>{{ pro.upc }} kcal</span>{% endif %}
+                              {% if pro.ean or pro.jan or pro.isbn %}
+                              <span class="nutrition-mini-macros">
+                                 {% if pro.ean %}P{{ pro.ean }}{% endif %}
+                                 {% if pro.jan %}K{{ pro.jan }}{% endif %}
+                                 {% if pro.isbn %}Y{{ pro.isbn }}{% endif %}
+                              </span>
+                              {% endif %}
+                           </div>
                            {% endif %}
-                           
                         </div>
 
                         <div class="yoresel-content">
@@ -96,16 +109,6 @@
                                  </span>
                                  {% endif %}
 
-                                 {% if pro.upc %}
-                                 <span class="food-chip">
-                                    <i class="feather-fire"></i>&nbsp;
-                                    <img src="image/kcal.png" width="14" alt="kcal">
-                                    {{ pro.upc }} <b>Kcal</b>
-                                    {% if pro.ean %}&nbsp;<b>P</b>&nbsp;{{ pro.ean }}{% endif %}
-                                    {% if pro.jan %}&nbsp;<b>C</b>&nbsp;{{ pro.jan }}{% endif %}
-                                    {% if pro.isbn %}&nbsp;<b>F</b>&nbsp;{{ pro.isbn }}{% endif %}
-                                 </span>
-                                 {% endif %}
                               </div>
 
                               {% if pro.options %}
@@ -152,13 +155,27 @@
                        data-product-id="{{ product.product_id }}"
                        data-product-name="{{ product.name|e }}"
                        data-section-name="{{ encoktercihname ? encoktercihname|e : text_most_preferred|e }}">
-                     <div class="encok-image menu-image-zoom"
-                          onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ encoktercihname ? encoktercihname|e('js') : text_most_preferred|e('js') }}')">
-                        <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
-                        {% if product.is_upcoming %}
-                        <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                     <div class="encok-media">
+                        <div class="encok-image menu-image-zoom"
+                             onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ encoktercihname ? encoktercihname|e('js') : text_most_preferred|e('js') }}')">
+                           <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
+                           {% if product.is_upcoming %}
+                           <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                           {% endif %}
+                        </div>
+
+                        {% if product.upc or product.ean or product.jan or product.isbn %}
+                        <div class="nutrition-under-image" aria-label="Besin bilgisi">
+                           {% if product.upc %}<span>{{ product.upc }} kcal</span>{% endif %}
+                           {% if product.ean or product.jan or product.isbn %}
+                           <span class="nutrition-mini-macros">
+                              {% if product.ean %}P{{ product.ean }}{% endif %}
+                              {% if product.jan %}K{{ product.jan }}{% endif %}
+                              {% if product.isbn %}Y{{ product.isbn }}{% endif %}
+                           </span>
+                           {% endif %}
+                        </div>
                         {% endif %}
-                        
                      </div>
 
                      <div class="encok-content">
@@ -185,16 +202,6 @@
                                  </span>
                                  {% endif %}
 
-                                 {% if product.upc %}
-                                 <span class="food-chip">
-                                    <i class="feather-fire"></i>&nbsp;
-                                    <img src="image/kcal.png" width="14" alt="kcal">
-                                    {{ product.upc }} <b>Kcal</b>
-                                    {% if product.ean %}&nbsp;<b>P</b>&nbsp;{{ product.ean }}{% endif %}
-                                    {% if product.jan %}&nbsp;<b>C</b>&nbsp;{{ product.jan }}{% endif %}
-                                    {% if product.isbn %}&nbsp;<b>F</b>&nbsp;{{ product.isbn }}{% endif %}
-                                 </span>
-                                 {% endif %}
                               </div>
  <div class="order-price-row">
       <small class="food-price encok-price">{{ product.price }}</small>
@@ -241,11 +248,26 @@
                        data-product-id="{{ product.product_id }}"
                        data-product-name="{{ product.name|e }}"
                        data-section-name="{{ text_newest_products|e }}">
-                     <div class="encok-image menu-image-zoom"
-                          onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ text_newest_products|e('js') }}')">
-                        <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
-                        {% if product.is_upcoming %}
-                        <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                     <div class="encok-media">
+                        <div class="encok-image menu-image-zoom"
+                             onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ text_newest_products|e('js') }}')">
+                           <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
+                           {% if product.is_upcoming %}
+                           <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                           {% endif %}
+                        </div>
+
+                        {% if product.upc or product.ean or product.jan or product.isbn %}
+                        <div class="nutrition-under-image" aria-label="Besin bilgisi">
+                           {% if product.upc %}<span>{{ product.upc }} kcal</span>{% endif %}
+                           {% if product.ean or product.jan or product.isbn %}
+                           <span class="nutrition-mini-macros">
+                              {% if product.ean %}P{{ product.ean }}{% endif %}
+                              {% if product.jan %}K{{ product.jan }}{% endif %}
+                              {% if product.isbn %}Y{{ product.isbn }}{% endif %}
+                           </span>
+                           {% endif %}
+                        </div>
                         {% endif %}
                      </div>
 
@@ -273,16 +295,6 @@
                                  </span>
                                  {% endif %}
 
-                                 {% if product.upc %}
-                                 <span class="food-chip">
-                                    <i class="feather-fire"></i>&nbsp;
-                                    <img src="image/kcal.png" width="14" alt="kcal">
-                                    {{ product.upc }} <b>Kcal</b>
-                                    {% if product.ean %}&nbsp;<b>P</b>&nbsp;{{ product.ean }}{% endif %}
-                                    {% if product.jan %}&nbsp;<b>C</b>&nbsp;{{ product.jan }}{% endif %}
-                                    {% if product.isbn %}&nbsp;<b>F</b>&nbsp;{{ product.isbn }}{% endif %}
-                                 </span>
-                                 {% endif %}
                               </div>
 
                               <div class="order-price-row">

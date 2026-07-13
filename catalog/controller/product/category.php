@@ -15,6 +15,9 @@ class ControllerProductCategory extends Controller {
 
 		$data['title'] = $this->config->get('config_meta_title');
 		$data['description'] = $this->config->get('config_meta_description');
+		$preview_host = isset($this->request->server['HTTP_HOST']) ? (string)$this->request->server['HTTP_HOST'] : '';
+		$local_preview = strpos($preview_host, 'localhost') === 0 || strpos($preview_host, '127.0.0.1') === 0 || strpos($preview_host, '[::1]') === 0;
+		$data['nutrition_preview'] = $local_preview && isset($this->request->get['nutrition_preview']) && (string)$this->request->get['nutrition_preview'] === '1';
 		$data['serv'] = HTTPS_SERVER;
 		$brand_logo = (string)$this->model_common_restaurant_settings->get('restaurant_menu_logo', $this->model_common_restaurant_settings->get('restaurant_brand_logo', $this->config->get('config_logo')));
 

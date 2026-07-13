@@ -349,6 +349,10 @@ class ControllerCatalogProduct extends Controller {
 					'model' => $product_info['model'],
 					'price' => $product_info['price'],
 					'location' => $product_info['location'],
+					'upc' => $product_info['upc'],
+					'ean' => $product_info['ean'],
+					'jan' => $product_info['jan'],
+					'isbn' => $product_info['isbn'],
 					'status' => (int)$product_info['status'],
 					'sort_order' => (int)$product_info['sort_order'],
 					'image' => $product_info['image'],
@@ -384,6 +388,10 @@ class ControllerCatalogProduct extends Controller {
 			$model = isset($this->request->post['model']) ? trim($this->request->post['model']) : '';
 			$price = isset($this->request->post['price']) ? str_replace(',', '.', trim($this->request->post['price'])) : '0';
 			$location = isset($this->request->post['location']) ? trim($this->request->post['location']) : '';
+			$upc = isset($this->request->post['upc']) ? trim($this->request->post['upc']) : '';
+			$ean = isset($this->request->post['ean']) ? trim($this->request->post['ean']) : '';
+			$jan = isset($this->request->post['jan']) ? trim($this->request->post['jan']) : '';
+			$isbn = isset($this->request->post['isbn']) ? trim($this->request->post['isbn']) : '';
 			$status = isset($this->request->post['status']) ? (int)$this->request->post['status'] : 1;
 			$sort_order = isset($this->request->post['sort_order']) ? (int)$this->request->post['sort_order'] : 0;
 			$image = isset($this->request->post['image']) ? trim($this->request->post['image']) : '';
@@ -436,10 +444,10 @@ class ControllerCatalogProduct extends Controller {
 				$product_data = array(
 					'model'               => $model,
 					'sku'                 => '',
-					'upc'                 => '',
-					'ean'                 => '',
-					'jan'                 => '',
-					'isbn'                => '',
+					'upc'                 => $upc,
+					'ean'                 => $ean,
+					'jan'                 => $jan,
+					'isbn'                => $isbn,
 					'mpn'                 => '',
 					'location'            => $location,
 					'quantity'            => 10000,
@@ -477,6 +485,10 @@ class ControllerCatalogProduct extends Controller {
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'model', $model);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'price', $price);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'location', $location);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'upc', $upc);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'ean', $ean);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'jan', $jan);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'isbn', $isbn);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'status', $status ? 1 : 0);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'sort_order', $sort_order);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'image', $image);

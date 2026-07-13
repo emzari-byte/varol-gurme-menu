@@ -251,6 +251,8 @@
               .quick-product-field .form-control{height:44px;border:1px solid #dce8e1;border-radius:12px;box-shadow:none;}
               .quick-product-field textarea.form-control{height:110px;resize:vertical;}
               .quick-product-field .form-control:focus{border-color:#78a887;box-shadow:0 0 0 4px rgba(120,168,135,.13);}
+              .quick-product-nutrition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+              .quick-product-nutrition-grid .quick-product-field{margin-bottom:0;}
               .quick-product-language{border:1px solid #e4ece7;border-radius:16px;padding:14px;background:#fbfdfc;margin-bottom:14px;}
               .quick-product-language-title{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#123629;font-weight:900;}
               .quick-product-category-search{position:relative;}
@@ -447,6 +449,23 @@
                   <div class="quick-product-field">
                     <label>Hazırlık Süresi</label>
                     <input type="text" name="prep_time" class="form-control" placeholder="15-20" />
+                  </div>
+                  <div class="quick-product-field">
+                    <label>Besin De&#287;erleri</label>
+                    <div class="quick-product-nutrition-grid">
+                      <div class="quick-product-field">
+                        <input type="text" name="upc" class="form-control" placeholder="Kcal" />
+                      </div>
+                      <div class="quick-product-field">
+                        <input type="text" name="ean" class="form-control" placeholder="Protein" />
+                      </div>
+                      <div class="quick-product-field">
+                        <input type="text" name="jan" class="form-control" placeholder="Karbonhidrat" />
+                      </div>
+                      <div class="quick-product-field">
+                        <input type="text" name="isbn" class="form-control" placeholder="Ya&#287;" />
+                      </div>
+                    </div>
                   </div>
                   <div class="quick-product-field">
                     <label>Kategoriler</label>
@@ -671,6 +690,10 @@ function fillQuickProductForm(product) {
 	$('input[name="model"]').val(product.model);
 	$('input[name="price"]').val(product.price);
 	$('input[name="location"]').val(product.location || '');
+	$('input[name="upc"]').val(product.upc || '');
+	$('input[name="ean"]').val(product.ean || '');
+	$('input[name="jan"]').val(product.jan || '');
+	$('input[name="isbn"]').val(product.isbn || '');
 	$('select[name="status"]').val(product.status);
 	$('input[name="sort_order"]').val(product.sort_order);
 	$('input[name="prep_time"]').val(product.prep_time || '');

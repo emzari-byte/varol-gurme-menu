@@ -18,7 +18,7 @@
       <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick-theme.min.css?v=20"/>
       <link href="{{ serv }}vendor/icons/feather.css?v=20" rel="stylesheet" type="text/css">
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=20" rel="stylesheet">
-      <link href="{{ serv }}css/style.css?v=40" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=50" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <link href="{{ serv }}vendor/sidebar/demo.css?v=20" rel="stylesheet">
@@ -121,13 +121,37 @@
                           data-category-id="{{ category.category_id }}"
                           data-category-name="{{ category.name|e }}">
 
-                        <div class="encok-image menu-image-zoom"
-                             onclick="openMenuLightbox('{{ product.thumb }}?v=20', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ category.name|e('js') }}')">
-                           <img src="{{ product.thumb }}?v=20" alt="{{ product.name }}">
-                           {% if product.is_upcoming %}
-                           <span class="coming-soon-badge">{{ text_coming_soon }}</span>
-                           {% endif %}
+                        <div class="encok-media">
+                           <div class="encok-image menu-image-zoom"
+                                onclick="openMenuLightbox('{{ product.thumb }}?v=20', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ category.name|e('js') }}')">
+                              <img src="{{ product.thumb }}?v=20" alt="{{ product.name }}">
+                              {% if product.is_upcoming %}
+                              <span class="coming-soon-badge">{{ text_coming_soon }}</span>
+                              {% endif %}
+                           </div>
 
+                           {% set nutrition_energy = product.upc %}
+                           {% set nutrition_protein = product.ean %}
+                           {% set nutrition_carbs = product.jan %}
+                           {% set nutrition_fat = product.isbn %}
+                           {% if nutrition_preview and not nutrition_energy %}
+                              {% set nutrition_energy = 320 + ((loop.index0 % 5) * 85) %}
+                              {% set nutrition_protein = 8 + ((loop.index0 % 4) * 4) %}
+                              {% set nutrition_carbs = 22 + ((loop.index0 % 5) * 7) %}
+                              {% set nutrition_fat = 9 + ((loop.index0 % 4) * 3) %}
+                           {% endif %}
+                           {% if nutrition_energy or nutrition_protein or nutrition_carbs or nutrition_fat %}
+                           <div class="nutrition-under-image" aria-label="Besin bilgisi">
+                              {% if nutrition_energy %}<span>{{ nutrition_energy }} kcal</span>{% endif %}
+                              {% if nutrition_protein or nutrition_carbs or nutrition_fat %}
+                              <span class="nutrition-mini-macros">
+                                 {% if nutrition_protein %}P{{ nutrition_protein }}{% endif %}
+                                 {% if nutrition_carbs %}K{{ nutrition_carbs }}{% endif %}
+                                 {% if nutrition_fat %}Y{{ nutrition_fat }}{% endif %}
+                              </span>
+                              {% endif %}
+                           </div>
+                           {% endif %}
                         </div>
 
                         <div class="encok-content">
@@ -143,6 +167,7 @@
                                  <button type="button" class="encok-desc-toggle" onclick="toggleEncokDesc(this)">{{ text_view_more }}</button>
                               </div>
                               {% endif %}
+
                            </div>
 
                            <div class="encok-bottom">
@@ -154,16 +179,6 @@
                                     </span>
                                     {% endif %}
 
-                                    {% if product.upc %}
-                                    <span class="food-chip">
-                                       <i class="feather-fire"></i>&nbsp;
-                                       <img src="image/kcal.png?v=20" width="14" alt="kcal">
-                                       {{ product.upc }} <b>Kcal</b>
-                                       {% if product.ean %}&nbsp;<b>P</b>&nbsp;{{ product.ean }}{% endif %}
-                                       {% if product.jan %}&nbsp;<b>C</b>&nbsp;{{ product.jan }}{% endif %}
-                                       {% if product.isbn %}&nbsp;<b>F</b>&nbsp;{{ product.isbn }}{% endif %}
-                                    </span>
-                                    {% endif %}
                                  </div>
 
                                  <div class="order-price-row">

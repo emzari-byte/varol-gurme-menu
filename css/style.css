@@ -4722,6 +4722,231 @@ body.menu-page-leaving .osahan-home-page{
 	gap:10px !important;
 }
 
+.encok-media{
+	width:118px;
+	min-width:118px;
+	display:flex;
+	flex-direction:column;
+	background:#edf3ef;
+	overflow:hidden;
+	position:relative;
+}
+
+.encok-media .encok-image{
+	width:100% !important;
+	min-width:0 !important;
+	flex:1 1 auto;
+}
+
+.encok-media .encok-image img{
+	height:100%;
+	min-height:0 !important;
+}
+
+.yoresel-media{
+	width:230px;
+	min-width:230px;
+	max-width:230px;
+	display:flex;
+	flex-direction:column;
+	background:#edf3ef;
+	overflow:hidden;
+	position:relative;
+}
+
+.yoresel-media .yoresel-image-wrap{
+	width:100% !important;
+	min-width:0 !important;
+	max-width:100% !important;
+	flex:1 1 auto;
+}
+
+.yoresel-media .yoresel-image-wrap img{
+	height:100%;
+	min-height:0 !important;
+}
+
+.nutrition-under-image{
+	position:absolute;
+	left:0;
+	right:0;
+	bottom:0;
+	z-index:4;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	gap:4px;
+	min-height:24px;
+	padding:3px 5px;
+	border-top:1px solid rgba(255,255,255,.22);
+	background:rgba(20,36,28,.20);
+	backdrop-filter:blur(6px) saturate(1.05);
+	color:rgba(255,255,255,.86);
+	font-size:8.5px;
+	font-weight:400;
+	line-height:1;
+	text-align:center;
+	letter-spacing:0;
+	text-shadow:0 1px 2px rgba(0,0,0,.32);
+	pointer-events:none;
+}
+
+.nutrition-under-image span{
+	white-space:nowrap;
+}
+
+.nutrition-mini-macros{
+	color:rgba(255,255,255,.76);
+}
+
+.category-product-card .encok-media{
+	width:148px;
+	min-width:148px;
+}
+
+.category-product-card .encok-media .encok-image,
+.category-product-card .encok-media .encok-image img{
+	min-height:178px !important;
+}
+
+@media (max-width: 575.98px){
+	.encok-card{
+		border-radius:22px !important;
+	}
+
+	.yoresel-card-inner{
+		display:block;
+	}
+
+	.yoresel-media{
+		width:100%;
+		min-width:100%;
+		max-width:100%;
+	}
+
+	.yoresel-media .yoresel-image-wrap,
+	.yoresel-media .yoresel-image-wrap img{
+		min-height:178px !important;
+		height:178px;
+	}
+
+	.category-product-card .encok-media{
+		width:136px;
+		min-width:136px;
+	}
+
+	.category-product-card .encok-media .encok-image,
+	.category-product-card .encok-media .encok-image img{
+		min-height:190px !important;
+	}
+
+	.category-product-card .encok-content{
+		padding:14px 13px 13px !important;
+	}
+
+	.category-product-card .encok-top{
+		min-height:0 !important;
+	}
+
+	.category-product-card .encok-top h6{
+		font-size:16px !important;
+		line-height:1.22 !important;
+		margin-bottom:6px !important;
+		-webkit-line-clamp:2 !important;
+	}
+
+	.category-product-card .encok-desc{
+		font-size:12px !important;
+		line-height:1.48 !important;
+		min-height:0 !important;
+		-webkit-line-clamp:3 !important;
+	}
+
+	.category-product-card .encok-bottom{
+		grid-template-columns:minmax(0,1fr) 66px !important;
+		align-items:end !important;
+		gap:6px !important;
+		margin-top:8px !important;
+	}
+
+	.category-product-card .encok-meta{
+		gap:7px !important;
+		min-width:0 !important;
+	}
+
+	.category-product-card .encok-tags{
+		align-items:flex-start !important;
+		gap:5px !important;
+		min-height:0 !important;
+	}
+
+	.category-product-card .food-chip{
+		font-size:10px !important;
+		padding:6px 8px !important;
+	}
+
+	.category-product-card .nutrition-under-image{
+		min-height:22px;
+		padding:3px 4px;
+		font-size:8px;
+		gap:3px;
+	}
+
+	.category-product-card .order-price-row{
+		gap:8px !important;
+	}
+
+	.category-product-card .encok-options{
+		max-width:66px !important;
+		gap:5px !important;
+	}
+
+	.category-product-card .encok-options img{
+		width:28px !important;
+		height:28px !important;
+	}
+}
+
+@media (max-width: 390px){
+	.category-product-card .encok-media{
+		width:126px;
+		min-width:126px;
+	}
+
+	.category-product-card .encok-media .encok-image,
+	.category-product-card .encok-media .encok-image img{
+		min-height:186px !important;
+	}
+
+	.category-product-card .encok-content{
+		padding:13px 12px 12px !important;
+	}
+
+	.category-product-card .encok-bottom{
+		grid-template-columns:minmax(0,1fr) 60px !important;
+	}
+
+	.category-product-card .encok-options{
+		max-width:60px !important;
+		gap:4px !important;
+	}
+
+	.category-product-card .encok-options img{
+		width:27px !important;
+		height:27px !important;
+	}
+
+	.category-product-card .food-chip{
+		font-size:9.5px !important;
+		padding:6px 7px !important;
+	}
+
+	.category-product-card .nutrition-under-image{
+		font-size:7.8px;
+		gap:3px;
+	}
+}
+
 .menu-wifi-action{
 	display:inline-flex;
 	align-items:center;
