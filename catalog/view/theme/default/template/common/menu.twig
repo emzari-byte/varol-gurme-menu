@@ -66,7 +66,7 @@
                      <div class="yoresel-card-inner">
                         <div class="yoresel-media">
                            <div class="list-card-image yoresel-image-wrap menu-image-zoom"
-                                onclick="openMenuLightbox('{{ pro.thumb }}', '{{ pro.name|e('js') }}', '{{ pro.product_id }}', '{{ yoreselname ? yoreselname|e('js') : text_regional_products|e('js') }}')">
+                                onclick="openMenuLightbox('{{ pro.popup }}?v=21', '{{ pro.name|e('js') }}', '{{ pro.product_id }}', '{{ yoreselname ? yoreselname|e('js') : text_regional_products|e('js') }}')">
                               <img src="{{ pro.thumb }}" class="img-fluid item-img w-100" alt="{{ pro.name }}"/>
                               {% if pro.is_upcoming %}
                               <span class="coming-soon-badge">{{ text_coming_soon }}</span>
@@ -157,7 +157,7 @@
                        data-section-name="{{ encoktercihname ? encoktercihname|e : text_most_preferred|e }}">
                      <div class="encok-media">
                         <div class="encok-image menu-image-zoom"
-                             onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ encoktercihname ? encoktercihname|e('js') : text_most_preferred|e('js') }}')">
+                             onclick="openMenuLightbox('{{ product.popup }}?v=21', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ encoktercihname ? encoktercihname|e('js') : text_most_preferred|e('js') }}')">
                            <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
                            {% if product.is_upcoming %}
                            <span class="coming-soon-badge">{{ text_coming_soon }}</span>
@@ -250,7 +250,7 @@
                        data-section-name="{{ text_newest_products|e }}">
                      <div class="encok-media">
                         <div class="encok-image menu-image-zoom"
-                             onclick="openMenuLightbox('{{ product.thumb }}', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ text_newest_products|e('js') }}')">
+                             onclick="openMenuLightbox('{{ product.popup }}?v=21', '{{ product.name|e('js') }}', '{{ product.product_id }}', '{{ text_newest_products|e('js') }}')">
                            <img src="{{ product.thumb }}" class="img-fluid item-img w-100" alt="{{ product.name }}">
                            {% if product.is_upcoming %}
                            <span class="coming-soon-badge">{{ text_coming_soon }}</span>

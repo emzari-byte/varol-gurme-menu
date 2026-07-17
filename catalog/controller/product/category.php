@@ -380,7 +380,7 @@ class ControllerProductCategory extends Controller {
 
             if (!empty($result['image'])) {
                 $image = $this->model_tool_image->resize($result['image'], 800, 600);
-                $popup = $this->model_tool_image->resize($result['image'], 1000, 740);
+                $popup = HTTPS_SERVER . 'image/' . $result['image'];
             } else {
                 $image = $this->model_tool_image->resize('no_image.png', 800, 600);
                 $popup = $this->model_tool_image->resize('no_image.png', 1000, 740);
