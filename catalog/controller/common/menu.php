@@ -157,7 +157,7 @@ class ControllerCommonMenu extends Controller {
 		$share_default_name = $data['language_code'] === 'en-gb' ? 'Sharing Menu' : 'Paylaşmalık Menü';
 
 		$data['yoreselname'] = $popular_section['name'] ? $popular_section['name'] : $data['text_most_preferred'];
-		$data['yoreselpro'] = $this->buildHomeProducts($popular_section['products'], $gun, $active_language_id, $show_prices, 900, 660, false, $prep_extra_minutes);
+		$data['yoreselpro'] = $this->buildHomeProducts($popular_section['products'], $gun, $active_language_id, $show_prices, 900, 660, true, $prep_extra_minutes);
 
 		$data['encoktercihname'] = $share_section['name'] ? $share_section['name'] : $share_default_name;
 		$data['encoktercihpro'] = $this->buildHomeProducts($share_section['products'], $gun, $active_language_id, $show_prices, 150, 110, true, $prep_extra_minutes);

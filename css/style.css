@@ -4799,6 +4799,18 @@ body.menu-page-leaving .osahan-home-page{
 	color:rgba(255,255,255,.76);
 }
 
+.trending-slider .yoresel-media .yoresel-image-wrap,
+.trending-slider .yoresel-media .yoresel-image-wrap img{
+	aspect-ratio:4 / 3;
+	height:auto !important;
+	min-height:0 !important;
+}
+
+.trending-slider .yoresel-media .yoresel-image-wrap img{
+	object-fit:cover;
+	object-position:center center;
+}
+
 .category-product-card .encok-media{
 	width:148px;
 	min-width:148px;
@@ -4828,6 +4840,12 @@ body.menu-page-leaving .osahan-home-page{
 	.yoresel-media .yoresel-image-wrap img{
 		min-height:178px !important;
 		height:178px;
+	}
+
+	.trending-slider .yoresel-media .yoresel-image-wrap,
+	.trending-slider .yoresel-media .yoresel-image-wrap img{
+		height:auto !important;
+		min-height:0 !important;
 	}
 
 	.category-product-card .encok-media{
