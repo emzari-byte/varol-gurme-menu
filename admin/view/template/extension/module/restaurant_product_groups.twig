@@ -1,0 +1,273 @@
+{{ header }}{{ column_left }}
+<div id="content" class="restaurant-group-admin">
+  <div class="page-header restaurant-page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <button type="button" id="button-add-group" data-toggle="tooltip" title="Grup Ekle" class="btn btn-success"><i class="fa fa-plus"></i></button>
+        <button type="submit" form="form-restaurant-product-groups" data-toggle="tooltip" title="Kaydet" class="btn btn-primary"><i class="fa fa-save"></i></button>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="Vazgeç" class="btn btn-default"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>Ürün Grupları</h1>
+      <p>Farklı stok kodlarına sahip ürünleri menüde tek kart altında seçenek olarak gösterin.</p>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+          <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    {% if error_warning %}
+      <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}</div>
+    {% endif %}
+    {% if success %}
+      <div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success }}</div>
+    {% endif %}
+
+    <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-restaurant-product-groups">
+      <div id="group-board" class="group-board">
+        {% set group_row = 0 %}
+        {% for group in groups %}
+          <section class="group-card" id="group-row-{{ group_row }}">
+            <input type="hidden" name="groups[{{ group_row }}][group_id]" value="{{ group.group_id }}">
+            <header class="group-head">
+              <div>
+                <span class="group-kicker">Menü Kartı</span>
+                <h2>{{ group.name ? group.name : 'Yeni Grup' }}</h2>
+              </div>
+              <div class="group-actions">
+                <label class="group-toggle">
+                  <input type="checkbox" name="groups[{{ group_row }}][status]" value="1" {% if group.status %}checked{% endif %}>
+                  <span>Aktif</span>
+                </label>
+                <button type="button" class="btn btn-danger remove-group"><i class="fa fa-trash"></i></button>
+              </div>
+            </header>
+
+            <div class="group-body">
+              <div class="group-layout">
+                <div class="group-image-box">
+                  <a href="" id="thumb-group-image-{{ group_row }}" data-toggle="image" class="img-thumbnail">
+                    <img src="{{ group.thumb }}" alt="" title="" data-placeholder="{{ placeholder }}">
+                  </a>
+                  <input type="hidden" name="groups[{{ group_row }}][image]" value="{{ group.image }}" id="input-group-image-{{ group_row }}">
+                  <span>Ortak görsel</span>
+                </div>
+
+                <div class="group-fields">
+                  <div class="row">
+                    <div class="col-sm-8">
+                      <label>Kategori</label>
+                      <input type="text" value="{{ group.category_name }}" placeholder="Kategori ara..." class="form-control group-category-search" data-row="{{ group_row }}">
+                      <input type="hidden" name="groups[{{ group_row }}][category_id]" value="{{ group.category_id }}" id="input-group-category-{{ group_row }}">
+                    </div>
+                    <div class="col-sm-2">
+                      <label>Sıralama</label>
+                      <input type="number" name="groups[{{ group_row }}][sort_order]" value="{{ group.sort_order }}" class="form-control">
+                    </div>
+                    <div class="col-sm-2">
+                      <label>Etiket</label>
+                      <input type="text" name="groups[{{ group_row }}][meta_label]" value="{{ group.meta_label }}" placeholder="Çeşit Seçiniz" class="form-control">
+                    </div>
+                  </div>
+
+                  <div class="language-grid">
+                    {% for language in languages %}
+                      <div class="language-card">
+                        <label><img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}"> {{ language.name }}</label>
+                        <input type="text" name="groups[{{ group_row }}][descriptions][{{ language.language_id }}][name]" value="{{ group.descriptions[language.language_id] is defined ? group.descriptions[language.language_id].name : '' }}" placeholder="Grup başlığı" class="form-control">
+                        <textarea name="groups[{{ group_row }}][descriptions][{{ language.language_id }}][description]" rows="3" placeholder="Kısa açıklama" class="form-control">{{ group.descriptions[language.language_id] is defined ? group.descriptions[language.language_id].description : '' }}</textarea>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="group-products">
+                <div class="product-add-row">
+                  <label>Ürün Ekle</label>
+                  <input type="text" value="" placeholder="Ürün adı yazın..." class="form-control group-product-search" data-row="{{ group_row }}">
+                </div>
+
+                <div class="group-product-list" id="group-products-{{ group_row }}">
+                  {% set item_row = 0 %}
+                  {% for item in group.items %}
+                    <div class="group-product-item" id="group-product-{{ group_row }}-{{ item.product_id }}">
+                      <button type="button" class="remove-product" title="Kaldır"><i class="fa fa-times"></i></button>
+                      <input type="hidden" name="groups[{{ group_row }}][items][{{ item_row }}][product_id]" value="{{ item.product_id }}">
+                      <div class="product-name">{{ item.product_name }}</div>
+                      <input type="text" name="groups[{{ group_row }}][items][{{ item_row }}][variant_label]" value="{{ item.variant_label }}" placeholder="Seçenek adı" class="form-control">
+                      <input type="text" name="groups[{{ group_row }}][items][{{ item_row }}][variant_note]" value="{{ item.variant_note }}" placeholder="Alt açıklama" class="form-control">
+                      <input type="number" name="groups[{{ group_row }}][items][{{ item_row }}][sort_order]" value="{{ item.sort_order }}" placeholder="Sıra" class="form-control sort-input">
+                    </div>
+                    {% set item_row = item_row + 1 %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </section>
+          {% set group_row = group_row + 1 %}
+        {% endfor %}
+      </div>
+    </form>
+  </div>
+
+  <style>
+    .restaurant-group-admin{background:#f7f3ea;}
+    .restaurant-page-header{background:#fff;border-bottom:1px solid #eadfce;margin-bottom:18px;}
+    .restaurant-page-header h1{font-weight:700;color:#2d241b;margin-bottom:4px;}
+    .restaurant-page-header p{margin:0 0 8px;color:#7f715f;}
+    .group-board{display:grid;gap:18px;}
+    .group-card{background:#fff;border:1px solid #e6dac8;border-radius:12px;box-shadow:0 14px 32px rgba(66,48,28,.07);overflow:hidden;}
+    .group-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 20px;border-bottom:1px solid #efe6d9;background:#fffaf2;}
+    .group-kicker{display:block;margin-bottom:5px;color:#a37a43;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+    .group-head h2{margin:0;color:#231d18;font-size:20px;font-weight:800;}
+    .group-actions{display:flex;align-items:center;gap:8px;}
+    .group-toggle{display:inline-flex;align-items:center;gap:7px;margin:0;padding:7px 12px;border:1px solid #dfcaa9;border-radius:999px;background:#fff;color:#7a5b31;font-weight:800;}
+    .group-toggle input{margin:0;}
+    .group-body{padding:20px;}
+    .group-layout{display:grid;grid-template-columns:130px minmax(0,1fr);gap:20px;}
+    .group-image-box{display:grid;gap:8px;align-content:start;text-align:center;color:#7f715f;font-weight:700;}
+    .group-image-box .img-thumbnail{width:112px;height:112px;margin:0 auto;border-color:#e5d7c3;border-radius:14px;overflow:hidden;}
+    .group-image-box img{width:100%;height:100%;object-fit:cover;}
+    .group-fields label,.product-add-row label{display:block;margin-bottom:7px;color:#403325;font-weight:800;}
+    .group-fields .form-control,.product-add-row .form-control,.group-product-item .form-control{border-color:#e1d5c3;box-shadow:none;}
+    .language-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:16px;}
+    .language-card{display:grid;gap:8px;padding:12px;border:1px solid #ece2d5;border-radius:10px;background:#fffdf9;}
+    .language-card label{margin:0;}
+    .group-products{margin-top:18px;padding-top:18px;border-top:1px solid #efe6d9;}
+    .product-add-row{max-width:520px;margin-bottom:12px;}
+    .group-product-list{display:grid;gap:8px;}
+    .group-product-item{display:grid;grid-template-columns:34px minmax(140px,1.2fr) minmax(130px,1fr) minmax(150px,1fr) 80px;gap:8px;align-items:center;padding:10px;border:1px solid #ece2d5;border-radius:10px;background:#fffdf9;}
+    .product-name{font-weight:800;color:#33281d;}
+    .remove-product{width:30px;height:30px;border:0;border-radius:50%;background:#f5ded8;color:#b84231;}
+    .sort-input{text-align:center;}
+    @media (max-width:900px){
+      .group-layout{grid-template-columns:1fr;}
+      .group-product-item{grid-template-columns:34px 1fr;}
+      .group-product-item .form-control,.group-product-item .product-name{grid-column:2;}
+    }
+  </style>
+
+  <script type="text/javascript"><!--
+var groupRow = {{ group_row }};
+var itemRows = {};
+
+{% set setup_row = 0 %}
+{% for group in groups %}
+itemRows[{{ setup_row }}] = {{ group.items|length }};
+{% set setup_row = setup_row + 1 %}
+{% endfor %}
+
+function escapeHtml(text) {
+	return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function bindGroupCategory($scope) {
+	$scope.find('.group-category-search').autocomplete({
+		source: function(request, response) {
+			$.ajax({
+				url: 'index.php?route=catalog/category/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+				dataType: 'json',
+				success: function(json) {
+					response($.map(json, function(item) {
+						return { label: item.name, value: item.category_id };
+					}));
+				}
+			});
+		},
+		select: function(item) {
+			var row = $(this).data('row');
+			$(this).val(item.label);
+			$('#input-group-category-' + row).val(item.value);
+		}
+	});
+}
+
+function bindGroupProduct($scope) {
+	$scope.find('.group-product-search').autocomplete({
+		source: function(request, response) {
+			$.ajax({
+				url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request) + '&limit=20',
+				dataType: 'json',
+				success: function(json) {
+					response($.map(json, function(item) {
+						return { label: item.name, value: item.product_id };
+					}));
+				}
+			});
+		},
+		select: function(item) {
+			var row = $(this).data('row');
+			var board = $('#group-products-' + row);
+			var itemRow = itemRows[row] || 0;
+
+			$(this).val('');
+			$('#group-product-' + row + '-' + item.value).remove();
+
+			board.append(
+				'<div class="group-product-item" id="group-product-' + row + '-' + item.value + '">' +
+					'<button type="button" class="remove-product" title="Kaldır"><i class="fa fa-times"></i></button>' +
+					'<input type="hidden" name="groups[' + row + '][items][' + itemRow + '][product_id]" value="' + item.value + '">' +
+					'<div class="product-name">' + escapeHtml(item.label) + '</div>' +
+					'<input type="text" name="groups[' + row + '][items][' + itemRow + '][variant_label]" value="' + escapeHtml(item.label) + '" placeholder="Seçenek adı" class="form-control">' +
+					'<input type="text" name="groups[' + row + '][items][' + itemRow + '][variant_note]" value="" placeholder="Alt açıklama" class="form-control">' +
+					'<input type="number" name="groups[' + row + '][items][' + itemRow + '][sort_order]" value="' + (itemRow + 1) + '" placeholder="Sıra" class="form-control sort-input">' +
+				'</div>'
+			);
+
+			itemRows[row] = itemRow + 1;
+		}
+	});
+}
+
+function buildGroup(row) {
+	itemRows[row] = 0;
+
+	return '' +
+	'<section class="group-card" id="group-row-' + row + '">' +
+		'<input type="hidden" name="groups[' + row + '][group_id]" value="">' +
+		'<header class="group-head">' +
+			'<div><span class="group-kicker">Menü Kartı</span><h2>Yeni Grup</h2></div>' +
+			'<div class="group-actions"><label class="group-toggle"><input type="checkbox" name="groups[' + row + '][status]" value="1" checked><span>Aktif</span></label><button type="button" class="btn btn-danger remove-group"><i class="fa fa-trash"></i></button></div>' +
+		'</header>' +
+		'<div class="group-body">' +
+			'<div class="group-layout">' +
+				'<div class="group-image-box"><a href="" id="thumb-group-image-' + row + '" data-toggle="image" class="img-thumbnail"><img src="{{ placeholder }}" alt="" title="" data-placeholder="{{ placeholder }}"></a><input type="hidden" name="groups[' + row + '][image]" value="" id="input-group-image-' + row + '"><span>Ortak görsel</span></div>' +
+				'<div class="group-fields">' +
+					'<div class="row"><div class="col-sm-8"><label>Kategori</label><input type="text" value="" placeholder="Kategori ara..." class="form-control group-category-search" data-row="' + row + '"><input type="hidden" name="groups[' + row + '][category_id]" value="" id="input-group-category-' + row + '"></div><div class="col-sm-2"><label>Sıralama</label><input type="number" name="groups[' + row + '][sort_order]" value="0" class="form-control"></div><div class="col-sm-2"><label>Etiket</label><input type="text" name="groups[' + row + '][meta_label]" value="Çeşit Seçiniz" placeholder="Çeşit Seçiniz" class="form-control"></div></div>' +
+					'<div class="language-grid">' +
+						{% for language in languages %}
+						'<div class="language-card"><label><img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}"> {{ language.name }}</label><input type="text" name="groups[' + row + '][descriptions][{{ language.language_id }}][name]" value="" placeholder="Grup başlığı" class="form-control"><textarea name="groups[' + row + '][descriptions][{{ language.language_id }}][description]" rows="3" placeholder="Kısa açıklama" class="form-control"></textarea></div>' +
+						{% endfor %}
+					'</div>' +
+				'</div>' +
+			'</div>' +
+			'<div class="group-products"><div class="product-add-row"><label>Ürün Ekle</label><input type="text" value="" placeholder="Ürün adı yazın..." class="form-control group-product-search" data-row="' + row + '"></div><div class="group-product-list" id="group-products-' + row + '"></div></div>' +
+		'</div>' +
+	'</section>';
+}
+
+bindGroupCategory($(document));
+bindGroupProduct($(document));
+
+$('#button-add-group').on('click', function() {
+	var html = buildGroup(groupRow);
+	$('#group-board').append(html);
+	var $group = $('#group-row-' + groupRow);
+	bindGroupCategory($group);
+	bindGroupProduct($group);
+	groupRow++;
+});
+
+$('#group-board').on('click', '.remove-group', function() {
+	$(this).closest('.group-card').remove();
+});
+
+$('#group-board').on('click', '.remove-product', function() {
+	$(this).closest('.group-product-item').remove();
+});
+//--></script>
+</div>
+{{ footer }}

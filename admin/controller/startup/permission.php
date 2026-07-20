@@ -47,8 +47,24 @@ class ControllerStartupPermission extends Controller {
 			);
 
 			if (!in_array($route, $ignore) && !$this->user->hasPermission('access', $route)) {
+				if ($this->hasInheritedRestaurantPermission($route)) {
+					return;
+				}
+
 				return new Action('error/permission');
 			}
 		}
+	}
+
+	private function hasInheritedRestaurantPermission($route) {
+		$restaurant_routes = array(
+			'extension/module/restaurant_product_groups'
+		);
+
+		if (!in_array($route, $restaurant_routes)) {
+			return false;
+		}
+
+		return $this->user->hasPermission('access', 'catalog/product') || $this->user->hasPermission('access', 'extension/module/restaurant_settings');
 	}
 }

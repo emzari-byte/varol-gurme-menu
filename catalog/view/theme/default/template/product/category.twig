@@ -18,7 +18,7 @@
       <link rel="stylesheet" type="text/css" href="{{ serv }}vendor/slick/slick-theme.min.css?v=20"/>
       <link href="{{ serv }}vendor/icons/feather.css?v=20" rel="stylesheet" type="text/css">
       <link href="{{ serv }}vendor/bootstrap/css/bootstrap.min.css?v=20" rel="stylesheet">
-      <link href="{{ serv }}css/style.css?v=50" rel="stylesheet">
+      <link href="{{ serv }}css/style.css?v=52" rel="stylesheet">
       <link href="{{ serv }}css/menu-themes.css?v=4" rel="stylesheet">
       {{ restaurant_analytics_code|raw }}
       <link href="{{ serv }}vendor/sidebar/demo.css?v=20" rel="stylesheet">
@@ -114,7 +114,74 @@
                <div class="most_sale px-3 pb-4">
                   <div class="encok-grid">
 
-                     {% for product in category.products %}
+                     {% if category.display_items is defined %}
+                     {% set visible_items = category.display_items %}
+                     {% elseif category.display_products is defined %}
+                     {% set visible_items = [] %}
+                     {% for product_item in category.display_products %}
+                     {% set visible_items = visible_items|merge([{ 'type': 'product', 'data': product_item }]) %}
+                     {% endfor %}
+                     {% else %}
+                     {% set visible_items = [] %}
+                     {% for product_item in category.products %}
+                     {% set visible_items = visible_items|merge([{ 'type': 'product', 'data': product_item }]) %}
+                     {% endfor %}
+                     {% endif %}
+
+                     {% for display_item in visible_items %}
+                     {% if display_item.type == 'group' %}
+                     {% set group = display_item.data %}
+                     <div class="kebab-signature-card">
+                        <div class="kebab-signature-image menu-image-zoom"
+                             onclick="openMenuLightbox('{{ group.popup }}?v=21', '{{ group.name|e('js') }}', '{{ group.variants[0].product_id }}', '{{ category.name|e('js') }}')">
+                           <img src="{{ group.thumb }}?v=20" alt="{{ group.name }}" loading="lazy" decoding="async">
+                        </div>
+
+                        <div class="kebab-signature-body">
+                           <h6 class="kebab-signature-title">{{ group.name }}</h6>
+                           {% if group.description %}
+                           <div class="kebab-signature-desc">{{ group.description|raw }}</div>
+                           {% endif %}
+
+                           <div class="kebab-signature-meta">
+                              {% if group.tag %}
+                              <span class="food-chip">
+                                 <i class="feather-clock"></i>&nbsp;{{ group.tag }}
+                              </span>
+                              {% endif %}
+                              {% if group.meta_label %}
+                              <span class="food-chip">{{ group.meta_label }}</span>
+                              {% endif %}
+                           </div>
+
+                           <div class="kebab-portion-list">
+                              {% for variant in group.variants %}
+                              <div class="kebab-portion-row"
+                                   data-product-id="{{ variant.product_id }}"
+                                   data-product-name="{{ variant.name|e }}"
+                                   data-category-id="{{ category.category_id }}"
+                                   data-category-name="{{ category.name|e }}">
+                                 <div class="kebab-portion-copy">
+                                    <strong>{{ variant.portion_label }}</strong>
+                                    <small>{{ variant.portion_note }}</small>
+                                 </div>
+                                 <div class="kebab-portion-action">
+                                    <span class="kebab-portion-price">{{ variant.price }}</span>
+                                    {% if can_order and not variant.is_upcoming %}
+                                    <button type="button"
+                                            class="order-add-btn kebab-portion-add"
+                                            data-product-id="{{ variant.product_id }}">
+                                       {{ text_menu_add }}
+                                    </button>
+                                    {% endif %}
+                                 </div>
+                              </div>
+                              {% endfor %}
+                           </div>
+                        </div>
+                     </div>
+                     {% else %}
+                     {% set product = display_item.data %}
                      <div class="encok-card category-product-card"
                           data-product-id="{{ product.product_id }}"
                           data-product-name="{{ product.name|e }}"
@@ -209,6 +276,7 @@
                            </div>
                         </div>
                      </div>
+                     {% endif %}
                      {% endfor %}
 
                   </div>
@@ -1094,7 +1162,7 @@ function updateWaiterCallButton(state) {
    $(document).on('click', '.order-add-btn', function() {
       var btn = $(this);
       var productId = btn.data('product-id');
-      var card = btn.closest('.encok-card');
+      var card = btn.closest('.encok-card, .kebab-portion-row');
 
       $.post(addEndpoint, { product_id: productId }, function(resp) {
          if (!resp || !resp.success) {

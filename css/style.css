@@ -4965,6 +4965,234 @@ body.menu-page-leaving .osahan-home-page{
 	}
 }
 
+.kebab-signature-card{
+	grid-column:1 / -1;
+	display:grid;
+	grid-template-columns:minmax(140px,34%) minmax(0,1fr);
+	overflow:hidden;
+	background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(252,254,253,.9));
+	border:1px solid rgba(255,255,255,.82);
+	border-radius:26px;
+	box-shadow:0 14px 36px rgba(66,101,82,.07);
+}
+
+.kebab-signature-image{
+	position:relative;
+	min-height:100%;
+	background:#edf3ef;
+	cursor:zoom-in;
+	overflow:hidden;
+}
+
+.kebab-signature-image img{
+	display:block;
+	width:100%;
+	height:100%;
+	min-height:226px;
+	object-fit:cover;
+	object-position:center;
+}
+
+.kebab-signature-body{
+	min-width:0;
+	padding:17px 16px 15px;
+	display:flex;
+	flex-direction:column;
+	justify-content:flex-start;
+	gap:10px;
+}
+
+.kebab-signature-title{
+	margin:0;
+	color:#416a53 !important;
+	font-size:19px;
+	line-height:1.22;
+	font-weight:900;
+	letter-spacing:0;
+}
+
+.kebab-signature-desc{
+	color:#718277;
+	font-size:13px;
+	line-height:1.48;
+	display:-webkit-box;
+	-webkit-line-clamp:3;
+	-webkit-box-orient:vertical;
+	overflow:hidden;
+}
+
+.kebab-signature-desc p{
+	margin:0;
+}
+
+.kebab-signature-meta{
+	display:flex;
+	align-items:center;
+	flex-wrap:wrap;
+	gap:6px;
+}
+
+.kebab-portion-list{
+	display:grid;
+	gap:7px;
+	margin-top:2px;
+}
+
+.kebab-portion-row{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:10px;
+	min-height:54px;
+	padding:8px 10px;
+	background:rgba(248,252,249,.94);
+	border:1px solid rgba(134,183,158,.18);
+	border-radius:16px;
+}
+
+.kebab-portion-copy{
+	min-width:0;
+}
+
+.kebab-portion-copy strong{
+	display:block;
+	color:#315645;
+	font-size:13px;
+	line-height:1.16;
+	font-weight:850;
+	letter-spacing:0;
+}
+
+.kebab-portion-copy small{
+	display:block;
+	margin-top:3px;
+	color:#718277;
+	font-size:10.5px;
+	line-height:1.25;
+}
+
+.kebab-portion-action{
+	display:flex;
+	align-items:center;
+	justify-content:flex-end;
+	gap:8px;
+	flex:0 0 auto;
+}
+
+.kebab-portion-price{
+	color:#416a53;
+	font-size:14px;
+	font-weight:900;
+	line-height:1;
+	white-space:nowrap;
+}
+
+.kebab-portion-add{
+	min-height:30px !important;
+	padding:8px 11px !important;
+	font-size:11px !important;
+	line-height:1 !important;
+}
+
+@media (max-width: 575.98px){
+	.kebab-signature-card{
+		grid-template-columns:136px minmax(0,1fr);
+		border-radius:22px;
+	}
+
+	.kebab-signature-image img{
+		min-height:100%;
+		height:100%;
+	}
+
+	.kebab-signature-body{
+		padding:14px 13px 13px;
+		gap:8px;
+	}
+
+	.kebab-signature-title{
+		font-size:17px;
+		line-height:1.2;
+	}
+
+	.kebab-signature-desc{
+		font-size:12px;
+		line-height:1.42;
+		-webkit-line-clamp:2;
+	}
+
+	.kebab-signature-meta{
+		gap:5px;
+	}
+
+	.kebab-signature-meta .food-chip{
+		font-size:10px !important;
+		padding:6px 8px !important;
+	}
+
+	.kebab-portion-list{
+		gap:6px;
+	}
+
+	.kebab-portion-row{
+		min-height:48px;
+		padding:7px 9px;
+		gap:8px;
+	}
+
+	.kebab-portion-copy strong{
+		font-size:12.5px;
+	}
+
+	.kebab-portion-copy small{
+		font-size:10px;
+	}
+
+	.kebab-portion-price{
+		font-size:13px;
+	}
+}
+
+@media (max-width: 390px){
+	.kebab-signature-card{
+		grid-template-columns:126px minmax(0,1fr);
+	}
+
+	.kebab-signature-body{
+		padding:13px 12px 12px;
+	}
+
+	.kebab-signature-title{
+		font-size:16px;
+	}
+
+	.kebab-signature-desc{
+		font-size:11.5px;
+	}
+
+	.kebab-signature-meta .food-chip:nth-child(n+2){
+		display:none;
+	}
+
+	.kebab-portion-row{
+		min-height:46px;
+		padding:7px 8px;
+	}
+
+	.kebab-portion-action{
+		gap:6px;
+	}
+
+	.kebab-portion-price{
+		font-size:12.5px;
+	}
+
+	.kebab-portion-add{
+		padding:7px 9px !important;
+		font-size:10.5px !important;
+	}
+}
+
 .menu-wifi-action{
 	display:inline-flex;
 	align-items:center;

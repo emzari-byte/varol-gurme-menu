@@ -116,12 +116,25 @@ class ControllerCommonColumnLeft extends Controller {
 
 		if (
 			$this->user->hasPermission('access', 'extension/module/restaurant_home_products') ||
+			$this->user->hasPermission('access', 'extension/module/restaurant_product_groups') ||
 			$this->user->hasPermission('access', 'extension/module/restaurant_settings') ||
 			$this->user->hasPermission('access', 'catalog/product')
 		) {
 			$restaurant_menu[] = array(
 				'name'     => 'Ana Sayfa Ürünler',
 				'href'     => $this->url->link('extension/module/restaurant_home_products', 'user_token=' . $this->session->data['user_token'], true),
+				'children' => array()
+			);
+		}
+
+		if (
+			$this->user->hasPermission('access', 'extension/module/restaurant_product_groups') ||
+			$this->user->hasPermission('access', 'extension/module/restaurant_settings') ||
+			$this->user->hasPermission('access', 'catalog/product')
+		) {
+			$restaurant_menu[] = array(
+				'name'     => 'Ürün Grupları',
+				'href'     => $this->url->link('extension/module/restaurant_product_groups', 'user_token=' . $this->session->data['user_token'], true),
 				'children' => array()
 			);
 		}
@@ -217,6 +230,7 @@ class ControllerCommonColumnLeft extends Controller {
 			'extension/module/restaurant_tables',
 			'extension/module/restaurant_waiters',
 			'extension/module/restaurant_home_products',
+			'extension/module/restaurant_product_groups',
 			'extension/module/restaurant_orders',
 			'extension/module/restaurant_reviews',
 			'catalog/product',

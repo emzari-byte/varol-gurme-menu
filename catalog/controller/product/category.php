@@ -12,6 +12,7 @@ class ControllerProductCategory extends Controller {
 		$this->load->model('catalog/product');
 		$this->load->model('tool/image');
 		$this->load->model('common/restaurant_settings');
+		$this->load->model('common/restaurant_product_groups');
 
 		$data['title'] = $this->config->get('config_meta_title');
 		$data['description'] = $this->config->get('config_meta_description');
@@ -295,12 +296,16 @@ class ControllerProductCategory extends Controller {
         }
 
         $direct_products = $this->getProductsByCategoryId($category_id, $gun, $prep_extra_minutes);
+        $direct_display = $this->buildDisplayGroupsForCategory($direct_products, $category_id);
 
         if (!empty($direct_products)) {
             $data['categories'][] = array(
                 'category_id' => (int)$category_info['category_id'],
                 'name'     => $category_info['name'],
                 'products' => $direct_products,
+                'display_products' => $direct_display['products'],
+                'product_groups' => $direct_display['groups'],
+                'display_items' => $direct_display['items'],
                 'thumb'    => !empty($category_info['image'])
                     ? (HTTPS_SERVER . 'image/' . $category_info['image'])
                     : $this->model_tool_image->resize('no_image.png', 40, 40),
@@ -336,10 +341,15 @@ class ControllerProductCategory extends Controller {
                     $child_thumb = $this->model_tool_image->resize('no_image.png', 40, 40);
                 }
 
+                $child_display = $this->buildDisplayGroupsForCategory($child_products, (int)$child['category_id']);
+
                 $data['categories'][] = array(
                     'category_id' => (int)$child_info['category_id'],
                     'name'     => $child_info['name'],
                     'products' => $child_products,
+                    'display_products' => $child_display['products'],
+                    'product_groups' => $child_display['groups'],
+                    'display_items' => $child_display['items'],
                     'thumb'    => $child_thumb,
                     'href'     => $this->url->link('product/category', 'path=' . (int)$category_info['category_id'] . '_' . (int)$child_info['category_id'] . $qr_param, true)
                 );
@@ -431,11 +441,312 @@ class ControllerProductCategory extends Controller {
                 'ean'         => $result['ean'],
                 'jan'         => $result['jan'],
                 'isbn'        => $result['isbn'],
+                'sort_order'  => isset($result['sort_order']) ? (int)$result['sort_order'] : 0,
                 'description' => $this->model_common_restaurant_settings->cleanProductDescriptionHtml($result['description'])
             );
         }
 
         return $products;
+    }
+
+    private function buildDisplayGroupsForCategory(array $products, int $category_id): array {
+        $configured_display = $this->getConfiguredProductGroupsForDisplay($products, $category_id);
+        $automatic_display = $this->groupPortionProductsForDisplay($configured_display['products']);
+
+        $groups = array_merge($configured_display['groups'], $automatic_display['groups']);
+
+        return array(
+            'groups' => $groups,
+            'products' => $automatic_display['products'],
+            'items' => $this->buildSortedDisplayItems($groups, $automatic_display['products'])
+        );
+    }
+
+    private function buildSortedDisplayItems(array $groups, array $products): array {
+        $items = array();
+
+        foreach ($groups as $group) {
+            $items[] = array(
+                'type' => 'group',
+                'sort_order' => isset($group['sort_order']) ? (int)$group['sort_order'] : 0,
+                'data' => $group
+            );
+        }
+
+        foreach ($products as $product) {
+            $items[] = array(
+                'type' => 'product',
+                'sort_order' => isset($product['sort_order']) ? (int)$product['sort_order'] : 0,
+                'data' => $product
+            );
+        }
+
+        usort($items, function ($a, $b) {
+            if ($a['sort_order'] === $b['sort_order']) {
+                return strcmp($a['type'], $b['type']);
+            }
+
+            return $a['sort_order'] <=> $b['sort_order'];
+        });
+
+        return $items;
+    }
+
+    private function getConfiguredProductGroupsForDisplay(array $products, int $category_id): array {
+        $groups = array();
+        $singles = $products;
+
+        if (!$products || $category_id <= 0) {
+            return array(
+                'groups' => $groups,
+                'products' => $singles
+            );
+        }
+
+        $products_by_id = array();
+
+        foreach ($products as $product) {
+            $products_by_id[(int)$product['product_id']] = $product;
+        }
+
+        $configured_groups = $this->model_common_restaurant_product_groups->getGroupsByCategoryId($category_id, (int)$this->config->get('config_language_id'));
+        $used_product_ids = array();
+
+        foreach ($configured_groups as $configured_group) {
+            $variants = array();
+
+            foreach ($configured_group['items'] as $item) {
+                $product_id = (int)$item['product_id'];
+
+                if (!isset($products_by_id[$product_id])) {
+                    continue;
+                }
+
+                $variant = $products_by_id[$product_id];
+                $variant['portion_label'] = trim((string)$item['variant_label']) !== '' ? $item['variant_label'] : $variant['name'];
+                $variant['portion_note'] = trim((string)$item['variant_note']);
+                $variant['group_type'] = 'configured';
+                $variants[] = $variant;
+                $used_product_ids[$product_id] = true;
+            }
+
+            if (count($variants) < 2) {
+                foreach ($variants as $variant) {
+                    unset($used_product_ids[(int)$variant['product_id']]);
+                }
+
+                continue;
+            }
+
+            $first_variant = $variants[0];
+            $image = trim((string)$configured_group['image']);
+            $thumb = $first_variant['popup'];
+            $popup = $first_variant['popup'];
+
+            if ($image !== '' && is_file(DIR_IMAGE . $image)) {
+                $thumb = $this->model_tool_image->resize($image, 800, 600);
+                $popup = HTTPS_SERVER . 'image/' . $image;
+            }
+
+            $groups[] = array(
+                'name' => trim((string)$configured_group['name']) !== '' ? $configured_group['name'] : $first_variant['name'],
+                'description' => nl2br(htmlspecialchars(trim((string)$configured_group['description']), ENT_QUOTES, 'UTF-8')),
+                'thumb' => $thumb,
+                'popup' => $popup,
+                'tag' => $first_variant['tag'],
+                'type' => 'configured',
+                'sort_order' => (int)$configured_group['sort_order'],
+                'meta_label' => trim((string)$configured_group['meta_label']),
+                'options' => $first_variant['options'],
+                'variants' => $variants
+            );
+        }
+
+        if ($used_product_ids) {
+            $singles = array();
+
+            foreach ($products as $product) {
+                if (!isset($used_product_ids[(int)$product['product_id']])) {
+                    $singles[] = $product;
+                }
+            }
+        }
+
+        return array(
+            'groups' => $groups,
+            'products' => $singles
+        );
+    }
+
+    private function groupPortionProductsForDisplay(array $products): array {
+        $groups = array();
+        $singles = array();
+
+        foreach ($products as $product) {
+            $parsed = $this->parseDisplayGroupProduct($product);
+
+            if (!$parsed) {
+                $singles[] = $product;
+                continue;
+            }
+
+            $group_key = $this->slugifyDisplayKey($parsed['base']);
+
+            if (!isset($groups[$group_key])) {
+                $groups[$group_key] = array(
+                    'name' => $parsed['base'],
+                    'description' => !empty($parsed['description']) ? $parsed['description'] : $product['description'],
+                    'thumb' => !empty($parsed['thumb']) ? $parsed['thumb'] : $product['popup'],
+                    'popup' => !empty($parsed['popup']) ? $parsed['popup'] : $product['popup'],
+                    'tag' => $product['tag'],
+                    'type' => $parsed['type'],
+                    'sort_order' => isset($product['sort_order']) ? (int)$product['sort_order'] : 0,
+                    'meta_label' => $parsed['meta_label'],
+                    'options' => $product['options'],
+                    'variants' => array()
+                );
+            }
+
+            $product['portion_label'] = $parsed['variant'];
+            $product['portion_note'] = $parsed['note'];
+            $product['group_type'] = $parsed['type'];
+            $groups[$group_key]['variants'][] = $product;
+        }
+
+        foreach ($groups as $key => $group) {
+            if (count($group['variants']) < 2) {
+                foreach ($group['variants'] as $variant) {
+                    unset($variant['portion_label'], $variant['portion_note']);
+                    $singles[] = $variant;
+                }
+
+                unset($groups[$key]);
+                continue;
+            }
+
+            usort($groups[$key]['variants'], function ($a, $b) {
+                if (!empty($a['group_type']) && $a['group_type'] === 'beverage') {
+                    return strcmp($a['portion_label'], $b['portion_label']);
+                }
+
+                return $this->portionWeightValue($a['portion_label']) <=> $this->portionWeightValue($b['portion_label']);
+            });
+        }
+
+        return array(
+            'groups' => array_values($groups),
+            'products' => $singles
+        );
+    }
+
+    private function parseDisplayGroupProduct(array $product) {
+        $portion = $this->parsePortionProductName($product['name']);
+
+        if ($portion) {
+            return array(
+                'type' => 'portion',
+                'variant' => $portion['portion'],
+                'base' => $portion['base'],
+                'note' => $this->getPortionNote($portion['portion']),
+                'meta_label' => 'Süt Kuzu Tandır',
+                'description' => '',
+                'thumb' => '',
+                'popup' => ''
+            );
+        }
+
+        return $this->parseBeverageGroupProduct($product);
+    }
+
+    private function parseBeverageGroupProduct(array $product) {
+        $clean = trim(preg_replace('/\s+/', ' ', strip_tags(html_entity_decode($product['name'], ENT_QUOTES, 'UTF-8'))));
+        $normalized = $this->slugifyDisplayKey($clean);
+
+        $beverages = array(
+            'coca-cola' => 'Coca-Cola',
+            'coca-cola-zero' => 'Coca-Cola Zero',
+            'fanta' => 'Fanta',
+            'sprite' => 'Sprite'
+        );
+
+        if (!isset($beverages[$normalized])) {
+            return false;
+        }
+
+        $shared_image = 'catalog/icons/soguk-taze.jpg';
+        $thumb = is_file(DIR_IMAGE . $shared_image) ? $this->model_tool_image->resize($shared_image, 800, 600) : $product['thumb'];
+        $popup = is_file(DIR_IMAGE . $shared_image) ? HTTPS_SERVER . 'image/' . $shared_image : $product['popup'];
+
+        return array(
+            'type' => 'beverage',
+            'variant' => $beverages[$normalized],
+            'base' => 'Gazlı İçecekler',
+            'note' => 'Soğuk servis edilir',
+            'meta_label' => 'Çeşit Seçiniz',
+            'description' => 'Coca-Cola, Coca-Cola Zero, Fanta ve Sprite seçenekleriyle soğuk servis edilir.',
+            'thumb' => $thumb,
+            'popup' => $popup
+        );
+    }
+
+    private function parsePortionProductName(string $name) {
+        $clean = trim(preg_replace('/\s+/', ' ', strip_tags(html_entity_decode($name, ENT_QUOTES, 'UTF-8'))));
+
+        if (!preg_match('/^(\d+(?:[,.]\d+)?\s*(?:gr\.?|gram|kg\.?|kilogram))\s+(.+)$/iu', $clean, $matches)) {
+            return false;
+        }
+
+        $base = trim($matches[2]);
+
+        if (mb_stripos($base, 'Denizli Kebab', 0, 'UTF-8') === false) {
+            return false;
+        }
+
+        return array(
+            'portion' => trim($matches[1]),
+            'base' => $base
+        );
+    }
+
+    private function getPortionNote(string $portion): string {
+        $value = $this->portionWeightValue($portion);
+
+        if ($value <= 250) {
+            return 'Tek Porsiyon';
+        }
+
+        if ($value <= 350) {
+            return 'Bol Porsiyon';
+        }
+
+        if ($value <= 500) {
+            return 'İki Kişilik';
+        }
+
+        if ($value <= 750) {
+            return 'Üç Kişilik';
+        }
+
+        return 'Dört Kişilik';
+    }
+
+    private function portionWeightValue(string $portion): int {
+        $normalized = mb_strtolower(str_replace(',', '.', $portion), 'UTF-8');
+
+        if (strpos($normalized, 'kg') !== false || strpos($normalized, 'kilogram') !== false) {
+            return (int)round((float)$normalized * 1000);
+        }
+
+        return (int)round((float)$normalized);
+    }
+
+    private function slugifyDisplayKey(string $value): string {
+        $value = mb_strtolower($value, 'UTF-8');
+        $search = array('ı', 'ğ', 'ü', 'ş', 'ö', 'ç');
+        $replace = array('i', 'g', 'u', 's', 'o', 'c');
+        $value = str_replace($search, $replace, $value);
+        $value = preg_replace('/[^a-z0-9]+/i', '-', $value);
+        return trim($value, '-');
     }
 
     private function normalizeUpcomingProductName($name) {
