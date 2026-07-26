@@ -177,6 +177,23 @@ class ControllerProductCategory extends Controller {
             return;
 		}
 
+        $closed_category_ids = $this->model_catalog_category->getClosedCategoryIdsByDay($gun);
+        $is_path_closed = false;
+
+        foreach ($parts as $path_id) {
+            $path_category_info = $this->model_catalog_category->getCategory((int)$path_id);
+
+            if ($path_category_info && $this->isCategoryClosedOnDay($path_category_info, $gun, $closed_category_ids)) {
+                $is_path_closed = true;
+                break;
+            }
+        }
+
+        if ($is_path_closed || $this->isCategoryClosedOnDay($category_info, $gun, $closed_category_ids)) {
+            $this->response->redirect($this->url->link('common/menu', $qr_param_no_prefix, true));
+            return;
+        }
+
         $data['category_info'] = array(
             'category_id' => (int)$category_info['category_id'],
             'name'        => $category_info['name'],
@@ -224,7 +241,7 @@ class ControllerProductCategory extends Controller {
         $top_categories = $this->model_catalog_category->getCategories(0);
 
         foreach ($top_categories as $top_category) {
-            if ($gun == 'Sun' && $top_category['column'] == '99') {
+            if ($this->isCategoryClosedOnDay($top_category, $gun, $closed_category_ids)) {
                 continue;
             }
 
@@ -265,7 +282,7 @@ class ControllerProductCategory extends Controller {
             $data['group_mode'] = true;
 
             foreach ($child_query->rows as $child) {
-                if ($gun == 'Sun' && $child['column'] == '99') {
+                if ($this->isCategoryClosedOnDay($child, $gun, $closed_category_ids)) {
                     continue;
                 }
 
@@ -319,7 +336,7 @@ class ControllerProductCategory extends Controller {
 
         if ($has_children) {
             foreach ($child_query->rows as $child) {
-                if ($gun == 'Sun' && $child['column'] == '99') {
+                if ($this->isCategoryClosedOnDay($child, $gun, $closed_category_ids)) {
                     continue;
                 }
 
@@ -866,6 +883,16 @@ class ControllerProductCategory extends Controller {
 
     private function isProductClosedOnDay($sku, $day) {
         return in_array($day, $this->parseProductClosedDays($sku), true);
+    }
+
+    private function isCategoryClosedOnDay($category, $day, $closed_category_ids) {
+        $category_id = isset($category['category_id']) ? (int)$category['category_id'] : 0;
+
+        if ($category_id && in_array($category_id, $closed_category_ids, true)) {
+            return true;
+        }
+
+        return $day === 'Sun' && isset($category['column']) && (int)$category['column'] === 99;
     }
 
     private function parseProductClosedDays($sku) {

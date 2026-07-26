@@ -124,9 +124,10 @@ class ControllerCommonMenu extends Controller {
 		$data['categories'] = array();
 
 		$categories = $this->model_catalog_category->getCategories(0);
+		$closed_category_ids = $this->model_catalog_category->getClosedCategoryIdsByDay($gun);
 
 		foreach ($categories as $category) {
-			if ($gun == 'Sun' && $category['column'] == '99') {
+			if ($this->isCategoryClosedOnDay($category, $gun, $closed_category_ids)) {
 				continue;
 			}
 
@@ -326,6 +327,16 @@ class ControllerCommonMenu extends Controller {
 
 	private function isProductClosedOnDay($sku, $day) {
 		return in_array($day, $this->parseProductClosedDays($sku), true);
+	}
+
+	private function isCategoryClosedOnDay($category, $day, $closed_category_ids) {
+		$category_id = isset($category['category_id']) ? (int)$category['category_id'] : 0;
+
+		if ($category_id && in_array($category_id, $closed_category_ids, true)) {
+			return true;
+		}
+
+		return $day === 'Sun' && isset($category['column']) && (int)$category['column'] === 99;
 	}
 
 	private function parseProductClosedDays($sku) {

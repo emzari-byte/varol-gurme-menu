@@ -142,6 +142,38 @@ class ControllerCatalogCategory extends Controller {
 		$this->getList();
 	}
 
+	public function quickDays() {
+		$this->load->language('catalog/category');
+		$this->load->model('catalog/category');
+
+		$json = array();
+
+		if (!$this->user->hasPermission('modify', 'catalog/category')) {
+			$json['error'] = $this->language->get('error_permission');
+		} else {
+			$category_id = isset($this->request->post['category_id']) ? (int)$this->request->post['category_id'] : 0;
+			$days = isset($this->request->post['days']) ? (array)$this->request->post['days'] : array();
+
+			if (!$category_id) {
+				$json['error'] = 'Gecersiz kategori istegi.';
+			} else {
+				$category_info = $this->model_catalog_category->getCategory($category_id);
+
+				if (!$category_info) {
+					$json['error'] = 'Kategori bulunamadi.';
+				} else {
+					$saved_days = $this->model_catalog_category->saveCategoryClosedDays($category_id, $days);
+
+					$json['success'] = true;
+					$json['days'] = $saved_days;
+				}
+			}
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
 	protected function getList() {
 		if (isset($this->request->get['sort'])) {
 			$sort = $this->request->get['sort'];
@@ -203,11 +235,23 @@ class ControllerCatalogCategory extends Controller {
 		$category_total = $this->model_catalog_category->getTotalCategories();
 
 		$results = $this->model_catalog_category->getCategories($filter_data);
+		$category_ids = array();
 
 		foreach ($results as $result) {
+			$category_ids[] = (int)$result['category_id'];
+		}
+
+		$closed_days_by_category = $this->model_catalog_category->getCategoryClosedDaysForCategories($category_ids);
+
+		foreach ($results as $result) {
+			$closed_days = isset($closed_days_by_category[(int)$result['category_id']]) ? $closed_days_by_category[(int)$result['category_id']] : array();
+			$closed_days = $this->mergeLegacyCategoryClosedDays($closed_days, isset($result['column']) ? $result['column'] : 1);
+
 			$data['categories'][] = array(
 				'category_id' => $result['category_id'],
 				'name'        => $result['name'],
+				'column'      => isset($result['column']) ? $result['column'] : 1,
+				'closed_days' => $closed_days,
 				'sort_order'  => $result['sort_order'],
 				'edit'        => $this->url->link('catalog/category/edit', 'user_token=' . $this->session->data['user_token'] . '&category_id=' . $result['category_id'] . $url, true),
 				'delete'      => $this->url->link('catalog/category/delete', 'user_token=' . $this->session->data['user_token'] . '&category_id=' . $result['category_id'] . $url, true)
@@ -271,6 +315,7 @@ class ControllerCatalogCategory extends Controller {
 
 		$data['sort'] = $sort;
 		$data['order'] = $order;
+		$data['user_token'] = $this->session->data['user_token'];
 
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');
@@ -465,6 +510,15 @@ class ControllerCatalogCategory extends Controller {
 			$data['column'] = 1;
 		}
 
+		if (isset($this->request->post['category_closed_days'])) {
+			$data['category_closed_days'] = (array)$this->request->post['category_closed_days'];
+		} elseif (!empty($category_info)) {
+			$data['category_closed_days'] = $this->model_catalog_category->getCategoryClosedDays($this->request->get['category_id']);
+			$data['category_closed_days'] = $this->mergeLegacyCategoryClosedDays($data['category_closed_days'], $category_info['column']);
+		} else {
+			$data['category_closed_days'] = array();
+		}
+
 		if (isset($this->request->post['sort_order'])) {
 			$data['sort_order'] = $this->request->post['sort_order'];
 		} elseif (!empty($category_info)) {
@@ -580,6 +634,39 @@ class ControllerCatalogCategory extends Controller {
 		}
 
 		return !$this->error;
+	}
+
+	private function mergeLegacyCategoryClosedDays($closed_days, $column) {
+		$closed_days = $this->normalizeCategoryClosedDays($closed_days);
+
+		if ((int)$column === 99 && !in_array('Sun', $closed_days, true)) {
+			$closed_days[] = 'Sun';
+		}
+
+		return $closed_days;
+	}
+
+	private function normalizeCategoryClosedDays($days) {
+		$valid_days = array(
+			'mon' => 'Mon',
+			'tue' => 'Tue',
+			'wed' => 'Wed',
+			'thu' => 'Thu',
+			'fri' => 'Fri',
+			'sat' => 'Sat',
+			'sun' => 'Sun'
+		);
+		$closed_days = array();
+
+		foreach ((array)$days as $day) {
+			$key = strtolower(trim((string)$day));
+
+			if (isset($valid_days[$key]) && !in_array($valid_days[$key], $closed_days, true)) {
+				$closed_days[] = $valid_days[$key];
+			}
+		}
+
+		return $closed_days;
 	}
 
 	public function autocomplete() {

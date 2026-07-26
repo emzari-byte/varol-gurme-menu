@@ -1,5 +1,7 @@
 <?php
 class ModelCatalogCategory extends Model {
+	private $category_closed_day_table_ensured = false;
+
 	public function addCategory($data) {
 		$this->db->query("INSERT INTO " . DB_PREFIX . "category SET parent_id = '" . (int)$data['parent_id'] . "', `top` = '" . (isset($data['top']) ? (int)$data['top'] : 0) . "', `column` = '" . (int)$data['column'] . "', sort_order = '" . (int)$data['sort_order'] . "', status = '" . (int)$data['status'] . "', date_modified = NOW(), date_added = NOW()");
 
@@ -53,6 +55,10 @@ class ModelCatalogCategory extends Model {
 			foreach ($data['category_layout'] as $store_id => $layout_id) {
 				$this->db->query("INSERT INTO " . DB_PREFIX . "category_to_layout SET category_id = '" . (int)$category_id . "', store_id = '" . (int)$store_id . "', layout_id = '" . (int)$layout_id . "'");
 			}
+		}
+
+		if (isset($data['category_closed_days'])) {
+			$this->saveCategoryClosedDays($category_id, $data['category_closed_days']);
 		}
 
 		$this->cache->delete('category');
@@ -161,11 +167,18 @@ class ModelCatalogCategory extends Model {
 			}
 		}
 
+		if (isset($data['category_closed_days'])) {
+			$this->saveCategoryClosedDays($category_id, $data['category_closed_days']);
+		}
+
 		$this->cache->delete('category');
 	}
 
 	public function deleteCategory($category_id) {
+		$this->ensureCategoryClosedDayTable();
+
 		$this->db->query("DELETE FROM " . DB_PREFIX . "category_path WHERE category_id = '" . (int)$category_id . "'");
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "category_closed_day` WHERE category_id = '" . (int)$category_id . "'");
 
 		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "category_path WHERE path_id = '" . (int)$category_id . "'");
 
@@ -216,7 +229,7 @@ class ModelCatalogCategory extends Model {
 	}
 
 	public function getCategories($data = array()) {
-		$sql = "SELECT cp.category_id AS category_id, GROUP_CONCAT(cd1.name ORDER BY cp.level SEPARATOR '&nbsp;&nbsp;&gt;&nbsp;&nbsp;') AS name, c1.parent_id, c1.sort_order FROM " . DB_PREFIX . "category_path cp LEFT JOIN " . DB_PREFIX . "category c1 ON (cp.category_id = c1.category_id) LEFT JOIN " . DB_PREFIX . "category c2 ON (cp.path_id = c2.category_id) LEFT JOIN " . DB_PREFIX . "category_description cd1 ON (cp.path_id = cd1.category_id) LEFT JOIN " . DB_PREFIX . "category_description cd2 ON (cp.category_id = cd2.category_id) WHERE cd1.language_id = '" . (int)$this->config->get('config_language_id') . "' AND cd2.language_id = '" . (int)$this->config->get('config_language_id') . "'";
+		$sql = "SELECT cp.category_id AS category_id, GROUP_CONCAT(cd1.name ORDER BY cp.level SEPARATOR '&nbsp;&nbsp;&gt;&nbsp;&nbsp;') AS name, c1.parent_id, c1.`column`, c1.sort_order FROM " . DB_PREFIX . "category_path cp LEFT JOIN " . DB_PREFIX . "category c1 ON (cp.category_id = c1.category_id) LEFT JOIN " . DB_PREFIX . "category c2 ON (cp.path_id = c2.category_id) LEFT JOIN " . DB_PREFIX . "category_description cd1 ON (cp.path_id = cd1.category_id) LEFT JOIN " . DB_PREFIX . "category_description cd2 ON (cp.category_id = cd2.category_id) WHERE cd1.language_id = '" . (int)$this->config->get('config_language_id') . "' AND cd2.language_id = '" . (int)$this->config->get('config_language_id') . "'";
 
 		if (!empty($data['filter_name'])) {
 			$sql .= " AND cd2.name LIKE '%" . $this->db->escape($data['filter_name']) . "%'";
@@ -256,6 +269,103 @@ class ModelCatalogCategory extends Model {
 		$query = $this->db->query($sql);
 
 		return $query->rows;
+	}
+
+	public function getCategoryClosedDaysForCategories($category_ids) {
+		$this->ensureCategoryClosedDayTable();
+
+		$ids = array();
+
+		foreach ((array)$category_ids as $category_id) {
+			$category_id = (int)$category_id;
+
+			if ($category_id > 0) {
+				$ids[] = $category_id;
+			}
+		}
+
+		$ids = array_values(array_unique($ids));
+		$data = array();
+
+		if (!$ids) {
+			return $data;
+		}
+
+		$query = $this->db->query("SELECT category_id, day_code FROM `" . DB_PREFIX . "category_closed_day` WHERE category_id IN (" . implode(',', $ids) . ") ORDER BY FIELD(day_code, 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')");
+
+		foreach ($query->rows as $row) {
+			$category_id = (int)$row['category_id'];
+
+			if (!isset($data[$category_id])) {
+				$data[$category_id] = array();
+			}
+
+			$data[$category_id][] = $row['day_code'];
+		}
+
+		return $data;
+	}
+
+	public function getCategoryClosedDays($category_id) {
+		$days_by_category = $this->getCategoryClosedDaysForCategories(array($category_id));
+
+		return isset($days_by_category[(int)$category_id]) ? $days_by_category[(int)$category_id] : array();
+	}
+
+	public function saveCategoryClosedDays($category_id, $days) {
+		$this->ensureCategoryClosedDayTable();
+
+		$category_id = (int)$category_id;
+		$days = $this->normalizeClosedDays($days);
+
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "category_closed_day` WHERE category_id = '" . $category_id . "'");
+
+		foreach ($days as $day_code) {
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "category_closed_day` SET category_id = '" . $category_id . "', day_code = '" . $this->db->escape($day_code) . "'");
+		}
+
+		$this->db->query("UPDATE " . DB_PREFIX . "category SET `column` = IF(`column` = 99, 1, `column`), date_modified = NOW() WHERE category_id = '" . $category_id . "'");
+		$this->cache->delete('category');
+
+		return $days;
+	}
+
+	private function ensureCategoryClosedDayTable() {
+		if ($this->category_closed_day_table_ensured) {
+			return;
+		}
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "category_closed_day` (
+			`category_id` int(11) NOT NULL,
+			`day_code` varchar(3) NOT NULL,
+			PRIMARY KEY (`category_id`,`day_code`),
+			KEY `day_code` (`day_code`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->category_closed_day_table_ensured = true;
+	}
+
+	private function normalizeClosedDays($days) {
+		$valid_days = array(
+			'mon' => 'Mon',
+			'tue' => 'Tue',
+			'wed' => 'Wed',
+			'thu' => 'Thu',
+			'fri' => 'Fri',
+			'sat' => 'Sat',
+			'sun' => 'Sun'
+		);
+		$closed_days = array();
+
+		foreach ((array)$days as $day) {
+			$key = strtolower(trim((string)$day));
+
+			if (isset($valid_days[$key]) && !in_array($valid_days[$key], $closed_days, true)) {
+				$closed_days[] = $valid_days[$key];
+			}
+		}
+
+		return $closed_days;
 	}
 
 	public function getCategoryDescriptions($category_id) {

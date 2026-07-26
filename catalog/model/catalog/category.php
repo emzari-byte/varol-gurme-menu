@@ -1,5 +1,7 @@
 <?php
 class ModelCatalogCategory extends Model {
+	private $category_closed_day_table_ensured = false;
+
 	public function getCategory($category_id) {
 		$query = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "category c LEFT JOIN " . DB_PREFIX . "category_description cd ON (c.category_id = cd.category_id) LEFT JOIN " . DB_PREFIX . "category_to_store c2s ON (c.category_id = c2s.category_id) WHERE c.category_id = '" . (int)$category_id . "' AND cd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND c2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND c.status = '1'");
 
@@ -65,5 +67,39 @@ class ModelCatalogCategory extends Model {
 		$query = $this->db->query("SELECT COUNT(*) AS total FROM " . DB_PREFIX . "category c LEFT JOIN " . DB_PREFIX . "category_to_store c2s ON (c.category_id = c2s.category_id) WHERE c.parent_id = '" . (int)$parent_id . "' AND c2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND c.status = '1'");
 
 		return $query->row['total'];
+	}
+
+	public function getClosedCategoryIdsByDay($day) {
+		$this->ensureCategoryClosedDayTable();
+
+		$valid_days = array('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun');
+
+		if (!in_array($day, $valid_days, true)) {
+			return array();
+		}
+
+		$category_ids = array();
+		$query = $this->db->query("SELECT category_id FROM `" . DB_PREFIX . "category_closed_day` WHERE day_code = '" . $this->db->escape($day) . "'");
+
+		foreach ($query->rows as $row) {
+			$category_ids[] = (int)$row['category_id'];
+		}
+
+		return $category_ids;
+	}
+
+	private function ensureCategoryClosedDayTable() {
+		if ($this->category_closed_day_table_ensured) {
+			return;
+		}
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "category_closed_day` (
+			`category_id` int(11) NOT NULL,
+			`day_code` varchar(3) NOT NULL,
+			PRIMARY KEY (`category_id`,`day_code`),
+			KEY `day_code` (`day_code`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+
+		$this->category_closed_day_table_ensured = true;
 	}
 }

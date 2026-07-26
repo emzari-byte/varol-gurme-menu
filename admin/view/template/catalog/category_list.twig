@@ -39,6 +39,18 @@
       .menu-category-table tbody td{vertical-align:middle;border-color:#edf2ee;}
       .menu-category-name{font-size:15px;font-weight:800;color:#173126;}
       .menu-category-sort{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:30px;border-radius:999px;background:#eef7f1;color:#1f6f43;font-weight:800;}
+      .menu-category-days-cell{width:120px;position:relative;}
+      .menu-category-days-trigger{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:88px;height:32px;padding:0 10px;border:1px solid #dbe8e1;border-radius:10px;background:#f7fbf8;color:#24543d;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;}
+      .menu-category-days-trigger.has-closed-days{background:#fff3cd;color:#875500;border-color:#efd58e;}
+      .menu-category-days-trigger.is-saving{opacity:.68;pointer-events:none;}
+      .menu-category-days-trigger i{font-size:13px;}
+      .menu-category-days-popover{position:absolute;z-index:1060;width:236px;padding:12px;border:1px solid #dfe8e2;border-radius:12px;background:#fff;box-shadow:0 18px 45px rgba(23,49,38,.18);}
+      .menu-category-days-popover-title{margin-bottom:10px;color:#173126;font-size:12px;font-weight:800;}
+      .menu-category-days-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+      .menu-category-day-toggle{height:34px;border:1px solid transparent;border-radius:9px;font-size:11px;font-weight:800;}
+      .menu-category-day-toggle.is-visible{background:#edf8f0;border-color:#cfe8d6;color:#1f7a43;}
+      .menu-category-day-toggle.is-hidden{background:#fff0ee;border-color:#f1c6bf;color:#c43b2f;}
+      .menu-category-days-help{display:block;margin-top:10px;color:#7b8b83;font-size:11px;line-height:1.35;}
       .menu-category-actions .btn{border-radius:8px;}
       @media(max-width:767px){.menu-category-head{display:block}.menu-category-stats{margin-top:14px}.menu-category-stat{flex:1;}}
     </style>
@@ -64,6 +76,7 @@
                     {% else %}
                     <a href="{{ sort_name }}">{{ column_name }}</a>
                     {% endif %}</td>
+                  <td class="text-center menu-category-days-cell">G&uuml;nler</td>
                   <td class="text-right">{% if sort == 'sort_order' %}
                     <a href="{{ sort_sort_order }}" class="{{ order|lower }}">{{ column_sort_order }}</a>
                     {% else %}
@@ -82,13 +95,19 @@
                     <input type="checkbox" name="selected[]" value="{{ category.category_id }}" />
                     {% endif %}</td>
                   <td class="text-left"><span class="menu-category-name">{{ category.name }}</span></td>
+                  <td class="text-center menu-category-days-cell">
+                    <button type="button" class="menu-category-days-trigger" data-category-id="{{ category.category_id }}" data-days="{{ category.closed_days|join(',')|e('html_attr') }}">
+                      <i class="fa fa-calendar-o"></i>
+                      <span class="menu-category-days-label">Her g&uuml;n</span>
+                    </button>
+                  </td>
                   <td class="text-right"><span class="menu-category-sort">{{ category.sort_order }}</span></td>
                   <td class="text-right menu-category-actions"><a href="{{ category.edit }}" data-toggle="tooltip" title="{{ button_edit }}" class="btn btn-primary"><i class="fa fa-pencil"></i></a></td>
                 </tr>
                 {% endfor %}
                 {% else %}
                 <tr>
-                  <td class="text-center" colspan="4">{{ text_no_results }}</td>
+                  <td class="text-center" colspan="5">{{ text_no_results }}</td>
                 </tr>
                 {% endif %}
               </tbody>
@@ -103,4 +122,165 @@
     </div>
   </div>
 </div>
+<script type="text/javascript"><!--
+var categoryDayOptions = [
+	{code: 'Mon', label: 'Pzt'},
+	{code: 'Tue', label: 'Sal'},
+	{code: 'Wed', label: 'Car'},
+	{code: 'Thu', label: 'Per'},
+	{code: 'Fri', label: 'Cum'},
+	{code: 'Sat', label: 'Cmt'},
+	{code: 'Sun', label: 'Paz'}
+];
+
+function normalizeCategoryClosedDays(days) {
+	var source = $.isArray(days) ? days : $.trim(days || '').split(',');
+	var valid = {};
+	var normalized = [];
+
+	$.each(categoryDayOptions, function(index, day) {
+		valid[day.code.toLowerCase()] = day.code;
+	});
+
+	$.each(source, function(index, value) {
+		var code = $.trim(value || '').toLowerCase();
+
+		if (valid[code] && normalized.indexOf(valid[code]) === -1) {
+			normalized.push(valid[code]);
+		}
+	});
+
+	return normalized;
+}
+
+function serializeCategoryClosedDays(days) {
+	var ordered = [];
+
+	$.each(categoryDayOptions, function(index, day) {
+		if (days.indexOf(day.code) !== -1) {
+			ordered.push(day.code);
+		}
+	});
+
+	return ordered;
+}
+
+function getCategoryDayLabel(code) {
+	var label = code;
+
+	$.each(categoryDayOptions, function(index, day) {
+		if (day.code == code) {
+			label = day.label;
+			return false;
+		}
+	});
+
+	return label;
+}
+
+function updateCategoryDaysTrigger($trigger, days) {
+	var closedDays = serializeCategoryClosedDays(normalizeCategoryClosedDays(days));
+	var label = 'Her g\u00fcn';
+
+	if (closedDays.length == 1) {
+		label = getCategoryDayLabel(closedDays[0]) + ' kapal\u0131';
+	} else if (closedDays.length > 1) {
+		label = closedDays.length + ' g\u00fcn kapal\u0131';
+	}
+
+	$trigger.attr('data-days', closedDays.join(',')).data('days', closedDays.join(','));
+	$trigger.toggleClass('has-closed-days', closedDays.length > 0);
+	$trigger.find('.menu-category-days-label').text(label);
+}
+
+function renderCategoryDaysPopover($trigger) {
+	var categoryId = $trigger.data('category-id');
+	var closedDays = normalizeCategoryClosedDays($trigger.attr('data-days') || '');
+	var offset = $trigger.offset();
+	var html = '<div class="menu-category-days-popover">';
+
+	html += '<div class="menu-category-days-popover-title">Kategorinin g\u00f6r\u00fcnece\u011fi g\u00fcnler</div>';
+	html += '<div class="menu-category-days-grid">';
+
+	$.each(categoryDayOptions, function(index, day) {
+		var isHidden = closedDays.indexOf(day.code) !== -1;
+		html += '<button type="button" class="menu-category-day-toggle ' + (isHidden ? 'is-hidden' : 'is-visible') + '" data-day="' + day.code + '">' + day.label + '</button>';
+	});
+
+	html += '</div>';
+	html += '<small class="menu-category-days-help">Ye\u015fil g\u00fcnlerde g\u00f6r\u00fcn\u00fcr. K\u0131rm\u0131z\u0131 g\u00fcnlerde kategori men\u00fcden gizlenir.</small>';
+	html += '</div>';
+
+	$('.menu-category-days-popover').remove();
+
+	var $popover = $(html).appendTo('body');
+	var left = Math.max(12, offset.left - ($popover.outerWidth() / 2) + ($trigger.outerWidth() / 2));
+	var top = offset.top + $trigger.outerHeight() + 8;
+
+	$popover.css({left: left, top: top});
+
+	$popover.on('click', '.menu-category-day-toggle', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+
+		var day = $(this).data('day');
+		var currentDays = normalizeCategoryClosedDays($trigger.attr('data-days') || '');
+		var index = currentDays.indexOf(day);
+
+		if (index === -1) {
+			currentDays.push(day);
+		} else {
+			currentDays.splice(index, 1);
+		}
+
+		var nextDays = serializeCategoryClosedDays(currentDays);
+
+		$trigger.addClass('is-saving');
+
+		$.ajax({
+			url: 'index.php?route=catalog/category/quickDays&user_token={{ user_token }}',
+			type: 'post',
+			dataType: 'json',
+			data: {
+				category_id: categoryId,
+				days: nextDays
+			},
+			complete: function() {
+				$trigger.removeClass('is-saving');
+			},
+			success: function(json) {
+				if (json.error) {
+					alert(json.error);
+					return;
+				}
+
+				if (json.success) {
+					updateCategoryDaysTrigger($trigger, json.days || []);
+					renderCategoryDaysPopover($trigger);
+				}
+			}
+		});
+	});
+}
+
+$('.menu-category-days-trigger').each(function() {
+	updateCategoryDaysTrigger($(this), $(this).attr('data-days') || '');
+});
+
+$(document).on('click', '.menu-category-days-trigger', function(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	renderCategoryDaysPopover($(this));
+});
+
+$(document).on('click', function(e) {
+	if (!$(e.target).closest('.menu-category-days-popover, .menu-category-days-trigger').length) {
+		$('.menu-category-days-popover').remove();
+	}
+});
+
+$(window).on('resize scroll', function() {
+	$('.menu-category-days-popover').remove();
+});
+//--></script>
 {{ footer }}
