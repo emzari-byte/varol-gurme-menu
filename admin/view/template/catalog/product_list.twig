@@ -204,6 +204,18 @@
               .product-filter-compact label{font-size:12px;margin-bottom:4px;}
               .product-filter-compact .form-control{height:32px;padding:5px 8px;font-size:12px;}
               .product-allergen-cell{min-width:150px;}
+              .menu-days-col{width:92px;min-width:92px;max-width:92px;text-align:center;}
+              .menu-days-trigger{display:inline-flex;align-items:center;justify-content:center;min-width:74px;height:30px;padding:0 9px;border:1px solid #dbe8e1;border-radius:10px;background:#f7fbf8;color:#24543d;font-size:11px;font-weight:900;line-height:1;white-space:nowrap;}
+              .menu-days-trigger.has-closed-days{background:#fff3cd;color:#875500;border-color:#efd58e;}
+              .menu-days-popover{position:absolute;z-index:1060;width:258px;padding:12px;border:1px solid #dce8e1;border-radius:16px;background:#fff;box-shadow:0 18px 46px rgba(12,35,25,.18);}
+              .menu-days-popover-title{margin-bottom:9px;color:#123629;font-size:12px;font-weight:900;}
+              .menu-days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+              .menu-day-toggle,.quick-product-day-toggle{height:34px;border:0;border-radius:10px;color:#fff;font-size:11px;font-weight:900;line-height:1;}
+              .menu-day-toggle.is-visible,.quick-product-day-toggle.is-visible{background:#2f8f58;}
+              .menu-day-toggle.is-hidden,.quick-product-day-toggle.is-hidden{background:#d84a3a;}
+              .menu-days-help{display:block;margin-top:9px;color:#7b8b82;font-size:11px;line-height:1.35;}
+              .quick-product-days{padding:12px;border:1px solid #dce8e1;border-radius:14px;background:#f8fbf9;}
+              .quick-product-days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;}
               .product-allergen-icons{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:32px;}
               .product-allergen-icon{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border:1px solid #dfe8e2;border-radius:9px;background:#fff;}
               .product-allergen-icon img{max-width:23px;max-height:23px;object-fit:contain;}
@@ -279,6 +291,7 @@
                       <td class="text-left">{% if sort == 'pd.name' %} <a href="{{ sort_name }}" class="{{ order|lower }}">{{ column_name }}</a> {% else %} <a href="{{ sort_name }}">{{ column_name }}</a> {% endif %}</td>
                       <td class="text-left">Alerjen</td>
                       <td class="text-left">{% if sort == 'p.model' %} <a href="{{ sort_model }}" class="{{ order|lower }}">{{ column_model }}</a> {% else %} <a href="{{ sort_model }}">{{ column_model }}</a> {% endif %}</td>
+                      <td class="menu-days-col"><span data-toggle="tooltip" title="Kirmizi gunlerde urun menude gizlenir">Günler</span></td>
                       <td class="text-right">{% if sort == 'p.price' %} <a href="{{ sort_price }}" class="{{ order|lower }}">{{ column_price }}</a> {% else %} <a href="{{ sort_price }}">{{ column_price }}</a> {% endif %}</td>
                       <td class="text-right">{% if sort == 'p.quantity' %} <a href="{{ sort_quantity }}" class="{{ order|lower }}">{{ column_quantity }}</a> {% else %} <a href="{{ sort_quantity }}">{{ column_quantity }}</a> {% endif %}</td>
                       <td class="text-left">{% if sort == 'p.status' %} <a href="{{ sort_status }}" class="{{ order|lower }}">{{ column_status }}</a> {% else %} <a href="{{ sort_status }}">{{ column_status }}</a> {% endif %}</td>
@@ -323,6 +336,11 @@
                         </div>
                       {% endif %}
                     </td>
+                    <td class="menu-days-col">
+                      <button type="button" class="menu-days-trigger" data-product-id="{{ product.product_id }}" data-sku="{{ product.sku|e('html_attr') }}">
+                        <span class="menu-days-label">Her gün</span>
+                      </button>
+                    </td>
                     <td class="text-right">{% if product.special %} <span class="quick-edit-value" style="text-decoration: line-through;" data-product-id="{{ product.product_id }}" data-field="price" data-raw="{{ product.price_raw }}">{{ product.price }}</span><br/>
                       <div class="text-danger">{{ product.special }}</div>
                       {% else %}
@@ -344,7 +362,7 @@
                   {% endfor %}
                   {% else %}
                   <tr>
-                    <td class="text-center" colspan="10">{{ text_no_results }}</td>
+                    <td class="text-center" colspan="11">{{ text_no_results }}</td>
                   </tr>
                   {% endif %}
                     </tbody>
@@ -426,6 +444,22 @@
                   <div class="quick-product-field">
                     <label>Ürün Kodu</label>
                     <input type="text" name="model" class="form-control" placeholder="ST02006" />
+                  </div>
+                  <div class="quick-product-field">
+                    <label>Menü Günleri</label>
+                    <div class="quick-product-days">
+                      <input type="hidden" name="sku" value="" />
+                      <div class="quick-product-days-grid">
+                        <button type="button" class="quick-product-day-toggle" data-day="Mon">Pzt</button>
+                        <button type="button" class="quick-product-day-toggle" data-day="Tue">Sal</button>
+                        <button type="button" class="quick-product-day-toggle" data-day="Wed">Car</button>
+                        <button type="button" class="quick-product-day-toggle" data-day="Thu">Per</button>
+                        <button type="button" class="quick-product-day-toggle" data-day="Fri">Cum</button>
+                        <button type="button" class="quick-product-day-toggle" data-day="Sat">Cmt</button>
+                        <button type="button" class="quick-product-day-toggle" data-day="Sun">Paz</button>
+                      </div>
+                      <small class="menu-days-help">Yeşil: görünür, kırmızı: gizli.</small>
+                    </div>
                   </div>
                   <div class="quick-product-field">
                     <label>Fiyat</label>
@@ -577,6 +611,154 @@ var quickProductCategories = [
 {% endfor %}
 ];
 var quickProductSelectedCategories = {};
+var menuDayOptions = [
+	{code: 'Mon', label: 'Pzt'},
+	{code: 'Tue', label: 'Sal'},
+	{code: 'Wed', label: 'Car'},
+	{code: 'Thu', label: 'Per'},
+	{code: 'Fri', label: 'Cum'},
+	{code: 'Sat', label: 'Cmt'},
+	{code: 'Sun', label: 'Paz'}
+];
+
+function normalizeClosedDaysFromSku(sku) {
+	sku = $.trim(sku || '');
+
+	if (!sku) {
+		return [];
+	}
+
+	if (sku == '99') {
+		return ['Sun'];
+	}
+
+	if (sku.toLowerCase().indexOf('closed:') !== 0) {
+		return [];
+	}
+
+	var valid = {};
+	var days = [];
+
+	$.each(menuDayOptions, function(index, day) {
+		valid[day.code.toLowerCase()] = day.code;
+	});
+
+	$.each(sku.substring(7).split(','), function(index, value) {
+		var code = $.trim(value).toLowerCase();
+
+		if (valid[code] && days.indexOf(valid[code]) === -1) {
+			days.push(valid[code]);
+		}
+	});
+
+	return days;
+}
+
+function serializeClosedDays(days) {
+	var ordered = [];
+
+	$.each(menuDayOptions, function(index, day) {
+		if (days.indexOf(day.code) !== -1) {
+			ordered.push(day.code);
+		}
+	});
+
+	return ordered.length ? 'closed:' + ordered.join(',') : '';
+}
+
+function getDayLabel(code) {
+	var label = code;
+
+	$.each(menuDayOptions, function(index, day) {
+		if (day.code == code) {
+			label = day.label;
+			return false;
+		}
+	});
+
+	return label;
+}
+
+function updateMenuDaysTrigger($trigger, sku) {
+	var closedDays = normalizeClosedDaysFromSku(sku);
+	var label = 'Her gün';
+
+	if (closedDays.length == 1) {
+		label = getDayLabel(closedDays[0]) + ' kapalı';
+	} else if (closedDays.length > 1) {
+		label = closedDays.length + ' gün kapalı';
+	}
+
+	$trigger.attr('data-sku', sku).data('sku', sku);
+	$trigger.toggleClass('has-closed-days', closedDays.length > 0);
+	$trigger.find('.menu-days-label').text(label);
+}
+
+function renderQuickProductDays(sku) {
+	var closedDays = normalizeClosedDaysFromSku(sku);
+	var normalizedSku = serializeClosedDays(closedDays);
+
+	$('input[name="sku"]').val(normalizedSku);
+
+	$('.quick-product-day-toggle').each(function() {
+		var $button = $(this);
+		var isHidden = closedDays.indexOf($button.data('day')) !== -1;
+
+		$button.toggleClass('is-hidden', isHidden).toggleClass('is-visible', !isHidden);
+	});
+}
+
+function renderMenuDaysPopover($trigger) {
+	var productId = $trigger.data('product-id');
+	var sku = $trigger.attr('data-sku') || '';
+	var closedDays = normalizeClosedDaysFromSku(sku);
+	var offset = $trigger.offset();
+	var html = '<div class="menu-days-popover">';
+
+	html += '<div class="menu-days-popover-title">Ürünün görüneceği günler</div>';
+	html += '<div class="menu-days-grid">';
+
+	$.each(menuDayOptions, function(index, day) {
+		var isHidden = closedDays.indexOf(day.code) !== -1;
+		html += '<button type="button" class="menu-day-toggle ' + (isHidden ? 'is-hidden' : 'is-visible') + '" data-day="' + day.code + '">' + day.label + '</button>';
+	});
+
+	html += '</div>';
+	html += '<small class="menu-days-help">Yeşil günlerde görünür. Kırmızı yaptığınız günlerde menüden gizlenir.</small>';
+	html += '</div>';
+
+	$('.menu-days-popover').remove();
+
+	var $popover = $(html).appendTo('body');
+	var left = Math.max(12, offset.left - ($popover.outerWidth() / 2) + ($trigger.outerWidth() / 2));
+	var top = offset.top + $trigger.outerHeight() + 8;
+
+	$popover.css({left: left, top: top});
+
+	$popover.on('click', '.menu-day-toggle', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+
+		var day = $(this).data('day');
+		var currentDays = normalizeClosedDaysFromSku($trigger.attr('data-sku') || '');
+		var index = currentDays.indexOf(day);
+
+		if (index === -1) {
+			currentDays.push(day);
+		} else {
+			currentDays.splice(index, 1);
+		}
+
+		var nextSku = serializeClosedDays(currentDays);
+
+		quickUpdateProduct(productId, 'sku', nextSku, function(json) {
+			if (json.success) {
+				updateMenuDaysTrigger($trigger, json.value || '');
+				renderMenuDaysPopover($trigger);
+			}
+		});
+	});
+}
 
 function renderQuickProductSelectedCategories() {
 	var html = '';
@@ -659,6 +841,7 @@ function resetQuickProductForm(mode) {
 	$('#quick-product-id').val('');
 	$('#input-quick-product-image').val('');
 	$('#thumb-quick-product-image img').attr('src', '{{ placeholder }}');
+	renderQuickProductDays('');
 	quickProductSelectedCategories = {};
 	renderQuickProductSelectedCategories();
 	$('#quick-product-category-search').val('');
@@ -688,6 +871,7 @@ function resetQuickProductForm(mode) {
 function fillQuickProductForm(product) {
 	$('#quick-product-id').val(product.product_id);
 	$('input[name="model"]').val(product.model);
+	renderQuickProductDays(product.sku || '');
 	$('input[name="price"]').val(product.price);
 	$('input[name="location"]').val(product.location || '');
 	$('input[name="upc"]').val(product.upc || '');
@@ -726,6 +910,36 @@ $('#button-open-quick-product').on('click', function(e) {
 	resetQuickProductForm('add');
 	$('#modal-quick-product').modal('show');
 	initQuickProductDescriptionEditors();
+});
+
+$('.menu-days-trigger').each(function() {
+	updateMenuDaysTrigger($(this), $(this).attr('data-sku') || '');
+});
+
+$(document).on('click', '.menu-days-trigger', function(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	renderMenuDaysPopover($(this));
+});
+
+$(document).on('click', '.quick-product-day-toggle', function() {
+	var currentDays = normalizeClosedDaysFromSku($('input[name="sku"]').val());
+	var day = $(this).data('day');
+	var index = currentDays.indexOf(day);
+
+	if (index === -1) {
+		currentDays.push(day);
+	} else {
+		currentDays.splice(index, 1);
+	}
+
+	renderQuickProductDays(serializeClosedDays(currentDays));
+});
+
+$(document).on('click', function(e) {
+	if (!$(e.target).closest('.menu-days-popover, .menu-days-trigger').length) {
+		$('.menu-days-popover').remove();
+	}
 });
 
 $('#quick-product-category-search').on('input focus', function() {
@@ -917,7 +1131,7 @@ $(document).on('dblclick', '.quick-edit-value', function() {
 	}
 
 	var originalDisplay = $.trim($span.text());
-	var originalValue = field == 'price' ? $span.data('raw') : originalDisplay;
+	var originalValue = $span.is('[data-raw]') ? ($span.data('raw') || '') : originalDisplay;
 	var $input = $('<input type="text" class="form-control input-sm quick-edit-input" />').val(originalValue);
 
 	$span.data('editing', true).hide().after($input);

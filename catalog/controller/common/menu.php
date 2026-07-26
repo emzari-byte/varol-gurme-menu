@@ -182,7 +182,7 @@ class ControllerCommonMenu extends Controller {
 				continue;
 			}
 
-			if ($day == 'Sun' && isset($product_info['sku']) && $product_info['sku'] == '99') {
+			if ($this->isProductClosedOnDay(isset($product_info['sku']) ? $product_info['sku'] : '', $day)) {
 				continue;
 			}
 
@@ -322,6 +322,48 @@ class ControllerCommonMenu extends Controller {
 		$description = trim((string)$this->config->get('config_meta_description'));
 
 		return $description !== '' ? $description : 'Varol Veranda dijital menüsü: kahvaltı, kahve, içecek ve gün boyu lezzet seçeneklerini inceleyin.';
+	}
+
+	private function isProductClosedOnDay($sku, $day) {
+		return in_array($day, $this->parseProductClosedDays($sku), true);
+	}
+
+	private function parseProductClosedDays($sku) {
+		$sku = trim((string)$sku);
+
+		if ($sku === '') {
+			return array();
+		}
+
+		if ($sku === '99') {
+			return array('Sun');
+		}
+
+		if (stripos($sku, 'closed:') !== 0) {
+			return array();
+		}
+
+		$valid_days = array(
+			'mon' => 'Mon',
+			'tue' => 'Tue',
+			'wed' => 'Wed',
+			'thu' => 'Thu',
+			'fri' => 'Fri',
+			'sat' => 'Sat',
+			'sun' => 'Sun'
+		);
+		$closed_days = array();
+		$parts = explode(',', substr($sku, 7));
+
+		foreach ($parts as $part) {
+			$key = strtolower(trim($part));
+
+			if (isset($valid_days[$key]) && !in_array($valid_days[$key], $closed_days, true)) {
+				$closed_days[] = $valid_days[$key];
+			}
+		}
+
+		return $closed_days;
 	}
 
 	private function applyPricePrefix($price, $prefix) {

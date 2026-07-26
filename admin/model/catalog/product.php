@@ -358,6 +358,11 @@ class ModelCatalogProduct extends Model {
 				SET model = '" . $this->db->escape($value) . "',
 					date_modified = NOW()
 				WHERE product_id = '" . (int)$product_id . "'");
+		} elseif ($field == 'sku') {
+			$this->db->query("UPDATE " . DB_PREFIX . "product
+				SET sku = '" . $this->db->escape(trim((string)$value)) . "',
+					date_modified = NOW()
+				WHERE product_id = '" . (int)$product_id . "'");
 		} elseif ($field == 'price') {
 			$value = str_replace(',', '.', $value);
 

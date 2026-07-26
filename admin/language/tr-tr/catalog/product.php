@@ -37,7 +37,7 @@ $_['entry_meta_description'] = 'Meta Açıklaması';
 $_['entry_store']            = 'Mağazalar';
 $_['entry_keyword']          = 'SEO Bağlantısı';
 $_['entry_model']            = 'Ürün Kodu';
-$_['entry_sku']              = 'HAFTASONU KAPALI =99';
+$_['entry_sku']              = 'Menü Günleri';
 $_['entry_upc']              = '*KCAL';
 $_['entry_ean']              = '*PROTEİN';
 $_['entry_jan']              = 'KARBONHİDRAT';
@@ -86,7 +86,7 @@ $_['entry_layout']           = 'Bu Bölüm Gibi Davran';
 $_['entry_recurring']        = 'Abonelik Profili';
 
 // Help
-$_['help_sku']               = 'Stok Tutma Birimi';
+$_['help_sku']               = 'Ürün listesinde Günler kontrolünden yönetilir.';
 $_['help_upc']               = 'Evrensel Ürün Kodu';
 $_['help_ean']               = 'Avrupa Makale Numarası';
 $_['help_jan']               = 'Japon Makale Numarası';

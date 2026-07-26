@@ -384,7 +384,7 @@ class ControllerProductCategory extends Controller {
         $allergens_by_product = $this->getAllergensByProductIds($product_ids);
 
         foreach ($results as $result) {
-            if ($gun == 'Sun' && $result['sku'] == '99') {
+            if ($this->isProductClosedOnDay(isset($result['sku']) ? $result['sku'] : '', $gun)) {
                 continue;
             }
 
@@ -862,6 +862,48 @@ class ControllerProductCategory extends Controller {
         }
 
         return $allergens;
+    }
+
+    private function isProductClosedOnDay($sku, $day) {
+        return in_array($day, $this->parseProductClosedDays($sku), true);
+    }
+
+    private function parseProductClosedDays($sku) {
+        $sku = trim((string)$sku);
+
+        if ($sku === '') {
+            return array();
+        }
+
+        if ($sku === '99') {
+            return array('Sun');
+        }
+
+        if (stripos($sku, 'closed:') !== 0) {
+            return array();
+        }
+
+        $valid_days = array(
+            'mon' => 'Mon',
+            'tue' => 'Tue',
+            'wed' => 'Wed',
+            'thu' => 'Thu',
+            'fri' => 'Fri',
+            'sat' => 'Sat',
+            'sun' => 'Sun'
+        );
+        $closed_days = array();
+        $parts = explode(',', substr($sku, 7));
+
+        foreach ($parts as $part) {
+            $key = strtolower(trim($part));
+
+            if (isset($valid_days[$key]) && !in_array($valid_days[$key], $closed_days, true)) {
+                $closed_days[] = $valid_days[$key];
+            }
+        }
+
+        return $closed_days;
     }
 
     private function applyPricePrefix($price, $prefix) {

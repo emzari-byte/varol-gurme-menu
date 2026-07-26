@@ -249,7 +249,11 @@ class ControllerCatalogProduct extends Controller {
 			$value = isset($this->request->post['value']) ? $this->request->post['value'] : '';
 			$product_description = isset($this->request->post['product_description']) ? $this->request->post['product_description'] : array();
 			$product_category = isset($this->request->post['product_category']) ? (array)$this->request->post['product_category'] : array();
-			$allowed = array('name', 'model', 'price', 'status', 'image', 'description', 'category');
+			$allowed = array('name', 'model', 'sku', 'price', 'status', 'image', 'description', 'category');
+
+			if ($field == 'sku') {
+				$value = trim((string)$value);
+			}
 
 			if (!$product_id || !in_array($field, $allowed)) {
 				$json['error'] = 'Geçersiz hızlı düzenleme isteği.';
@@ -347,6 +351,7 @@ class ControllerCatalogProduct extends Controller {
 				$json['product'] = array(
 					'product_id' => (int)$product_id,
 					'model' => $product_info['model'],
+					'sku' => $product_info['sku'],
 					'price' => $product_info['price'],
 					'location' => $product_info['location'],
 					'upc' => $product_info['upc'],
@@ -386,6 +391,7 @@ class ControllerCatalogProduct extends Controller {
 			$descriptions = isset($this->request->post['description']) ? (array)$this->request->post['description'] : array();
 			$prep_time = isset($this->request->post['prep_time']) ? $this->normalizePreparationTime($this->request->post['prep_time']) : '';
 			$model = isset($this->request->post['model']) ? trim($this->request->post['model']) : '';
+			$sku = isset($this->request->post['sku']) ? trim($this->request->post['sku']) : '';
 			$price = isset($this->request->post['price']) ? str_replace(',', '.', trim($this->request->post['price'])) : '0';
 			$location = isset($this->request->post['location']) ? trim($this->request->post['location']) : '';
 			$upc = isset($this->request->post['upc']) ? trim($this->request->post['upc']) : '';
@@ -443,7 +449,7 @@ class ControllerCatalogProduct extends Controller {
 
 				$product_data = array(
 					'model'               => $model,
-					'sku'                 => '',
+					'sku'                 => $sku,
 					'upc'                 => $upc,
 					'ean'                 => $ean,
 					'jan'                 => $jan,
@@ -483,6 +489,7 @@ class ControllerCatalogProduct extends Controller {
 						$this->model_catalog_product->quickUpdateProductDescriptions($product_id, $product_description);
 						$this->model_catalog_product->quickUpdateProductCategories($product_id, array_unique($clean_categories));
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'model', $model);
+						$this->model_catalog_product->quickUpdateProductField($product_id, 'sku', $sku);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'price', $price);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'location', $location);
 						$this->model_catalog_product->quickUpdateProductField($product_id, 'upc', $upc);
@@ -803,6 +810,7 @@ class ControllerCatalogProduct extends Controller {
 				'name'       => $result['name'],
 				'allergens'  => $product_allergens,
 				'model'      => $result['model'],
+				'sku'        => $result['sku'],
 				'akinsoft_sync_class' => isset($akinsoft_sync_map[$result['product_id']]) ? 'akinsoft-row-' . $akinsoft_sync_map[$result['product_id']]['status'] : '',
 				'akinsoft_sync_label' => isset($akinsoft_sync_map[$result['product_id']]) ? ($akinsoft_sync_map[$result['product_id']]['status'] == 'matched' ? 'Akınsoft eşleşti' : 'Akınsoft eşleşmedi') : '',
 				'akinsoft_sync_status' => isset($akinsoft_sync_map[$result['product_id']]) ? $akinsoft_sync_map[$result['product_id']]['status'] : '',
